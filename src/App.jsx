@@ -17,6 +17,7 @@ import CardGenerate from '@/pages/CardGenerate';
 import Play from '@/pages/Play';
 import Battle from '@/pages/Battle';
 import Profile from '@/pages/Profile';
+import BattleHistory from '@/pages/BattleHistory';
 import AdminPanel from '@/pages/AdminPanel';
 // Add page imports here
 
@@ -57,6 +58,7 @@ const AuthenticatedApp = () => {
         <Route path="/play" element={<Play />} />
         <Route path="/battle" element={<Battle />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/history" element={<BattleHistory />} />
         <Route path="/admin" element={<AdminPanel />} />
       </Route>
       {/* Add your page Route elements here */}

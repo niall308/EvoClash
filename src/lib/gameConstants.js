@@ -43,6 +43,11 @@ export const UPGRADE_REQUIREMENTS = {
   3: { winsVsBonus: 1000, winsVsNonBonus: 500, gamesPlayed: 2000 },
 };
 
+export const AI_OPPONENT_NAMES = [
+  "Commander Rex", "Shadow Viper", "Iron Warden", "Blaze Hunter", "Frost Reaper",
+  "Storm Breaker", "Rogue Tamer", "Void Walker", "Ember Knight", "Crimson Fang",
+];
+
 export const NAME_PARTS = {
   1: { prefixes: ["Feral", "Ancient", "Savage", "Wild", "Primal", "Rampant"] },
   2: { prefixes: ["Ironclad", "Knight", "Steel", "Armored", "Iron", "Guardian"] },

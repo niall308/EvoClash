@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Trophy, Swords, Gamepad2 } from "lucide-react";
+import { ArrowLeft, Trophy, Swords, Gamepad2, History } from "lucide-react";
 import { UPGRADE_REQUIREMENTS } from "@/lib/gameConstants";
 
 function Stat({ icon: Icon, label, value }) {
@@ -44,6 +44,13 @@ export default function Profile() {
         <Stat icon={Swords} label="Losses" value={user.losses || 0} />
         <Stat icon={Gamepad2} label="Games" value={user.gamesPlayed || 0} />
       </div>
+
+      <Link to="/history" className="flex items-center justify-between bg-white/5 rounded-xl p-4 mb-8">
+        <span className="flex items-center gap-2 font-semibold text-sm">
+          <History className="w-4 h-4 text-amber-400" /> Battle History
+        </span>
+        <span className="text-white/40 text-xs">View all →</span>
+      </Link>
 
       <h2 className="text-lg font-bold mb-3">Upgrade Progress</h2>
       <div className="space-y-3">

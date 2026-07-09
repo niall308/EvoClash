@@ -2,12 +2,15 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { generateRandomCard, upgradeCard } from "@/lib/cardGenerator";
 import { computeDamage, rollDice, maxHealth } from "@/lib/battleEngine";
 import { checkUpgradeEligible } from "@/lib/upgradeCheck";
+import { AI_OPPONENT_NAMES } from "@/lib/gameConstants";
 import { base44 } from "@/api/base44Client";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 export default function useBattleMatch(playerCards, onMatchEnd) {
+  const [opponentName] = useState(() => randomFrom(AI_OPPONENT_NAMES));
   const [aiPool, setAiPool] = useState(() =>
     shuffle(
       Array.from({ length: 15 }, () => {
@@ -38,9 +41,10 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
   };
 
   const applyProgression = useCallback(
-    async (winner) => {
+    async (winner, finalScore) => {
       setPhase("matchEnd");
       setMatchResult(winner);
+      const cardsUsed = playerCards.filter((c) => statsRef.current[c.id]).map((c) => c.name);
       const updates = [];
       for (const card of playerCards) {
         const delta = statsRef.current[card.id];
@@ -68,9 +72,16 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
         losses: (me.losses || 0) + (winner === "ai" ? 1 : 0),
         gamesPlayed: (me.gamesPlayed || 0) + 1,
       });
+      await base44.entities.BattleHistory.create({
+        opponentName,
+        outcome: winner === "player" ? "win" : "loss",
+        cardsUsed,
+        playerScore: finalScore.player,
+        aiScore: finalScore.ai,
+      });
       if (onMatchEnd) onMatchEnd(winner);
     },
-    [playerCards, onMatchEnd]
+    [playerCards, onMatchEnd, opponentName]
   );
 
   const finishRound = useCallback(
@@ -84,7 +95,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       await sleep(1600);
       const matchOver = newScore.player >= 3 || newScore.ai >= 3;
       if (matchOver) {
-        await applyProgression(newScore.player > newScore.ai ? "player" : "ai");
+        await applyProgression(newScore.player > newScore.ai ? "player" : "ai", newScore);
         return;
       }
       if (winnerSide === "player") {
@@ -166,6 +177,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
   return {
     round,
     score,
+    opponentName,
     playerCard,
     aiCard,
     playerHP,

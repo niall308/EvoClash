@@ -1,0 +1,33 @@
+{
+  "name": "BattleHistory",
+  "type": "object",
+  "properties": {
+    "opponentName": {
+      "type": "string"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "win",
+        "loss"
+      ]
+    },
+    "cardsUsed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "playerScore": {
+      "type": "number"
+    },
+    "aiScore": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "opponentName",
+    "outcome",
+    "cardsUsed"
+  ]
+}
