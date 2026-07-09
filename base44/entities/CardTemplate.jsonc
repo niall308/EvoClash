@@ -1,0 +1,33 @@
+{
+  "name": "CardTemplate",
+  "type": "object",
+  "properties": {
+    "baseName": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Dinosaur",
+        "Extinct Animal",
+        "Mythical Creature"
+      ]
+    },
+    "tier1Animation": {
+      "type": "string"
+    },
+    "tier2Animation": {
+      "type": "string"
+    },
+    "tier3Animation": {
+      "type": "string"
+    },
+    "tier4Animation": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "baseName",
+    "category"
+  ]
+}

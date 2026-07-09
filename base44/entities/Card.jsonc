@@ -1,0 +1,72 @@
+{
+  "name": "Card",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "baseName": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Dinosaur",
+        "Extinct Animal",
+        "Mythical Creature"
+      ]
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "Fire",
+        "Lava",
+        "Water",
+        "Ice",
+        "Rock",
+        "Wind",
+        "Earth",
+        "Magic"
+      ]
+    },
+    "tier": {
+      "type": "number",
+      "default": 1
+    },
+    "attack": {
+      "type": "number"
+    },
+    "defense": {
+      "type": "number"
+    },
+    "bonusDamage": {
+      "type": "number",
+      "default": 0
+    },
+    "bonusDefense": {
+      "type": "number",
+      "default": 0
+    },
+    "winsVsBonus": {
+      "type": "number",
+      "default": 0
+    },
+    "winsVsNonBonus": {
+      "type": "number",
+      "default": 0
+    },
+    "gamesPlayed": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "name",
+    "baseName",
+    "category",
+    "type",
+    "tier",
+    "attack",
+    "defense"
+  ]
+}

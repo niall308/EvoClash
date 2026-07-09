@@ -1,0 +1,25 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "username": {
+      "type": "string"
+    },
+    "isAdmin": {
+      "type": "boolean",
+      "default": false
+    },
+    "wins": {
+      "type": "number",
+      "default": 0
+    },
+    "losses": {
+      "type": "number",
+      "default": 0
+    },
+    "gamesPlayed": {
+      "type": "number",
+      "default": 0
+    }
+  }
+}
