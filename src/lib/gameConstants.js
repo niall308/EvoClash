@@ -43,6 +43,9 @@ export const UPGRADE_REQUIREMENTS = {
   3: { winsVsBonus: 1000, winsVsNonBonus: 500, gamesPlayed: 2000 },
 };
 
+export const CARD_BACK_URL = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/8e6b0b264_Card_Back.jpg";
+export const STYLE_REFERENCE_URL = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/636b60708_Style.png";
+
 export const AI_OPPONENT_NAMES = [
   "Commander Rex", "Shadow Viper", "Iron Warden", "Blaze Hunter", "Frost Reaper",
   "Storm Breaker", "Rogue Tamer", "Void Walker", "Ember Knight", "Crimson Fang",

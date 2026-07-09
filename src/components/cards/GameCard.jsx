@@ -23,7 +23,11 @@ export default function GameCard({ card, size = "md", onDelete, glow }) {
         </button>
       )}
       <div className="flex-1 flex items-center justify-center">
-        <Icon className="w-8 h-8" style={{ color }} />
+        {card.imageUrl ? (
+          <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover" />
+        ) : (
+          <Icon className="w-8 h-8" style={{ color }} />
+        )}
       </div>
       <div className="px-1.5 pb-1.5 text-center">
         <p className="text-white font-bold text-[11px] leading-tight truncate">{card.name}</p>

@@ -58,6 +58,9 @@
     "gamesPlayed": {
       "type": "number",
       "default": 0
+    },
+    "imageUrl": {
+      "type": "string"
     }
   },
   "required": [

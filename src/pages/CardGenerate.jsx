@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { generateRandomCard } from "@/lib/cardGenerator";
+import { STYLE_REFERENCE_URL } from "@/lib/gameConstants";
 import GameCard from "@/components/cards/GameCard";
 import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,8 +25,12 @@ export default function CardGenerate() {
     setGenerating(true);
     setNewCard(null);
     const cardData = generateRandomCard(1);
+    const { url } = await base44.integrations.Core.GenerateImage({
+      prompt: `A ${cardData.type}-type ${cardData.baseName}, dynamic full-body creature illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`,
+      existing_image_urls: [STYLE_REFERENCE_URL],
+    });
+    cardData.imageUrl = url;
     const created = await base44.entities.Card.create(cardData);
-    await new Promise((r) => setTimeout(r, 400));
     setNewCard(created);
     setCount((c) => c + 1);
     setGenerating(false);
