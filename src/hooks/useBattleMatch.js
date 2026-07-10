@@ -120,17 +120,35 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       busyRef.current = true;
       const attacker = attackerSide === "player" ? playerCard : aiCard;
       const defender = attackerSide === "player" ? aiCard : playerCard;
-      const attackerHP = attackerSide === "player" ? playerHP : aiHP;
-      const defenderHP = attackerSide === "player" ? aiHP : playerHP;
-      const dmg = computeDamage(attacker, defender);
-      setEffect({ side: attackerSide, value: dmg, blocked: dmg === 0, key: Date.now() });
+      const result = computeDamage(attacker, defender);
+
+      if (result.tie) {
+        setEffect({ side: attackerSide, value: 0, tie: true, key: Date.now() });
+        await sleep(600);
+        setLog("It's a tie! Both cards are destroyed.");
+        await sleep(1000);
+        setPlayerCard(null);
+        setAiCard(null);
+        setPlayerHP(0);
+        setAiHP(0);
+        setPhase("draw");
+        setLog("Tap your deck to draw a card!");
+        busyRef.current = false;
+        return;
+      }
+
+      const targetSide = result.recoil ? attackerSide : attackerSide === "player" ? "ai" : "player";
+      const targetHP = targetSide === "player" ? playerHP : aiHP;
+      setEffect({ side: attackerSide, value: result.damage, blocked: false, recoil: result.recoil, key: Date.now() });
       await sleep(600);
-      const newDefHP = Math.max(0, defenderHP - dmg);
-      if (attackerSide === "player") setAiHP(newDefHP);
-      else setPlayerHP(newDefHP);
+      const newTargetHP = Math.max(0, targetHP - result.damage);
+      if (targetSide === "player") setPlayerHP(newTargetHP);
+      else setAiHP(newTargetHP);
       await sleep(500);
-      if (newDefHP <= 0) {
-        await finishRound(attackerSide, attackerHP);
+      if (newTargetHP <= 0) {
+        const winnerSide = targetSide === "player" ? "ai" : "player";
+        const survivorHP = winnerSide === "player" ? playerHP : aiHP;
+        await finishRound(winnerSide, survivorHP);
         busyRef.current = false;
         return;
       }

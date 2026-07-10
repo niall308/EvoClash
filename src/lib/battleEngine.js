@@ -8,7 +8,9 @@ export function computeDamage(attacker, defender) {
   const multiplier = getTypeMultiplier(attacker.type, defender.type);
   const rawAttack = Math.round(attacker.attack * multiplier) + (attacker.bonusDamage || 0);
   const totalDefense = (defender.defense || 0) + (defender.bonusDefense || 0);
-  return Math.max(0, rawAttack - totalDefense);
+  if (rawAttack === totalDefense) return { tie: true, recoil: false, damage: 0 };
+  if (rawAttack > totalDefense) return { tie: false, recoil: false, damage: rawAttack - totalDefense };
+  return { tie: false, recoil: true, damage: totalDefense - rawAttack };
 }
 
 export function rollDice() {

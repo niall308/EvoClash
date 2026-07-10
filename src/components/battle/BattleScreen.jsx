@@ -6,20 +6,31 @@ import DeckStack from "@/components/battle/DeckStack";
 import AttackArrow from "@/components/battle/AttackArrow";
 import DamageNumber from "@/components/battle/DamageNumber";
 import { maxHealth } from "@/lib/battleEngine";
-import { Swords } from "lucide-react";
+import { Swords, Flag } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import useBattleMatch from "@/hooks/useBattleMatch";
 
 export default function BattleScreen({ playerCards, onMatchEnd }) {
+  const navigate = useNavigate();
   const { round, score, playerCard, aiCard, playerHP, aiHP, phase, turn, log, effect, matchResult, draw, attack, playerRemaining } = useBattleMatch(
     playerCards,
     onMatchEnd
   );
+
+  const handleForfeit = () => {
+    if (window.confirm("Forfeit the match and return to the home screen?")) {
+      navigate("/");
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col text-white" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
       <div className="flex justify-between items-center px-4 py-2 text-xs font-bold">
         <span>Round {round}/5</span>
         <span>You {score.player} — {score.ai} AI</span>
+        <button onClick={handleForfeit} className="flex items-center gap-1 text-white/60 hover:text-red-400">
+          <Flag className="w-3.5 h-3.5" /> Forfeit
+        </button>
       </div>
 
       <div className="flex flex-col items-center pt-2 gap-2">
@@ -39,7 +50,7 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
 
       <div className="flex-1 relative flex flex-col items-center justify-center px-4">
         <AttackArrow direction={effect?.side === "player" ? "up" : "down"} color={effect?.side === "player" ? "#FF4500" : "#00BFFF"} trigger={effect?.key} />
-        <DamageNumber value={effect?.value} blocked={effect?.blocked} trigger={effect?.key} />
+        <DamageNumber value={effect?.value} blocked={effect?.blocked} tie={effect?.tie} trigger={effect?.key} />
         <p className="text-center text-sm text-white/70 max-w-xs">{log}</p>
         {phase === "battle" && turn === "player" && (
           <button
