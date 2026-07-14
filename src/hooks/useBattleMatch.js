@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { generateRandomCard, upgradeCard } from "@/lib/cardGenerator";
-import { computeDamage, rollDice, maxHealth } from "@/lib/battleEngine";
+import { computeDamage, maxHealth } from "@/lib/battleEngine";
 import { checkUpgradeEligible } from "@/lib/upgradeCheck";
 import { AI_OPPONENT_NAMES } from "@/lib/gameConstants";
 import { base44 } from "@/api/base44Client";
@@ -8,6 +8,8 @@ import { base44 } from "@/api/base44Client";
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const RPS_OPTIONS = ["rock", "paper", "scissors"];
+const RPS_BEATS = { rock: "scissors", scissors: "paper", paper: "rock" };
 
 export default function useBattleMatch(playerCards, onMatchEnd) {
   const [opponentName] = useState(() => randomFrom(AI_OPPONENT_NAMES));
@@ -33,6 +35,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
   const [log, setLog] = useState("Tap your deck to draw a card!");
   const [effect, setEffect] = useState(null);
   const [matchResult, setMatchResult] = useState(null);
+  const [graveyard, setGraveyard] = useState(0);
   const statsRef = useRef({});
   const busyRef = useRef(false);
 
@@ -133,6 +136,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
         setEffect({ side: attackerSide, value: 0, tie: true, key: Date.now() });
         await sleep(600);
         setLog("It's a tie! Both cards are destroyed.");
+        setGraveyard((g) => g + 2);
         await sleep(1000);
         setPlayerCard(null);
         setAiCard(null);
@@ -155,6 +159,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       if (newTargetHP <= 0) {
         const winnerSide = targetSide === "player" ? "ai" : "player";
         const survivorHP = winnerSide === "player" ? playerHP : aiHP;
+        setGraveyard((g) => g + 1);
         await finishRound(winnerSide, survivorHP);
         busyRef.current = false;
         return;
@@ -201,12 +206,26 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
 
   useEffect(() => {
     if (phase === "draw" && playerCard && aiCard) {
-      const first = rollDice();
-      setTurn(first);
-      setPhase("battle");
-      setLog(first === "player" ? `Round ${round}: Dice roll — you strike first!` : `Round ${round}: Dice roll — AI strikes first!`);
+      setPhase("rps");
+      setLog("Pick rock, paper, or scissors to decide who goes first!");
     }
-  }, [phase, playerCard, aiCard, round]);
+  }, [phase, playerCard, aiCard]);
+
+  const pickRps = useCallback(
+    (choice) => {
+      if (phase !== "rps") return;
+      const aiChoice = randomFrom(RPS_OPTIONS);
+      if (choice === aiChoice) {
+        setLog(`Both picked ${choice} — tie! Pick again.`);
+        return;
+      }
+      const winner = RPS_BEATS[choice] === aiChoice ? "player" : "ai";
+      setTurn(winner);
+      setPhase("battle");
+      setLog(winner === "player" ? "You won the draw — you strike first!" : "AI won the draw — AI strikes first!");
+    },
+    [phase]
+  );
 
   return {
     round,
@@ -225,6 +244,8 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
     drawHand,
     playCard,
     attack,
+    pickRps,
+    graveyard,
     playerRemaining: playerPool.length + playerHand.length,
   };
 }

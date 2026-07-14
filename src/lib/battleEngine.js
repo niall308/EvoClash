@@ -15,10 +15,6 @@ export function computeDamage(attacker, defender) {
   return { tie: false, recoil: true, damage: totalDefense - rawAttack, isCrit };
 }
 
-export function rollDice() {
-  return Math.random() < 0.5 ? "player" : "ai";
-}
-
 export function maxHealth(card) {
   return Math.round(card.attack + card.defense * 1.5);
 }

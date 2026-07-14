@@ -6,6 +6,10 @@ import DeckStack from "@/components/battle/DeckStack";
 import PlayerHand from "@/components/battle/PlayerHand";
 import AttackArrow from "@/components/battle/AttackArrow";
 import DamageNumber from "@/components/battle/DamageNumber";
+import LivesIndicator from "@/components/battle/LivesIndicator";
+import MatchEndModal from "@/components/battle/MatchEndModal";
+import GraveyardPile from "@/components/battle/GraveyardPile";
+import RpsPicker from "@/components/battle/RpsPicker";
 import { maxHealth } from "@/lib/battleEngine";
 import { Swords, Flag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -29,8 +33,13 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
     drawHand,
     playCard,
     attack,
+    pickRps,
+    graveyard,
     playerRemaining,
   } = useBattleMatch(playerCards, onMatchEnd);
+
+  const playerLives = Math.max(0, 3 - score.ai);
+  const aiLives = Math.max(0, 3 - score.player);
 
   const handleForfeit = () => {
     if (window.confirm("Forfeit the match and return to the home screen?")) {
@@ -49,6 +58,7 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
       </div>
 
       <div className="flex flex-col items-center pt-2 gap-2">
+        <LivesIndicator lives={aiLives} />
         <AnimatePresence mode="wait">
           {aiCard && (
             <motion.div key={(aiCard.id || aiCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
@@ -67,6 +77,11 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
         <AttackArrow direction={effect?.side === "player" ? "up" : "down"} color={effect?.side === "player" ? "#FF4500" : "#00BFFF"} trigger={effect?.key} />
         <DamageNumber value={effect?.value} blocked={effect?.blocked} tie={effect?.tie} crit={effect?.crit} trigger={effect?.key} />
         <p className="text-center text-sm text-white/70 max-w-xs">{log}</p>
+        {phase === "rps" && (
+          <div className="mt-4">
+            <RpsPicker onPick={pickRps} />
+          </div>
+        )}
         {phase === "battle" && turn === "player" && (
           <button
             onClick={() => attack("player")}
@@ -75,14 +90,12 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
             <Swords className="w-5 h-5" /> Attack
           </button>
         )}
-        {phase === "matchEnd" && (
-          <p className="mt-4 text-2xl font-black">{matchResult === "player" ? "🏆 Victory!" : "Defeat"}</p>
-        )}
       </div>
 
       <div className="flex items-end justify-between px-4 pb-6 gap-3">
         <div className="flex-1" />
         <div className="flex flex-col items-center gap-2">
+          <LivesIndicator lives={playerLives} />
           {playerCard && (
             <div className="w-40">
               <HealthBar current={playerHP} max={maxHealth(playerCard)} label="You" />
@@ -102,6 +115,9 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
       </div>
 
       {!playerCard && playerHand.length > 0 && <PlayerHand hand={playerHand} onSelect={playCard} />}
+
+      <GraveyardPile count={graveyard} />
+      {phase === "matchEnd" && <MatchEndModal won={matchResult === "player"} />}
     </div>
   );
 }
