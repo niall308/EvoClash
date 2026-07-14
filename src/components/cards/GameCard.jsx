@@ -35,10 +35,9 @@ export default function GameCard({ card, size = "md", onDelete, glow }) {
           <span className="text-orange-300">A{card.attack}</span>
           <span className="text-blue-300">D{card.defense}</span>
         </div>
-        {(card.bonusDamage > 0 || card.bonusDefense > 0) && (
+        {card.bonusDamage > 0 && (
           <div className="flex justify-center gap-1 text-[8px] text-yellow-300">
             <span>+{card.bonusDamage}</span>
-            <span>+{card.bonusDefense}</span>
           </div>
         )}
       </div>

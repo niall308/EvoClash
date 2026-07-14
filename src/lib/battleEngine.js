@@ -6,11 +6,13 @@ export function getTypeMultiplier(attackerType, defenderType) {
 
 export function computeDamage(attacker, defender) {
   const multiplier = getTypeMultiplier(attacker.type, defender.type);
-  const rawAttack = Math.round(attacker.attack * multiplier) + (attacker.bonusDamage || 0);
-  const totalDefense = (defender.defense || 0) + (defender.bonusDefense || 0);
-  if (rawAttack === totalDefense) return { tie: true, recoil: false, damage: 0 };
-  if (rawAttack > totalDefense) return { tie: false, recoil: false, damage: rawAttack - totalDefense };
-  return { tie: false, recoil: true, damage: totalDefense - rawAttack };
+  const isCrit = Math.random() < 0.1;
+  let rawAttack = Math.round(attacker.attack * multiplier) + (attacker.bonusDamage || 0);
+  if (isCrit) rawAttack = Math.round(rawAttack * 1.5);
+  const totalDefense = defender.defense || 0;
+  if (rawAttack === totalDefense) return { tie: true, recoil: false, damage: 0, isCrit: false };
+  if (rawAttack > totalDefense) return { tie: false, recoil: false, damage: rawAttack - totalDefense, isCrit };
+  return { tie: false, recoil: true, damage: totalDefense - rawAttack, isCrit };
 }
 
 export function rollDice() {
@@ -18,5 +20,5 @@ export function rollDice() {
 }
 
 export function maxHealth(card) {
-  return card.attack + card.defense;
+  return Math.round(card.attack + card.defense * 1.5);
 }

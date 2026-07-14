@@ -24,6 +24,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
   const [round, setRound] = useState(1);
   const [score, setScore] = useState({ player: 0, ai: 0 });
   const [playerCard, setPlayerCard] = useState(null);
+  const [playerHand, setPlayerHand] = useState([]);
   const [aiCard, setAiCard] = useState(null);
   const [playerHP, setPlayerHP] = useState(0);
   const [aiHP, setAiHP] = useState(0);
@@ -122,6 +123,12 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       const defender = attackerSide === "player" ? aiCard : playerCard;
       const result = computeDamage(attacker, defender);
 
+      if (result.isCrit && !result.tie && !result.recoil) {
+        const newDefense = Math.max(0, Math.round(defender.defense * 0.8));
+        if (attackerSide === "player") setAiCard((c) => ({ ...c, defense: newDefense }));
+        else setPlayerCard((c) => ({ ...c, defense: newDefense }));
+      }
+
       if (result.tie) {
         setEffect({ side: attackerSide, value: 0, tie: true, key: Date.now() });
         await sleep(600);
@@ -139,7 +146,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
 
       const targetSide = result.recoil ? attackerSide : attackerSide === "player" ? "ai" : "player";
       const targetHP = targetSide === "player" ? playerHP : aiHP;
-      setEffect({ side: attackerSide, value: result.damage, blocked: false, recoil: result.recoil, key: Date.now() });
+      setEffect({ side: attackerSide, value: result.damage, blocked: false, recoil: result.recoil, crit: result.isCrit, key: Date.now() });
       await sleep(600);
       const newTargetHP = Math.max(0, targetHP - result.damage);
       if (targetSide === "player") setPlayerHP(newTargetHP);
@@ -166,37 +173,47 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
     }
   }, [phase, turn, attack]);
 
-  const draw = useCallback(() => {
-    if (phase !== "draw" || busyRef.current) return;
-    let pCard = playerCard;
-    let pool = playerPool;
-    if (!pCard) {
-      pCard = pool[0];
-      pool = pool.slice(1);
-      setPlayerPool(pool);
-      setPlayerCard(pCard);
-      setPlayerHP(maxHealth(pCard));
-    }
-    let aCard = aiCard;
-    let apool = aiPool;
-    if (!aCard) {
-      aCard = apool[0];
-      apool = apool.slice(1);
-      setAiPool(apool);
+  const drawHand = useCallback(() => {
+    if (phase !== "draw" || busyRef.current || playerCard || playerHand.length > 0 || playerPool.length === 0) return;
+    const hand = playerPool.slice(0, 5);
+    setPlayerPool(playerPool.slice(hand.length));
+    setPlayerHand(hand);
+  }, [phase, playerCard, playerHand, playerPool]);
+
+  const playCard = useCallback(
+    (card) => {
+      if (phase !== "draw" || busyRef.current || playerCard) return;
+      setPlayerHand((h) => h.filter((c) => c.id !== card.id));
+      setPlayerCard(card);
+      setPlayerHP(maxHealth(card));
+    },
+    [phase, playerCard]
+  );
+
+  useEffect(() => {
+    if (phase === "draw" && !aiCard && aiPool.length > 0) {
+      const aCard = aiPool[0];
+      setAiPool((p) => p.slice(1));
       setAiCard(aCard);
       setAiHP(maxHealth(aCard));
     }
-    const first = rollDice();
-    setTurn(first);
-    setPhase("battle");
-    setLog(first === "player" ? `Round ${round}: Dice roll — you strike first!` : `Round ${round}: Dice roll — AI strikes first!`);
-  }, [phase, playerCard, playerPool, aiCard, aiPool, round]);
+  }, [phase, aiCard, aiPool]);
+
+  useEffect(() => {
+    if (phase === "draw" && playerCard && aiCard) {
+      const first = rollDice();
+      setTurn(first);
+      setPhase("battle");
+      setLog(first === "player" ? `Round ${round}: Dice roll — you strike first!` : `Round ${round}: Dice roll — AI strikes first!`);
+    }
+  }, [phase, playerCard, aiCard, round]);
 
   return {
     round,
     score,
     opponentName,
     playerCard,
+    playerHand,
     aiCard,
     playerHP,
     aiHP,
@@ -205,8 +222,9 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
     log,
     effect,
     matchResult,
-    draw,
+    drawHand,
+    playCard,
     attack,
-    playerRemaining: playerPool.length,
+    playerRemaining: playerPool.length + playerHand.length,
   };
 }

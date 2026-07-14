@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import GameCard from "@/components/cards/GameCard";
 import HealthBar from "@/components/battle/HealthBar";
 import DeckStack from "@/components/battle/DeckStack";
+import PlayerHand from "@/components/battle/PlayerHand";
 import AttackArrow from "@/components/battle/AttackArrow";
 import DamageNumber from "@/components/battle/DamageNumber";
 import { maxHealth } from "@/lib/battleEngine";
@@ -12,10 +13,24 @@ import useBattleMatch from "@/hooks/useBattleMatch";
 
 export default function BattleScreen({ playerCards, onMatchEnd }) {
   const navigate = useNavigate();
-  const { round, score, playerCard, aiCard, playerHP, aiHP, phase, turn, log, effect, matchResult, draw, attack, playerRemaining } = useBattleMatch(
-    playerCards,
-    onMatchEnd
-  );
+  const {
+    round,
+    score,
+    playerCard,
+    playerHand,
+    aiCard,
+    playerHP,
+    aiHP,
+    phase,
+    turn,
+    log,
+    effect,
+    matchResult,
+    drawHand,
+    playCard,
+    attack,
+    playerRemaining,
+  } = useBattleMatch(playerCards, onMatchEnd);
 
   const handleForfeit = () => {
     if (window.confirm("Forfeit the match and return to the home screen?")) {
@@ -50,7 +65,7 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
 
       <div className="flex-1 relative flex flex-col items-center justify-center px-4">
         <AttackArrow direction={effect?.side === "player" ? "up" : "down"} color={effect?.side === "player" ? "#FF4500" : "#00BFFF"} trigger={effect?.key} />
-        <DamageNumber value={effect?.value} blocked={effect?.blocked} tie={effect?.tie} trigger={effect?.key} />
+        <DamageNumber value={effect?.value} blocked={effect?.blocked} tie={effect?.tie} crit={effect?.crit} trigger={effect?.key} />
         <p className="text-center text-sm text-white/70 max-w-xs">{log}</p>
         {phase === "battle" && turn === "player" && (
           <button
@@ -82,9 +97,11 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
           </AnimatePresence>
         </div>
         <div className="flex-1 flex justify-end">
-          <DeckStack remaining={playerCard ? playerRemaining : playerRemaining + 1} onDraw={draw} disabled={phase !== "draw"} />
+          <DeckStack remaining={playerRemaining} onDraw={drawHand} disabled={phase !== "draw" || !!playerCard || playerHand.length > 0} />
         </div>
       </div>
+
+      {!playerCard && playerHand.length > 0 && <PlayerHand hand={playerHand} onSelect={playCard} />}
     </div>
   );
 }

@@ -28,8 +28,7 @@ function weightedStats(tier) {
   const attack = Math.round(statMin + bias * range);
   const defense = Math.round(statMin + (1 - bias) * range);
   const bonusDamage = randomInt(bonusMin, bonusMax);
-  const bonusDefense = randomInt(bonusMin, bonusMax);
-  return { attack, defense, bonusDamage, bonusDefense };
+  return { attack, defense, bonusDamage };
 }
 
 export function generateRandomCard(tier = 1) {
