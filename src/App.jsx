@@ -19,6 +19,7 @@ import Battle from '@/pages/Battle';
 import Profile from '@/pages/Profile';
 import BattleHistory from '@/pages/BattleHistory';
 import AdminPanel from '@/pages/AdminPanel';
+import HowToPlay from '@/pages/HowToPlay';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -59,6 +60,7 @@ const AuthenticatedApp = () => {
         <Route path="/battle" element={<Battle />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/history" element={<BattleHistory />} />
+        <Route path="/how-to-play" element={<HowToPlay />} />
         <Route path="/admin" element={<AdminPanel />} />
       </Route>
       {/* Add your page Route elements here */}
