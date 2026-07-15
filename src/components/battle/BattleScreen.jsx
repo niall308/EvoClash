@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import GameCard from "@/components/cards/GameCard";
 import HealthBar from "@/components/battle/HealthBar";
@@ -10,6 +10,7 @@ import LivesIndicator from "@/components/battle/LivesIndicator";
 import MatchEndModal from "@/components/battle/MatchEndModal";
 import GraveyardPile from "@/components/battle/GraveyardPile";
 import RpsPicker from "@/components/battle/RpsPicker";
+import ForfeitModal from "@/components/battle/ForfeitModal";
 import { maxHealth } from "@/lib/battleEngine";
 import { Swords, Flag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -40,19 +41,14 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
 
   const playerLives = Math.max(0, 3 - score.ai);
   const aiLives = Math.max(0, 3 - score.player);
-
-  const handleForfeit = () => {
-    if (window.confirm("Forfeit the match and return to the home screen?")) {
-      navigate("/");
-    }
-  };
+  const [showForfeitModal, setShowForfeitModal] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col text-white" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
       <div className="flex justify-between items-center px-4 py-2 text-xs font-bold">
         <span>Round {round}/5</span>
         <span>You {score.player} — {score.ai} AI</span>
-        <button onClick={handleForfeit} className="flex items-center gap-1 text-white/60 hover:text-red-400">
+        <button onClick={() => setShowForfeitModal(true)} className="flex items-center gap-1 text-white/60 hover:text-red-400">
           <Flag className="w-3.5 h-3.5" /> Forfeit
         </button>
       </div>
@@ -118,6 +114,9 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
 
       <GraveyardPile count={graveyard} />
       {phase === "matchEnd" && <MatchEndModal won={matchResult === "player"} />}
+      {showForfeitModal && (
+        <ForfeitModal onConfirm={() => navigate("/")} onCancel={() => setShowForfeitModal(false)} />
+      )}
     </div>
   );
 }

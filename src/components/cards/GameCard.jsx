@@ -7,21 +7,26 @@ const TYPE_ICONS = { Fire: Flame, Lava: Zap, Water: Droplet, Ice: Snowflake, Roc
 export default function GameCard({ card, size = "md", onDelete, glow }) {
   const Icon = TYPE_ICONS[card.type] || Sparkles;
   const color = TYPE_COLORS[card.type];
-  const sizes = { xs: "w-14 h-20", sm: "w-20 h-28", md: "w-32 h-44", lg: "w-40 h-56" };
+  const sizes = { xs: "w-14 h-20", hand: "w-16 h-24", sm: "w-20 h-28", md: "w-32 h-44", lg: "w-40 h-56" };
 
   return (
     <div
-      className={`relative ${sizes[size]} rounded-2xl border-4 shadow-xl flex flex-col overflow-hidden transition-shadow ${glow ? "shadow-[0_0_25px_rgba(255,215,0,0.8)]" : ""}`}
+      className={`relative ${sizes[size]} rounded-2xl border-2 shadow-xl flex flex-col overflow-hidden transition-shadow ${glow ? "shadow-[0_0_25px_rgba(255,215,0,0.8)]" : ""}`}
       style={{ borderColor: color, background: "linear-gradient(160deg, #0D1B2A 0%, #1A2E45 100%)" }}
     >
       <div className="absolute top-1 left-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: color }}>
         T{card.tier}
       </div>
-      {onDelete && (
-        <button onClick={() => onDelete(card.id)} className="absolute top-1 right-1 p-1 rounded-full bg-black/50 text-red-400 hover:text-red-300">
-          <Trash2 className="w-3 h-3" />
-        </button>
-      )}
+      <div className="absolute top-1 right-1 flex flex-col items-end gap-1">
+        <div className="p-1 rounded-full bg-black/50">
+          <Icon className="w-3 h-3" style={{ color }} />
+        </div>
+        {onDelete && (
+          <button onClick={() => onDelete(card.id)} className="p-1 rounded-full bg-black/50 text-red-400 hover:text-red-300">
+            <Trash2 className="w-3 h-3" />
+          </button>
+        )}
+      </div>
       <div className="flex-1 flex items-center justify-center">
         {card.imageUrl ? (
           <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover" />
