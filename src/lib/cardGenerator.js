@@ -1,4 +1,4 @@
-import { CATEGORIES, CREATURES, TYPES, TIER_RANGES, NAME_PARTS } from "@/lib/gameConstants";
+import { CATEGORIES, CREATURES, CREATURE_ROLES, TYPES, TIER_RANGES, NAME_PARTS } from "@/lib/gameConstants";
 
 function randomFrom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -21,9 +21,10 @@ export function generateName(baseName, tier) {
   return tier === 3 ? `${prefix} ${short}-${suffix}` : `${prefix} ${short} ${suffix}`;
 }
 
-function weightedStats(tier) {
+function weightedStats(tier, role) {
   const { statMin, statMax, bonusMin, bonusMax } = TIER_RANGES[tier];
-  const bias = Math.random(); // higher bias favors attack, lower favors defense
+  // predators always favor attack, prey always favor defense
+  const bias = role === "predator" ? 0.55 + Math.random() * 0.45 : role === "prey" ? Math.random() * 0.45 : Math.random();
   const range = statMax - statMin;
   const attack = Math.round(statMin + bias * range);
   const defense = Math.round(statMin + (1 - bias) * range);
@@ -35,7 +36,8 @@ export function generateRandomCard(tier = 1) {
   const category = randomFrom(CATEGORIES);
   const baseName = randomFrom(CREATURES[category]);
   const type = randomFrom(TYPES);
-  const stats = weightedStats(tier);
+  const role = CREATURE_ROLES[baseName];
+  const stats = weightedStats(tier, role);
   const name = generateName(baseName, tier);
   return {
     name,
@@ -52,7 +54,8 @@ export function generateRandomCard(tier = 1) {
 
 export function upgradeCard(card) {
   const newTier = card.tier + 1;
-  const stats = weightedStats(newTier);
+  const role = CREATURE_ROLES[card.baseName];
+  const stats = weightedStats(newTier, role);
   const name = generateName(card.baseName, newTier);
   return { ...card, tier: newTier, ...stats, name };
 }

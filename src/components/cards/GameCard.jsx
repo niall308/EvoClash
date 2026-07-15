@@ -7,7 +7,7 @@ const TYPE_ICONS = { Fire: Flame, Lava: Zap, Water: Droplet, Ice: Snowflake, Roc
 export default function GameCard({ card, size = "md", onDelete, glow }) {
   const Icon = TYPE_ICONS[card.type] || Sparkles;
   const color = TYPE_COLORS[card.type];
-  const sizes = { sm: "w-20 h-28", md: "w-32 h-44", lg: "w-40 h-56" };
+  const sizes = { xs: "w-14 h-20", sm: "w-20 h-28", md: "w-32 h-44", lg: "w-40 h-56" };
 
   return (
     <div

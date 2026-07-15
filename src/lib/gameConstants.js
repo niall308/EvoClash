@@ -30,6 +30,34 @@ export const CREATURES = {
   "Mythical Creature": ["Fire Dragon", "Phoenix", "Griffin", "Kraken", "Chimera", "Hydra", "Basilisk", "Unicorn"],
 };
 
+// "predator" creatures always get higher attack than defense, "prey" creatures always get higher defense than attack
+export const CREATURE_ROLES = {
+  "Tyrannosaurus Rex": "predator",
+  "Velociraptor": "predator",
+  "Triceratops": "prey",
+  "Stegosaurus": "prey",
+  "Spinosaurus": "predator",
+  "Brachiosaurus": "prey",
+  "Ankylosaurus": "prey",
+  "Pterodactyl": "predator",
+  "Woolly Mammoth": "prey",
+  "Saber-Tooth Tiger": "predator",
+  "Dodo Bird": "prey",
+  "Giant Sloth": "prey",
+  "Cave Bear": "predator",
+  "Irish Elk": "prey",
+  "Dire Wolf": "predator",
+  "Moa Bird": "prey",
+  "Fire Dragon": "predator",
+  "Phoenix": "prey",
+  "Griffin": "predator",
+  "Kraken": "predator",
+  "Chimera": "predator",
+  "Hydra": "predator",
+  "Basilisk": "predator",
+  "Unicorn": "prey",
+};
+
 export const TIER_RANGES = {
   1: { statMin: 1, statMax: 2500, bonusMin: 0, bonusMax: 125 },
   2: { statMin: 2501, statMax: 5000, bonusMin: 126, bonusMax: 200 },
