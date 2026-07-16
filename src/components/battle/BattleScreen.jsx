@@ -12,7 +12,7 @@ import GraveyardPile from "@/components/battle/GraveyardPile";
 import RpsPicker from "@/components/battle/RpsPicker";
 import ForfeitModal from "@/components/battle/ForfeitModal";
 import { maxHealth } from "@/lib/battleEngine";
-import { Swords, Flag } from "lucide-react";
+import { Swords, Flag, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useBattleMatch from "@/hooks/useBattleMatch";
 
@@ -73,6 +73,14 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
         <AttackArrow direction={effect?.side === "player" ? "up" : "down"} color={effect?.side === "player" ? "#FF4500" : "#00BFFF"} trigger={effect?.key} />
         <DamageNumber value={effect?.value} blocked={effect?.blocked} tie={effect?.tie} crit={effect?.crit} trigger={effect?.key} />
         <p className="text-center text-sm text-white/70 max-w-xs">{log}</p>
+        {phase === "draw" && round === 1 && playerHand.length === 0 && !playerCard && (
+          <button
+            onClick={drawHand}
+            className="mt-4 flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 px-8 py-4 rounded-full font-bold shadow-lg active:scale-95 transition-transform text-lg"
+          >
+            <Play className="w-5 h-5" /> Start Game
+          </button>
+        )}
         {phase === "rps" && (
           <div className="mt-4">
             <RpsPicker onPick={pickRps} />
@@ -106,7 +114,7 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
           </AnimatePresence>
         </div>
         <div className="flex-1 flex justify-end">
-          <DeckStack remaining={playerRemaining} onDraw={drawHand} disabled={phase !== "draw" || !!playerCard || playerHand.length > 0} />
+          <DeckStack remaining={playerRemaining} />
         </div>
       </div>
 

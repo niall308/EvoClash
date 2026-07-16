@@ -32,7 +32,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
   const [aiHP, setAiHP] = useState(0);
   const [phase, setPhase] = useState("draw");
   const [turn, setTurn] = useState(null);
-  const [log, setLog] = useState("Tap your deck to draw a card!");
+  const [log, setLog] = useState("Tap Start Game to begin!");
   const [effect, setEffect] = useState(null);
   const [matchResult, setMatchResult] = useState(null);
   const [graveyard, setGraveyard] = useState(0);
@@ -122,7 +122,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       setTurn(winnerSide);
       setRound((r) => r + 1);
       setPhase("draw");
-      setLog("Tap your deck to draw a card!");
+      setLog("Choose a card to play!");
     },
     [playerCard, aiCard, score, round, applyProgression]
   );
@@ -153,7 +153,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
         setPlayerHP(0);
         setAiHP(0);
         setPhase("draw");
-        setLog("Tap your deck to draw a card!");
+        setLog("Choose a card to play!");
         busyRef.current = false;
         return;
       }
@@ -194,6 +194,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
     const hand = playerPool.slice(0, 5);
     setPlayerPool(playerPool.slice(hand.length));
     setPlayerHand(hand);
+    setLog("Choose a card to play!");
   }, [phase, playerCard, playerHand, playerPool]);
 
   // keep the hand topped up to 5 cards whenever a card leaves it (played or defeated)
