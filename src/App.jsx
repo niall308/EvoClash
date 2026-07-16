@@ -20,6 +20,8 @@ import Profile from '@/pages/Profile';
 import BattleHistory from '@/pages/BattleHistory';
 import AdminPanel from '@/pages/AdminPanel';
 import HowToPlay from '@/pages/HowToPlay';
+import CardUpgrade from '@/pages/CardUpgrade';
+import AppLayout from '@/components/layout/AppLayout';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -53,15 +55,18 @@ const AuthenticatedApp = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/deck" element={<Deck />} />
-        <Route path="/generate" element={<CardGenerate />} />
-        <Route path="/play" element={<Play />} />
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/deck" element={<Deck />} />
+          <Route path="/generate" element={<CardGenerate />} />
+          <Route path="/play" element={<Play />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/history" element={<BattleHistory />} />
+          <Route path="/how-to-play" element={<HowToPlay />} />
+          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/card-upgrade/:id" element={<CardUpgrade />} />
+        </Route>
         <Route path="/battle" element={<Battle />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/history" element={<BattleHistory />} />
-        <Route path="/how-to-play" element={<HowToPlay />} />
-        <Route path="/admin" element={<AdminPanel />} />
       </Route>
       {/* Add your page Route elements here */}
       <Route path="*" element={<PageNotFound />} />

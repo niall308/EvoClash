@@ -1,0 +1,29 @@
+{
+  "name": "Milestone",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "metric": {
+      "type": "string",
+      "enum": [
+        "gamesPlayed",
+        "wins",
+        "losses"
+      ]
+    },
+    "target": {
+      "type": "number"
+    },
+    "coinReward": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "title",
+    "metric",
+    "target",
+    "coinReward"
+  ]
+}

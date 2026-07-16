@@ -55,6 +55,21 @@
       "type": "number",
       "default": 0
     },
+    "totalWins": {
+      "type": "number",
+      "default": 0
+    },
+    "totalGames": {
+      "type": "number",
+      "default": 0
+    },
+    "claimedCardMilestones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
     "imageUrl": {
       "type": "string"
     }

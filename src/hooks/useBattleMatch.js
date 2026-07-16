@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { generateRandomCard, upgradeCard } from "@/lib/cardGenerator";
+import { generateRandomCard } from "@/lib/cardGenerator";
 import { computeDamage, maxHealth } from "@/lib/battleEngine";
-import { checkUpgradeEligible } from "@/lib/upgradeCheck";
-import { AI_OPPONENT_NAMES } from "@/lib/gameConstants";
+import { AI_OPPONENT_NAMES, COINS_PER_CARD_DEFEATED, COINS_PER_WIN } from "@/lib/gameConstants";
+import { checkCardMilestones } from "@/lib/coinRewards";
 import { base44 } from "@/api/base44Client";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
@@ -39,10 +39,15 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
   const [rpsDone, setRpsDone] = useState(false);
   const statsRef = useRef({});
   const busyRef = useRef(false);
+  const defeatedCountRef = useRef(0);
 
-  const recordStat = (cardId, field) => {
-    if (!statsRef.current[cardId]) statsRef.current[cardId] = { winsVsBonus: 0, winsVsNonBonus: 0, gamesPlayed: 0 };
-    statsRef.current[cardId][field] += 1;
+  const recordRoundResult = (cardId, won, vsBonus) => {
+    if (!statsRef.current[cardId]) statsRef.current[cardId] = { winsVsBonus: 0, winsVsNonBonus: 0, gamesPlayed: 0, totalWins: 0 };
+    statsRef.current[cardId].gamesPlayed += 1;
+    if (won) {
+      statsRef.current[cardId][vsBonus ? "winsVsBonus" : "winsVsNonBonus"] += 1;
+      statsRef.current[cardId].totalWins += 1;
+    }
   };
 
   const applyProgression = useCallback(
@@ -51,31 +56,33 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       setMatchResult(winner);
       const cardsUsed = playerCards.filter((c) => statsRef.current[c.id]).map((c) => c.name);
       const updates = [];
+      let milestoneCoins = 0;
       for (const card of playerCards) {
         const delta = statsRef.current[card.id];
         if (!delta) continue;
-        let merged = {
+        const merged = {
           ...card,
           winsVsBonus: card.winsVsBonus + delta.winsVsBonus,
           winsVsNonBonus: card.winsVsNonBonus + delta.winsVsNonBonus,
           gamesPlayed: card.gamesPlayed + delta.gamesPlayed,
+          totalWins: (card.totalWins || 0) + delta.totalWins,
+          totalGames: (card.totalGames || 0) + delta.gamesPlayed,
         };
-        if (checkUpgradeEligible(merged)) {
-          merged = upgradeCard(merged);
-          merged.winsVsBonus = 0;
-          merged.winsVsNonBonus = 0;
-          merged.gamesPlayed = 0;
-        }
+        const { coins, claimedCardMilestones } = checkCardMilestones(merged);
+        merged.claimedCardMilestones = claimedCardMilestones;
+        milestoneCoins += coins;
         updates.push(merged);
       }
       if (updates.length) {
         await Promise.all(updates.map(({ id, ...rest }) => base44.entities.Card.update(id, rest)));
       }
       const me = await base44.auth.me();
+      const coinsEarned = defeatedCountRef.current * COINS_PER_CARD_DEFEATED + (winner === "player" ? COINS_PER_WIN : 0) + milestoneCoins;
       await base44.auth.updateMe({
         wins: (me.wins || 0) + (winner === "player" ? 1 : 0),
         losses: (me.losses || 0) + (winner === "ai" ? 1 : 0),
         gamesPlayed: (me.gamesPlayed || 0) + 1,
+        coins: (me.coins || 0) + coinsEarned,
       });
       await base44.entities.BattleHistory.create({
         opponentName,
@@ -92,8 +99,8 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
   const finishRound = useCallback(
     async (winnerSide, carryHP) => {
       setPhase("roundEnd");
-      if (winnerSide === "player") recordStat(playerCard.id, aiCard.bonusDamage > 0 ? "winsVsBonus" : "winsVsNonBonus");
-      recordStat(playerCard.id, "gamesPlayed");
+      recordRoundResult(playerCard.id, winnerSide === "player", aiCard.bonusDamage > 0);
+      if (winnerSide === "player") defeatedCountRef.current += 1;
       const newScore = { ...score, [winnerSide]: score[winnerSide] + 1 };
       setScore(newScore);
       setLog(winnerSide === "player" ? `You win round ${round}!` : `AI wins round ${round}!`);

@@ -20,6 +20,17 @@
     "gamesPlayed": {
       "type": "number",
       "default": 0
+    },
+    "coins": {
+      "type": "number",
+      "default": 0
+    },
+    "claimedMilestoneIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
     }
   }
 }

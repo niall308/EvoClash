@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import CardGrid from "@/components/cards/CardGrid";
-import { ArrowLeft, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, ArrowUpCircle } from "lucide-react";
 
 export default function Deck() {
+  const navigate = useNavigate();
   const [cards, setCards] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
 
   const load = async () => {
     const user = await base44.auth.me();
@@ -20,10 +22,15 @@ export default function Deck() {
   const handleDelete = async (id) => {
     await base44.entities.Card.delete(id);
     setCards((prev) => prev.filter((c) => c.id !== id));
+    if (selectedId === id) setSelectedId(null);
+  };
+
+  const handleSelect = (card) => {
+    setSelectedId((prev) => (prev === card.id ? null : card.id));
   };
 
   return (
-    <div className="min-h-screen bg-[#0D1B2A] text-white">
+    <div className="min-h-screen bg-[#0D1B2A] text-white pb-24">
       <div className="px-6 py-6 flex items-center justify-between">
         <div>
           <Link to="/" className="inline-flex items-center gap-1 text-white/60 text-sm mb-2">
@@ -41,7 +48,17 @@ export default function Deck() {
           <Loader2 className="w-6 h-6 animate-spin text-white/50" />
         </div>
       ) : (
-        <CardGrid cards={cards} onDelete={handleDelete} />
+        <CardGrid cards={cards} onDelete={handleDelete} selectedId={selectedId} onSelect={handleSelect} />
+      )}
+      {selectedId && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0D1B2A]/95 border-t border-white/10">
+          <button
+            onClick={() => navigate(`/card-upgrade/${selectedId}`)}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 py-3 rounded-full font-bold"
+          >
+            <ArrowUpCircle className="w-5 h-5" /> Upgrade Card
+          </button>
+        </div>
       )}
     </div>
   );

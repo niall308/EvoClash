@@ -85,3 +85,23 @@ export const NAME_PARTS = {
   3: { prefixes: ["Cyber", "Mecha", "Nano", "Techno", "Quantum"], suffixes: ["X", "Bot", "Unit", "Core"] },
   4: { prefixes: ["Omega", "Titan", "Apex", "Prime", "X-99"], suffixes: ["Prime", "Core", "Overlord", "Ultra"] },
 };
+
+// Coin economy (LC)
+export const COINS_PER_CARD_DEFEATED = 50;
+export const COINS_PER_WIN = 250;
+
+// Lifetime per-card milestones (never reset by tier upgrades)
+export const CARD_MILESTONES = [
+  { id: "wins50", type: "totalWins", target: 50, coinReward: 1000 },
+  { id: "wins100", type: "totalWins", target: 100, coinReward: 5000 },
+  { id: "games200", type: "totalGames", target: 200, coinReward: 2500 },
+];
+
+// Coin-purchasable stat upgrades on the Card Upgrade screen
+export const STAT_UPGRADES = [
+  { key: "attack", label: "Attack", cost: 5000, percent: 10 },
+  { key: "defense", label: "Defense", cost: 5000, percent: 10 },
+  { key: "bonusDamage", label: "Bonus Damage", cost: 3000, percent: 15 },
+];
+
+export const TIER_UPGRADE_COST = 15000;

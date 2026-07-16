@@ -1,6 +1,6 @@
 import React from "react";
 import { Flame, Zap, Droplet, Snowflake, Mountain, Wind, Sprout, Sparkles, Trash2 } from "lucide-react";
-import { TYPE_COLORS } from "@/lib/gameConstants";
+import { TYPE_COLORS, TYPE_ADVANTAGES } from "@/lib/gameConstants";
 
 const TYPE_ICONS = { Fire: Flame, Lava: Zap, Water: Droplet, Ice: Snowflake, Rock: Mountain, Wind: Wind, Earth: Sprout, Magic: Sparkles };
 
@@ -22,7 +22,13 @@ export default function GameCard({ card, size = "md", onDelete, glow }) {
           <Icon className="w-3 h-3" style={{ color }} />
         </div>
         {onDelete && (
-          <button onClick={() => onDelete(card.id)} className="p-1 rounded-full bg-black/50 text-red-400 hover:text-red-300">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(card.id);
+            }}
+            className="p-1 rounded-full bg-black/50 text-red-400 hover:text-red-300"
+          >
             <Trash2 className="w-3 h-3" />
           </button>
         )}
@@ -41,8 +47,14 @@ export default function GameCard({ card, size = "md", onDelete, glow }) {
           <span className="text-blue-300">D{card.defense}</span>
         </div>
         {card.bonusDamage > 0 && (
-          <div className="flex justify-center gap-1 text-[8px] text-yellow-300">
+          <div className="flex items-center justify-center gap-1 text-[8px] text-yellow-300">
             <span>+{card.bonusDamage}</span>
+            <span className="flex gap-0.5">
+              {(TYPE_ADVANTAGES[card.type] || []).map((t) => {
+                const TIcon = TYPE_ICONS[t];
+                return <TIcon key={t} className="w-2 h-2" style={{ color: TYPE_COLORS[t] }} />;
+              })}
+            </span>
           </div>
         )}
       </div>
