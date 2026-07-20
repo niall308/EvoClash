@@ -6,7 +6,7 @@ import StatUpgradeRow from "@/components/upgrade/StatUpgradeRow";
 import EvolveSection from "@/components/upgrade/EvolveSection";
 import { checkUpgradeEligible } from "@/lib/upgradeCheck";
 import { getStatUpgradeCost, getStatUpgradeMaxUses } from "@/lib/statUpgradeCost";
-import { evolveName } from "@/lib/cardGenerator";
+import { evolveName, randomInt } from "@/lib/cardGenerator";
 import { TIER_RANGES, STYLE_REFERENCE_URL, STAT_UPGRADES, TIER_UPGRADE_COST, EVOLVE_ARMOR_PROMPTS } from "@/lib/gameConstants";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
@@ -64,6 +64,11 @@ export default function CardUpgrade() {
     const newRange = TIER_RANGES[newTier];
     const pct = 1 + (25 + Math.random() * 70) / 100;
     const clamp = (v, min, max) => Math.min(max, Math.max(min, Math.round(v)));
+    // Only the higher of attack/defense is guaranteed to land inside the new tier's range
+    // (assigned a fresh random value there); the lower stat grows normally and can fall outside it.
+    const higherIsAttack = card.attack >= card.defense;
+    const higherValue = randomInt(newRange.statMin, newRange.statMax);
+    const lowerValue = Math.round((higherIsAttack ? card.defense : card.attack) * pct);
     const { url } = await base44.integrations.Core.GenerateImage({
       prompt: EVOLVE_ARMOR_PROMPTS[newTier],
       existing_image_urls: [card.imageUrl, STYLE_REFERENCE_URL],
@@ -71,8 +76,8 @@ export default function CardUpgrade() {
     const updated = {
       tier: newTier,
       name: evolveName(card.name, newTier),
-      attack: clamp(card.attack * pct, newRange.statMin, newRange.statMax),
-      defense: clamp(card.defense * pct, newRange.statMin, newRange.statMax),
+      attack: higherIsAttack ? higherValue : lowerValue,
+      defense: higherIsAttack ? lowerValue : higherValue,
       bonusDamage: clamp((card.bonusDamage || 0) * pct, newRange.bonusMin, newRange.bonusMax),
       imageUrl: url,
       winsVsBonus: 0,

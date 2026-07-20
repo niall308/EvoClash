@@ -40,27 +40,26 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
     graveyard,
     playerRemaining,
     rpsDone,
+    user,
+    activePowerUps,
     doubleAttackActive,
     tripleDefenseActive,
+    blockActive,
+    halfAttackTurnsLeft,
+    tempTierBoost,
     playerEffects,
     aiEffects,
     playerHpRatio,
     aiHpRatio,
-    powerCooldowns,
-    canBurn,
-    canReshuffle,
-    canDoubleAttack,
-    canTripleDefense,
+    canUseMap,
+    handlers,
     canRedrawHand,
     canForceOpponentRedraw,
-    burnPower,
     reshuffleModalOpen,
     openReshuffle,
     closeReshuffle,
     redrawHandPower,
     forceOpponentRedrawPower,
-    doubleAttackPower,
-    tripleDefensePower,
   } = useBattleMatch(playerCards, onMatchEnd, difficulty);
 
   const playerLives = Math.max(0, 3 - score.ai);
@@ -123,6 +122,21 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
                 <Zap className="w-3.5 h-3.5" /> Triple Defense ready!
               </span>
             )}
+            {blockActive && (
+              <span className="flex items-center gap-1 text-slate-300 text-xs font-bold">
+                <Zap className="w-3.5 h-3.5" /> Block ready!
+              </span>
+            )}
+            {halfAttackTurnsLeft > 0 && (
+              <span className="flex items-center gap-1 text-indigo-300 text-xs font-bold">
+                <Zap className="w-3.5 h-3.5" /> Half Attack active ({halfAttackTurnsLeft} left)
+              </span>
+            )}
+            {tempTierBoost && (
+              <span className="flex items-center gap-1 text-amber-300 text-xs font-bold">
+                <Zap className="w-3.5 h-3.5" /> Tier Upgrade ready!
+              </span>
+            )}
             <button
               onClick={() => attack("player")}
               className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform"
@@ -136,17 +150,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
       <div className="flex items-end justify-between px-4 pb-6 gap-3">
         <div className="flex-1 flex justify-start">
           {phase !== "matchEnd" && (
-            <PowerButtons
-              cooldowns={powerCooldowns}
-              canBurn={canBurn}
-              canReshuffle={canReshuffle}
-              canDoubleAttack={canDoubleAttack}
-              canTripleDefense={canTripleDefense}
-              onBurn={burnPower}
-              onReshuffle={openReshuffle}
-              onDoubleAttack={doubleAttackPower}
-              onTripleDefense={tripleDefensePower}
-            />
+            <PowerButtons user={user} activeKeys={activePowerUps} canUseMap={canUseMap} handlers={handlers} />
           )}
         </div>
         <div className="flex flex-col items-center gap-2">

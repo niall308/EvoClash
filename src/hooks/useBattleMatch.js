@@ -1,13 +1,23 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { generateRandomCard } from "@/lib/cardGenerator";
 import { computeDamage, maxHealth } from "@/lib/battleEngine";
-import { AI_OPPONENT_NAMES, COINS_PER_CARD_DEFEATED, COINS_PER_WIN, AI_DIFFICULTY_TIERS } from "@/lib/gameConstants";
+import {
+  AI_OPPONENT_NAMES,
+  COINS_PER_CARD_DEFEATED,
+  COINS_PER_WIN,
+  AI_DIFFICULTY_TIERS,
+  STYLE_REFERENCE_URL,
+  TIER_RANGES,
+  DEFAULT_ACTIVE_POWERUPS,
+} from "@/lib/gameConstants";
+import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
 import { checkCardMilestones } from "@/lib/coinRewards";
 import { base44 } from "@/api/base44Client";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const RPS_OPTIONS = ["rock", "paper", "scissors"];
 const RPS_BEATS = { rock: "scissors", scissors: "paper", paper: "rock" };
 
@@ -35,12 +45,17 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const [user, setUser] = useState(null);
   const [doubleAttackActive, setDoubleAttackActive] = useState(false);
   const [tripleDefenseActive, setTripleDefenseActive] = useState(false);
+  const [blockActive, setBlockActive] = useState(false);
+  const [halfAttackTurnsLeft, setHalfAttackTurnsLeft] = useState(0);
+  const [tempTierBoost, setTempTierBoost] = useState(null);
   const [reshuffleModalOpen, setReshuffleModalOpen] = useState(false);
   const [playerEffects, setPlayerEffects] = useState([]);
   const [aiEffects, setAiEffects] = useState([]);
   const statsRef = useRef({});
   const busyRef = useRef(false);
   const defeatedCountRef = useRef(0);
+  const halfAttackCardRef = useRef(null);
+  const aiImageLoadingRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -48,6 +63,27 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       setUser(me);
     })();
   }, []);
+
+  // give every AI-drawn card a generated creature picture (once it becomes the active card)
+  useEffect(() => {
+    if (!aiCard || aiCard.imageUrl || aiImageLoadingRef.current === aiCard) return;
+    aiImageLoadingRef.current = aiCard;
+    (async () => {
+      const { url } = await base44.integrations.Core.GenerateImage({
+        prompt: `A ${aiCard.type}-type ${aiCard.baseName}, dynamic full-body creature illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`,
+        existing_image_urls: [STYLE_REFERENCE_URL],
+      });
+      setAiCard((c) => (c === aiCard ? { ...c, imageUrl: url } : c));
+    })();
+  }, [aiCard]);
+
+  // cancel an in-progress Half Attack effect once the targeted AI card leaves play
+  useEffect(() => {
+    if (halfAttackCardRef.current !== aiCard) {
+      halfAttackCardRef.current = null;
+      setHalfAttackTurnsLeft(0);
+    }
+  }, [aiCard]);
 
   const recordRoundResult = (cardId, won, vsBonus) => {
     if (!statsRef.current[cardId]) statsRef.current[cardId] = { winsVsBonus: 0, winsVsNonBonus: 0, gamesPlayed: 0, totalWins: 0 };
@@ -141,13 +177,26 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     async (attackerSide) => {
       if (busyRef.current || phase !== "battle") return;
       busyRef.current = true;
-      const attacker = attackerSide === "player" ? playerCard : aiCard;
+      let attacker = attackerSide === "player" ? playerCard : aiCard;
       const defender = attackerSide === "player" ? aiCard : playerCard;
       const usingDoubleAttack = attackerSide === "player" && doubleAttackActive;
       const usingTripleDefense = attackerSide === "ai" && tripleDefenseActive;
-      const result = computeDamage(attacker, defender, usingDoubleAttack ? 2 : 1, usingTripleDefense ? 3 : 1);
+      const usingTierBoost = attackerSide === "player" && !!tempTierBoost;
+      const usingHalfAttack = attackerSide === "ai" && halfAttackTurnsLeft > 0 && halfAttackCardRef.current === aiCard;
+      const usingBlock = attackerSide === "ai" && blockActive;
+
+      if (usingTierBoost) attacker = { ...attacker, ...tempTierBoost };
+      if (usingHalfAttack) attacker = { ...attacker, attack: Math.round(attacker.attack * 0.5) };
+
+      const result = usingBlock
+        ? { tie: false, recoil: false, damage: 0, isCrit: false }
+        : computeDamage(attacker, defender, usingDoubleAttack ? 2 : 1, usingTripleDefense ? 3 : 1);
+
       if (usingDoubleAttack) setDoubleAttackActive(false);
       if (usingTripleDefense) setTripleDefenseActive(false);
+      if (usingTierBoost) setTempTierBoost(null);
+      if (usingHalfAttack) setHalfAttackTurnsLeft((n) => n - 1);
+      if (usingBlock) setBlockActive(false);
 
       if (result.isCrit && !result.tie && !result.recoil) {
         const newDefense = Math.max(0, Math.round(defender.defense * 0.8));
@@ -176,9 +225,11 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
 
       const targetSide = result.recoil ? attackerSide : attackerSide === "player" ? "ai" : "player";
       const targetHP = targetSide === "player" ? playerHP : aiHP;
-      setEffect({ side: attackerSide, value: result.damage, blocked: false, recoil: result.recoil, crit: result.isCrit, key: Date.now() });
-      const setTargetEffects = targetSide === "player" ? setPlayerEffects : setAiEffects;
-      setTargetEffects((e) => (e.includes(attacker.type) ? e : [...e, attacker.type]));
+      setEffect({ side: attackerSide, value: result.damage, blocked: usingBlock, recoil: result.recoil, crit: result.isCrit, key: Date.now() });
+      if (result.damage > 0) {
+        const setTargetEffects = targetSide === "player" ? setPlayerEffects : setAiEffects;
+        setTargetEffects((e) => (e.includes(attacker.type) ? e : [...e, attacker.type]));
+      }
       await sleep(600);
       const newTargetHP = Math.max(0, targetHP - result.damage);
       if (targetSide === "player") setPlayerHP(newTargetHP);
@@ -197,16 +248,38 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       setLog(attackerSide === "player" ? "AI's turn..." : "Your turn — attack!");
       busyRef.current = false;
     },
-    [phase, playerCard, aiCard, playerHP, aiHP, finishRound, doubleAttackActive, tripleDefenseActive]
+    [phase, playerCard, aiCard, playerHP, aiHP, finishRound, doubleAttackActive, tripleDefenseActive, blockActive, halfAttackTurnsLeft, tempTierBoost]
   );
-
-  const canUsePowerTimestamp = (ts) => !ts || Date.now() - new Date(ts).getTime() >= 24 * 60 * 60 * 1000;
 
   const activatePower = useCallback(
     async (field, effectFn) => {
-      if (!user || !canUsePowerTimestamp(user[field])) return;
+      if (!user || !isTimestampReady(user[field], DAY_MS)) return;
       const now = new Date().toISOString();
       const updatedUser = await base44.auth.updateMe({ [field]: now });
+      setUser(updatedUser);
+      effectFn();
+    },
+    [user]
+  );
+
+  const activateWeeklyPower = useCallback(
+    async (field, effectFn) => {
+      if (!user || !isTimestampReady(user[field], WEEK_MS)) return;
+      const now = new Date().toISOString();
+      const updatedUser = await base44.auth.updateMe({ [field]: now });
+      setUser(updatedUser);
+      effectFn();
+    },
+    [user]
+  );
+
+  const activateDailyMultiPower = useCallback(
+    async (usesField, resetField, max, effectFn) => {
+      if (!user || dailyMultiRemaining(user, usesField, resetField, max) <= 0) return;
+      const reset = isTimestampReady(user[resetField], DAY_MS);
+      const newUses = reset ? 1 : (user[usesField] || 0) + 1;
+      const newResetAt = reset ? new Date().toISOString() : user[resetField];
+      const updatedUser = await base44.auth.updateMe({ [usesField]: newUses, [resetField]: newResetAt });
       setUser(updatedUser);
       effectFn();
     },
@@ -267,6 +340,43 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       setLog("Triple Defense ready — your card will block the next hit with 3x defense!");
     });
   }, [activatePower, phase, turn]);
+
+  const blockPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activateDailyMultiPower("blockPowerUsesToday", "blockPowerResetAt", 5, () => {
+      setBlockActive(true);
+      setLog("Block ready — you will completely block the opponent's next attack!");
+    });
+  }, [activateDailyMultiPower, phase, turn]);
+
+  const halfAttackPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !aiCard) return;
+    activateDailyMultiPower("halfAttackPowerUsesToday", "halfAttackPowerResetAt", 2, () => {
+      halfAttackCardRef.current = aiCard;
+      setHalfAttackTurnsLeft(2);
+      setLog("Half Attack activated — the opponent's card deals half damage for its next 2 attacks!");
+    });
+  }, [activateDailyMultiPower, phase, turn, aiCard]);
+
+  const randomTierStats = (tier) => {
+    const { statMin, statMax, bonusMin, bonusMax } = TIER_RANGES[tier];
+    return { attack: randomInt(statMin, statMax), defense: randomInt(statMin, statMax), bonusDamage: randomInt(bonusMin, bonusMax) };
+  };
+
+  const tierUpgradePower = useCallback(
+    (tier, field) => {
+      if (phase !== "battle" || turn !== "player" || !playerCard) return;
+      activateWeeklyPower(field, () => {
+        setTempTierBoost(randomTierStats(tier));
+        setLog(`Tier ${tier} Upgrade activated — your card gets randomized T${tier} stats for your next attack!`);
+      });
+    },
+    [activateWeeklyPower, phase, turn, playerCard]
+  );
+
+  const t2UpgradePower = useCallback(() => tierUpgradePower(2, "t2UpgradePowerUsedAt"), [tierUpgradePower]);
+  const t3UpgradePower = useCallback(() => tierUpgradePower(3, "t3UpgradePowerUsedAt"), [tierUpgradePower]);
+  const t4UpgradePower = useCallback(() => tierUpgradePower(4, "t4UpgradePowerUsedAt"), [tierUpgradePower]);
 
   useEffect(() => {
     if (phase === "battle" && turn === "ai" && !busyRef.current) {
@@ -362,31 +472,45 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     graveyard,
     playerRemaining: playerPool.length + playerHand.length,
     rpsDone,
+    user,
+    activePowerUps: user?.activePowerUps?.length ? user.activePowerUps : DEFAULT_ACTIVE_POWERUPS,
     doubleAttackActive,
     tripleDefenseActive,
+    blockActive,
+    halfAttackTurnsLeft,
+    tempTierBoost,
     playerEffects,
     aiEffects,
     playerHpRatio: playerCard ? Math.max(0, playerHP / maxHealth(playerCard)) : 1,
     aiHpRatio: aiCard ? Math.max(0, aiHP / maxHealth(aiCard)) : 1,
-    powerCooldowns: {
-      burnPowerUsedAt: user?.burnPowerUsedAt,
-      reshufflePowerUsedAt: user?.reshufflePowerUsedAt,
-      doubleAttackPowerUsedAt: user?.doubleAttackPowerUsedAt,
-      defensePowerUsedAt: user?.defensePowerUsedAt,
+    canUseMap: {
+      burn: phase === "battle" && turn === "player" && !!aiCard && aiPool.length > 0,
+      reshuffle: (!playerCard && playerHand.length > 0) || (phase === "battle" && turn === "player" && !!aiCard && aiPool.length > 0),
+      doubleAttack: phase === "battle" && turn === "player",
+      defense: phase === "battle" && turn === "player",
+      block: phase === "battle" && turn === "player",
+      halfAttack: phase === "battle" && turn === "player" && !!aiCard,
+      t2Upgrade: phase === "battle" && turn === "player" && !!playerCard,
+      t3Upgrade: phase === "battle" && turn === "player" && !!playerCard,
+      t4Upgrade: phase === "battle" && turn === "player" && !!playerCard,
     },
-    canBurn: phase === "battle" && turn === "player" && !!aiCard && aiPool.length > 0,
-    canReshuffle: (!playerCard && playerHand.length > 0) || (phase === "battle" && turn === "player" && !!aiCard && aiPool.length > 0),
-    canDoubleAttack: phase === "battle" && turn === "player",
-    canTripleDefense: phase === "battle" && turn === "player",
+    handlers: {
+      burn: burnPower,
+      reshuffle: openReshuffle,
+      doubleAttack: doubleAttackPower,
+      defense: tripleDefensePower,
+      block: blockPower,
+      halfAttack: halfAttackPower,
+      t2Upgrade: t2UpgradePower,
+      t3Upgrade: t3UpgradePower,
+      t4Upgrade: t4UpgradePower,
+    },
     canRedrawHand: !playerCard && playerHand.length > 0,
     canForceOpponentRedraw: phase === "battle" && turn === "player" && !!aiCard && aiPool.length > 0,
-    burnPower,
     reshuffleModalOpen,
     openReshuffle,
     closeReshuffle,
     redrawHandPower,
     forceOpponentRedrawPower,
-    doubleAttackPower,
-    tripleDefensePower,
   };
 }

@@ -3,7 +3,7 @@ import { CATEGORIES, CREATURES, CREATURE_ROLES, TYPES, TIER_RANGES, NAME_PARTS, 
 function randomFrom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
-function randomInt(min, max) {
+export function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 

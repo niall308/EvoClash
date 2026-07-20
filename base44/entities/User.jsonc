@@ -59,6 +59,46 @@
     "defensePowerUsedAt": {
       "type": "string",
       "default": ""
+    },
+    "blockPowerUsesToday": {
+      "type": "number",
+      "default": 0
+    },
+    "blockPowerResetAt": {
+      "type": "string",
+      "default": ""
+    },
+    "halfAttackPowerUsesToday": {
+      "type": "number",
+      "default": 0
+    },
+    "halfAttackPowerResetAt": {
+      "type": "string",
+      "default": ""
+    },
+    "t2UpgradePowerUsedAt": {
+      "type": "string",
+      "default": ""
+    },
+    "t3UpgradePowerUsedAt": {
+      "type": "string",
+      "default": ""
+    },
+    "t4UpgradePowerUsedAt": {
+      "type": "string",
+      "default": ""
+    },
+    "activePowerUps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "burn",
+        "reshuffle",
+        "doubleAttack",
+        "defense"
+      ]
     }
   }
 }

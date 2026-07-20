@@ -148,3 +148,20 @@ export const TYPE_EFFECT_GROUP = {
 
 // Cost to instantly replenish an already-used tactical power
 export const POWER_REPLENISH_COST = 10000;
+
+// Full catalog of tactical power-ups. cooldownType: "daily" (1 use/24h, usedAtField),
+// "dailyMulti" (N uses/24h, usesField + resetField), "weekly" (1 use/7 days, usedAtField).
+export const POWER_DEFINITIONS = [
+  { key: "burn", label: "Burn", cooldownType: "daily", usedAtField: "burnPowerUsedAt", replenishCost: 10000 },
+  { key: "reshuffle", label: "Redraw", cooldownType: "daily", usedAtField: "reshufflePowerUsedAt", replenishCost: 10000 },
+  { key: "doubleAttack", label: "2x Attack", cooldownType: "daily", usedAtField: "doubleAttackPowerUsedAt", replenishCost: 10000 },
+  { key: "defense", label: "3x Defense", cooldownType: "daily", usedAtField: "defensePowerUsedAt", replenishCost: 10000 },
+  { key: "block", label: "Block", cooldownType: "dailyMulti", usesField: "blockPowerUsesToday", resetField: "blockPowerResetAt", maxPerDay: 5, replenishCost: 5000 },
+  { key: "halfAttack", label: "Half Attack", cooldownType: "dailyMulti", usesField: "halfAttackPowerUsesToday", resetField: "halfAttackPowerResetAt", maxPerDay: 2, replenishCost: 10000 },
+  { key: "t2Upgrade", label: "T2 Upgrade", cooldownType: "weekly", usedAtField: "t2UpgradePowerUsedAt", replenishCost: 50000 },
+  { key: "t3Upgrade", label: "T3 Upgrade", cooldownType: "weekly", usedAtField: "t3UpgradePowerUsedAt", replenishCost: 75000 },
+  { key: "t4Upgrade", label: "T4 Upgrade", cooldownType: "weekly", usedAtField: "t4UpgradePowerUsedAt", replenishCost: 100000 },
+];
+
+export const MAX_ACTIVE_POWERUPS = 4;
+export const DEFAULT_ACTIVE_POWERUPS = ["burn", "reshuffle", "doubleAttack", "defense"];
