@@ -21,6 +21,7 @@ import BattleHistory from '@/pages/BattleHistory';
 import AdminPanel from '@/pages/AdminPanel';
 import HowToPlay from '@/pages/HowToPlay';
 import CardUpgrade from '@/pages/CardUpgrade';
+import Leaderboards from '@/pages/Leaderboards';
 import AppLayout from '@/components/layout/AppLayout';
 // Add page imports here
 
@@ -65,6 +66,7 @@ const AuthenticatedApp = () => {
           <Route path="/how-to-play" element={<HowToPlay />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/card-upgrade/:id" element={<CardUpgrade />} />
+          <Route path="/leaderboards" element={<Leaderboards />} />
         </Route>
         <Route path="/battle" element={<Battle />} />
       </Route>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Bot, Users, ArrowLeft } from "lucide-react";
+import { Bot, Users, ArrowLeft, Trophy } from "lucide-react";
 
 export default function Play() {
   const navigate = useNavigate();
@@ -35,6 +35,9 @@ export default function Play() {
         <button disabled className="w-full flex items-center gap-4 bg-white/5 p-5 rounded-2xl font-bold text-left opacity-40">
           <Users className="w-8 h-8" /> Battle vs Human <span className="text-xs font-normal ml-auto">Coming soon</span>
         </button>
+        <Link to="/leaderboards" className="w-full flex items-center gap-4 bg-gradient-to-r from-amber-500 to-yellow-600 p-5 rounded-2xl font-bold text-left">
+          <Trophy className="w-8 h-8" /> Leaderboards
+        </Link>
       </div>
       {!ready && count !== null && <p className="text-yellow-400 text-sm mt-6">Build your deck to at least 15 cards in the Deck screen.</p>}
     </div>

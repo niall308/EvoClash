@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { generateRandomCard } from "@/lib/cardGenerator";
 import { STYLE_REFERENCE_URL } from "@/lib/gameConstants";
+import { getCreationStatus, buildCreationUpdate, EXTRA_CREATURE_COST } from "@/lib/cardCreationLimits";
 import GameCard from "@/components/cards/GameCard";
 import CreaturePicker from "@/components/generate/CreaturePicker";
-import { ArrowLeft, Sparkles, Loader2, PlusCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, PlusCircle, RefreshCw, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CardGenerate() {
@@ -43,10 +44,18 @@ export default function CardGenerate() {
     setGenerating(false);
   };
 
+  const status = user ? getCreationStatus(user, count) : null;
+
   const handleAddToDeck = async () => {
-    if (!previewCard || saving) return;
+    if (!previewCard || saving || !user) return;
+    if (status.needsPayment && (user.coins || 0) < EXTRA_CREATURE_COST) return;
     setSaving(true);
-    await base44.entities.Card.create(previewCard);
+    const userUpdate = buildCreationUpdate(user, count);
+    const [, updatedUser] = await Promise.all([
+      base44.entities.Card.create(previewCard),
+      Object.keys(userUpdate).length ? base44.auth.updateMe(userUpdate) : Promise.resolve(user),
+    ]);
+    setUser(updatedUser);
     setCount((c) => c + 1);
     setPreviewCard(null);
     setSaving(false);
@@ -62,7 +71,16 @@ export default function CardGenerate() {
         </Link>
       </div>
       <h1 className="text-2xl font-black mb-1">AI Generate</h1>
-      <p className="text-white/50 text-xs mb-8">{count === null ? "Loading..." : `${count}/50 cards owned`}</p>
+      <p className="text-white/50 text-xs mb-1">{count === null ? "Loading..." : `${count}/50 cards owned`}</p>
+      <p className="text-[11px] mb-8 h-4">
+        {status && !isAdmin && status.pastInitialFree && (
+          status.needsPayment ? (
+            <span className="text-amber-400">New creatures now cost {EXTRA_CREATURE_COST.toLocaleString()} LC</span>
+          ) : (
+            <span className="text-white/40">{status.freeRemaining} free creation{status.freeRemaining === 1 ? "" : "s"} left today</span>
+          )
+        )}
+      </p>
 
       <div className="w-full flex flex-col md:flex-row gap-6 items-start justify-center">
         <div className="flex-1 flex flex-col items-center">
@@ -89,11 +107,11 @@ export default function CardGenerate() {
             <div className="flex gap-3">
               <button
                 onClick={handleAddToDeck}
-                disabled={saving || count >= 50}
+                disabled={saving || count >= 50 || (status?.needsPayment && (user.coins || 0) < EXTRA_CREATURE_COST)}
                 className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform disabled:opacity-40"
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
-                Add to Deck
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : status?.needsPayment ? <Coins className="w-4 h-4" /> : <PlusCircle className="w-4 h-4" />}
+                {status?.needsPayment ? `Add to Deck — ${EXTRA_CREATURE_COST.toLocaleString()} LC` : "Add to Deck"}
               </button>
               <button
                 onClick={handleGenerate}

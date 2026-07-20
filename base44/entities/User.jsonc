@@ -31,6 +31,18 @@
         "type": "string"
       },
       "default": []
+    },
+    "totalCardsCreated": {
+      "type": "number",
+      "default": 0
+    },
+    "dailyFreeCreations": {
+      "type": "number",
+      "default": 0
+    },
+    "dailyFreeResetAt": {
+      "type": "string",
+      "default": ""
     }
   }
 }

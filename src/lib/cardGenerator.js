@@ -1,4 +1,4 @@
-import { CATEGORIES, CREATURES, CREATURE_ROLES, TYPES, TIER_RANGES, NAME_PARTS } from "@/lib/gameConstants";
+import { CATEGORIES, CREATURES, CREATURE_ROLES, TYPES, TIER_RANGES, NAME_PARTS, TIER4_PREFIXES } from "@/lib/gameConstants";
 
 function randomFrom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -67,6 +67,21 @@ export function upgradeCard(card) {
   const newTier = card.tier + 1;
   const role = CREATURE_ROLES[card.baseName];
   const stats = weightedStats(newTier, role);
-  const name = generateName(card.baseName, newTier);
+  const name = evolveName(card.name, newTier);
   return { ...card, tier: newTier, ...stats, name };
+}
+
+// Updates a card's display name when it evolves into newTier:
+// T2 appends " II", T3 appends " III" (replacing any prior tier suffix),
+// T4 strips the suffix and swaps the first word for a "mega" style prefix.
+export function evolveName(currentName, newTier) {
+  const base = currentName.replace(/ (II|III)$/, "");
+  if (newTier === 2) return `${base} II`;
+  if (newTier === 3) return `${base} III`;
+  if (newTier === 4) {
+    const words = base.split(" ");
+    words[0] = randomFrom(TIER4_PREFIXES);
+    return words.join(" ");
+  }
+  return currentName;
 }

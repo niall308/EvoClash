@@ -72,6 +72,18 @@
     },
     "imageUrl": {
       "type": "string"
+    },
+    "attackUpgradesUsed": {
+      "type": "number",
+      "default": 0
+    },
+    "defenseUpgradesUsed": {
+      "type": "number",
+      "default": 0
+    },
+    "bonusDamageUpgradesUsed": {
+      "type": "number",
+      "default": 0
     }
   },
   "required": [

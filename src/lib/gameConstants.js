@@ -86,6 +86,16 @@ export const NAME_PARTS = {
   4: { prefixes: ["Omega", "Titan", "Apex", "Prime", "X-99"], suffixes: ["Prime", "Core", "Overlord", "Ultra"] },
 };
 
+// Prefix pool used when a card evolves into Tier 4
+export const TIER4_PREFIXES = ["Mega", "Prime", "Ultimate", "Dreaded", "Devastating"];
+
+// Armor/visual evolution prompts by the tier being evolved INTO
+export const EVOLVE_ARMOR_PROMPTS = {
+  2: "The same creature, now wearing bronze age armor plating, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame",
+  3: "The same creature, now wearing gleaming silver metal armor plating that fully replaces any previous bronze armor, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame",
+  4: "The same creature, with all previous armor removed, now fully transformed into a robotic being made of silver and gold metal plating, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame",
+};
+
 // Coin economy (LC)
 export const COINS_PER_CARD_DEFEATED = 50;
 export const COINS_PER_WIN = 250;
@@ -97,11 +107,21 @@ export const CARD_MILESTONES = [
   { id: "games200", type: "totalGames", target: 200, coinReward: 2500 },
 ];
 
-// Coin-purchasable stat upgrades on the Card Upgrade screen
+// Coin-purchasable stat upgrades on the Card Upgrade screen.
+// Tier 1: each stat can be upgraded twice (cost doubles on the 2nd use, uses "cost" below).
+// Tiers 2-4: each stat can be upgraded once, at a flat cost per tier (see TIER_STAT_UPGRADE_COST).
 export const STAT_UPGRADES = [
   { key: "attack", label: "Attack", cost: 5000, percent: 10 },
   { key: "defense", label: "Defense", cost: 5000, percent: 10 },
   { key: "bonusDamage", label: "Bonus Damage", cost: 3000, percent: 15 },
 ];
 
+export const MAX_STAT_UPGRADES_PER_TIER = { 1: 2, 2: 1, 3: 1, 4: 1 };
+export const TIER_STAT_UPGRADE_COST = { 2: 20000, 3: 35000, 4: 50000 };
+
 export const TIER_UPGRADE_COST = 15000;
+
+// Card creation limits (Card Generate screen)
+export const FREE_CARDS_INITIAL = 15;
+export const FREE_CREATIONS_PER_DAY = 3;
+export const EXTRA_CREATURE_COST = 25000;

@@ -5,8 +5,12 @@ import GameCard from "@/components/cards/GameCard";
 import StatUpgradeRow from "@/components/upgrade/StatUpgradeRow";
 import EvolveSection from "@/components/upgrade/EvolveSection";
 import { checkUpgradeEligible } from "@/lib/upgradeCheck";
-import { TIER_RANGES, STYLE_REFERENCE_URL, STAT_UPGRADES, TIER_UPGRADE_COST } from "@/lib/gameConstants";
+import { getStatUpgradeCost, getStatUpgradeMaxUses } from "@/lib/statUpgradeCost";
+import { evolveName } from "@/lib/cardGenerator";
+import { TIER_RANGES, STYLE_REFERENCE_URL, STAT_UPGRADES, TIER_UPGRADE_COST, EVOLVE_ARMOR_PROMPTS } from "@/lib/gameConstants";
 import { ArrowLeft, Loader2 } from "lucide-react";
+
+const USED_FIELD = { attack: "attackUpgradesUsed", defense: "defenseUpgradesUsed", bonusDamage: "bonusDamageUpgradesUsed" };
 
 export default function CardUpgrade() {
   const { id } = useParams();
@@ -36,14 +40,19 @@ export default function CardUpgrade() {
 
   const handlePurchase = async (upg) => {
     if (purchasing) return;
+    const usedField = USED_FIELD[upg.key];
+    const usesInTier = card[usedField] || 0;
+    const maxUses = getStatUpgradeMaxUses(card.tier);
+    if (usesInTier >= maxUses) return;
+    const cost = getStatUpgradeCost(card.tier, upg.key, usesInTier);
     const capValue = upg.key === "bonusDamage" ? range.bonusMax : range.statMax;
     const currentVal = card[upg.key] || 0;
     const newVal = Math.min(capValue, Math.round(currentVal * (1 + upg.percent / 100)));
-    if (newVal <= currentVal || user.coins < upg.cost) return;
+    if (newVal <= currentVal || user.coins < cost) return;
     setPurchasing(upg.key);
-    await base44.entities.Card.update(card.id, { [upg.key]: newVal });
-    const updatedUser = await base44.auth.updateMe({ coins: user.coins - upg.cost });
-    setCard((c) => ({ ...c, [upg.key]: newVal }));
+    await base44.entities.Card.update(card.id, { [upg.key]: newVal, [usedField]: usesInTier + 1 });
+    const updatedUser = await base44.auth.updateMe({ coins: user.coins - cost });
+    setCard((c) => ({ ...c, [upg.key]: newVal, [usedField]: usesInTier + 1 }));
     setUser(updatedUser);
     setPurchasing(null);
   };
@@ -56,12 +65,12 @@ export default function CardUpgrade() {
     const pct = 1 + (25 + Math.random() * 70) / 100;
     const clamp = (v, min, max) => Math.min(max, Math.max(min, Math.round(v)));
     const { url } = await base44.integrations.Core.GenerateImage({
-      prompt:
-        "The same creature, now wearing bronze age armor plating, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame",
+      prompt: EVOLVE_ARMOR_PROMPTS[newTier],
       existing_image_urls: [card.imageUrl, STYLE_REFERENCE_URL],
     });
     const updated = {
       tier: newTier,
+      name: evolveName(card.name, newTier),
       attack: clamp(card.attack * pct, newRange.statMin, newRange.statMax),
       defense: clamp(card.defense * pct, newRange.statMin, newRange.statMax),
       bonusDamage: clamp((card.bonusDamage || 0) * pct, newRange.bonusMin, newRange.bonusMax),
@@ -69,6 +78,9 @@ export default function CardUpgrade() {
       winsVsBonus: 0,
       winsVsNonBonus: 0,
       gamesPlayed: 0,
+      attackUpgradesUsed: 0,
+      defenseUpgradesUsed: 0,
+      bonusDamageUpgradesUsed: 0,
     };
     await base44.entities.Card.update(card.id, updated);
     const updatedUser = await base44.auth.updateMe({ coins: user.coins - TIER_UPGRADE_COST });
@@ -87,17 +99,24 @@ export default function CardUpgrade() {
       </div>
       <h2 className="text-lg font-bold mb-3">Stat Upgrades</h2>
       <div className="space-y-3">
-        {STAT_UPGRADES.map((upg) => (
-          <StatUpgradeRow
-            key={upg.key}
-            upgrade={upg}
-            card={card}
-            coins={user.coins || 0}
-            purchasing={purchasing === upg.key}
-            onPurchase={handlePurchase}
-            capValue={upg.key === "bonusDamage" ? range.bonusMax : range.statMax}
-          />
-        ))}
+        {STAT_UPGRADES.map((upg) => {
+          const usesInTier = card[USED_FIELD[upg.key]] || 0;
+          const maxUses = getStatUpgradeMaxUses(card.tier);
+          return (
+            <StatUpgradeRow
+              key={upg.key}
+              upgrade={upg}
+              card={card}
+              coins={user.coins || 0}
+              purchasing={purchasing === upg.key}
+              onPurchase={handlePurchase}
+              capValue={upg.key === "bonusDamage" ? range.bonusMax : range.statMax}
+              cost={getStatUpgradeCost(card.tier, upg.key, usesInTier)}
+              usesInTier={usesInTier}
+              maxUses={maxUses}
+            />
+          );
+        })}
       </div>
       {card.tier < 4 && (
         <EvolveSection
