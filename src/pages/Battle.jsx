@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import BattleScreen from "@/components/battle/BattleScreen";
 import { Loader2 } from "lucide-react";
 
 export default function Battle() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const difficulty = location.state?.difficulty || "Normal";
   const [cards, setCards] = useState(null);
 
   useEffect(() => {
@@ -28,5 +30,5 @@ export default function Battle() {
     );
   }
 
-  return <BattleScreen playerCards={cards} />;
+  return <BattleScreen playerCards={cards} difficulty={difficulty} />;
 }

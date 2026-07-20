@@ -6,7 +6,7 @@ export default function GraveyardPile({ count }) {
   const stack = Array.from({ length: Math.min(count, 4) });
 
   return (
-    <div className="fixed left-2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10">
+    <div className="fixed left-[38%] -translate-x-1/2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10">
       <div className="relative" style={{ width: 36, height: 50 }}>
         {stack.map((_, i) => (
           <div

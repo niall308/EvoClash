@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { generateRandomCard } from "@/lib/cardGenerator";
 import { computeDamage, maxHealth } from "@/lib/battleEngine";
-import { AI_OPPONENT_NAMES, COINS_PER_CARD_DEFEATED, COINS_PER_WIN } from "@/lib/gameConstants";
+import { AI_OPPONENT_NAMES, COINS_PER_CARD_DEFEATED, COINS_PER_WIN, AI_DIFFICULTY_TIERS } from "@/lib/gameConstants";
 import { checkCardMilestones } from "@/lib/coinRewards";
 import { base44 } from "@/api/base44Client";
 
@@ -11,17 +11,12 @@ const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const RPS_OPTIONS = ["rock", "paper", "scissors"];
 const RPS_BEATS = { rock: "scissors", scissors: "paper", paper: "rock" };
 
-export default function useBattleMatch(playerCards, onMatchEnd) {
+export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "Normal") {
   const [opponentName] = useState(() => randomFrom(AI_OPPONENT_NAMES));
-  const [aiPool, setAiPool] = useState(() =>
-    shuffle(
-      Array.from({ length: 15 }, () => {
-        const r = Math.random();
-        const tier = r < 0.6 ? 1 : r < 0.85 ? 2 : r < 0.97 ? 3 : 4;
-        return generateRandomCard(tier);
-      })
-    )
-  );
+  const [aiPool, setAiPool] = useState(() => {
+    const tiers = AI_DIFFICULTY_TIERS[difficulty] || AI_DIFFICULTY_TIERS.Normal;
+    return shuffle(Array.from({ length: 15 }, () => generateRandomCard(randomFrom(tiers))));
+  });
   const [playerPool, setPlayerPool] = useState(() => shuffle(playerCards));
   const [round, setRound] = useState(1);
   const [score, setScore] = useState({ player: 0, ai: 0 });
@@ -39,7 +34,10 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
   const [rpsDone, setRpsDone] = useState(false);
   const [user, setUser] = useState(null);
   const [doubleAttackActive, setDoubleAttackActive] = useState(false);
+  const [tripleDefenseActive, setTripleDefenseActive] = useState(false);
   const [reshuffleModalOpen, setReshuffleModalOpen] = useState(false);
+  const [playerEffects, setPlayerEffects] = useState([]);
+  const [aiEffects, setAiEffects] = useState([]);
   const statsRef = useRef({});
   const busyRef = useRef(false);
   const defeatedCountRef = useRef(0);
@@ -123,10 +121,12 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       if (winnerSide === "player") {
         setAiCard(null);
         setAiHP(0);
+        setAiEffects([]);
         setPlayerHP(carryHP);
       } else {
         setPlayerCard(null);
         setPlayerHP(0);
+        setPlayerEffects([]);
         setAiHP(carryHP);
       }
       setTurn(winnerSide);
@@ -144,8 +144,10 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       const attacker = attackerSide === "player" ? playerCard : aiCard;
       const defender = attackerSide === "player" ? aiCard : playerCard;
       const usingDoubleAttack = attackerSide === "player" && doubleAttackActive;
-      const result = computeDamage(attacker, defender, usingDoubleAttack ? 2 : 1);
+      const usingTripleDefense = attackerSide === "ai" && tripleDefenseActive;
+      const result = computeDamage(attacker, defender, usingDoubleAttack ? 2 : 1, usingTripleDefense ? 3 : 1);
       if (usingDoubleAttack) setDoubleAttackActive(false);
+      if (usingTripleDefense) setTripleDefenseActive(false);
 
       if (result.isCrit && !result.tie && !result.recoil) {
         const newDefense = Math.max(0, Math.round(defender.defense * 0.8));
@@ -164,6 +166,8 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
         setAiCard(null);
         setPlayerHP(0);
         setAiHP(0);
+        setPlayerEffects([]);
+        setAiEffects([]);
         setPhase("draw");
         setLog("Choose a card to play!");
         busyRef.current = false;
@@ -173,6 +177,8 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       const targetSide = result.recoil ? attackerSide : attackerSide === "player" ? "ai" : "player";
       const targetHP = targetSide === "player" ? playerHP : aiHP;
       setEffect({ side: attackerSide, value: result.damage, blocked: false, recoil: result.recoil, crit: result.isCrit, key: Date.now() });
+      const setTargetEffects = targetSide === "player" ? setPlayerEffects : setAiEffects;
+      setTargetEffects((e) => (e.includes(attacker.type) ? e : [...e, attacker.type]));
       await sleep(600);
       const newTargetHP = Math.max(0, targetHP - result.damage);
       if (targetSide === "player") setPlayerHP(newTargetHP);
@@ -191,7 +197,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       setLog(attackerSide === "player" ? "AI's turn..." : "Your turn — attack!");
       busyRef.current = false;
     },
-    [phase, playerCard, aiCard, playerHP, aiHP, finishRound, doubleAttackActive]
+    [phase, playerCard, aiCard, playerHP, aiHP, finishRound, doubleAttackActive, tripleDefenseActive]
   );
 
   const canUsePowerTimestamp = (ts) => !ts || Date.now() - new Date(ts).getTime() >= 24 * 60 * 60 * 1000;
@@ -208,15 +214,16 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
   );
 
   const burnPower = useCallback(() => {
-    if (!aiCard || aiPool.length === 0 || phase !== "battle") return;
+    if (!aiCard || aiPool.length === 0 || phase !== "battle" || turn !== "player") return;
     activatePower("burnPowerUsedAt", () => {
       const newCard = aiPool[0];
       setAiPool((p) => p.slice(1));
       setAiCard(newCard);
       setAiHP(maxHealth(newCard));
+      setAiEffects([]);
       setLog("Burn! The opponent's card was destroyed and replaced — no life lost.");
     });
-  }, [activatePower, aiCard, aiPool, phase]);
+  }, [activatePower, aiCard, aiPool, phase, turn]);
 
   const openReshuffle = useCallback(() => setReshuffleModalOpen(true), []);
   const closeReshuffle = useCallback(() => setReshuffleModalOpen(false), []);
@@ -233,22 +240,31 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
   }, [activatePower, playerHand, playerPool, playerCard]);
 
   const forceOpponentRedrawPower = useCallback(() => {
-    if (!aiCard || aiPool.length === 0 || phase !== "battle") return;
+    if (!aiCard || aiPool.length === 0 || phase !== "battle" || turn !== "player") return;
     activatePower("reshufflePowerUsedAt", () => {
       const newCard = aiPool[0];
       setAiPool((p) => p.slice(1));
       setAiCard(newCard);
       setAiHP(maxHealth(newCard));
+      setAiEffects([]);
       setLog("You forced your opponent to redraw!");
     });
     setReshuffleModalOpen(false);
-  }, [activatePower, aiCard, aiPool, phase]);
+  }, [activatePower, aiCard, aiPool, phase, turn]);
 
   const doubleAttackPower = useCallback(() => {
     if (phase !== "battle" || turn !== "player") return;
     activatePower("doubleAttackPowerUsedAt", () => {
       setDoubleAttackActive(true);
       setLog("Double Attack ready — your next strike deals double damage!");
+    });
+  }, [activatePower, phase, turn]);
+
+  const tripleDefensePower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePower("defensePowerUsedAt", () => {
+      setTripleDefenseActive(true);
+      setLog("Triple Defense ready — your card will block the next hit with 3x defense!");
     });
   }, [activatePower, phase, turn]);
 
@@ -281,6 +297,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       setPlayerHand((h) => h.filter((c) => c.id !== card.id));
       setPlayerCard(card);
       setPlayerHP(maxHealth(card));
+      setPlayerEffects([]);
     },
     [phase, playerCard]
   );
@@ -291,6 +308,7 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       setAiPool((p) => p.slice(1));
       setAiCard(aCard);
       setAiHP(maxHealth(aCard));
+      setAiEffects([]);
     }
   }, [phase, aiCard, aiPool]);
 
@@ -345,16 +363,23 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
     playerRemaining: playerPool.length + playerHand.length,
     rpsDone,
     doubleAttackActive,
+    tripleDefenseActive,
+    playerEffects,
+    aiEffects,
+    playerHpRatio: playerCard ? Math.max(0, playerHP / maxHealth(playerCard)) : 1,
+    aiHpRatio: aiCard ? Math.max(0, aiHP / maxHealth(aiCard)) : 1,
     powerCooldowns: {
       burnPowerUsedAt: user?.burnPowerUsedAt,
       reshufflePowerUsedAt: user?.reshufflePowerUsedAt,
       doubleAttackPowerUsedAt: user?.doubleAttackPowerUsedAt,
+      defensePowerUsedAt: user?.defensePowerUsedAt,
     },
-    canBurn: phase === "battle" && !!aiCard && aiPool.length > 0,
-    canReshuffle: (!playerCard && playerHand.length > 0) || (phase === "battle" && !!aiCard && aiPool.length > 0),
+    canBurn: phase === "battle" && turn === "player" && !!aiCard && aiPool.length > 0,
+    canReshuffle: (!playerCard && playerHand.length > 0) || (phase === "battle" && turn === "player" && !!aiCard && aiPool.length > 0),
     canDoubleAttack: phase === "battle" && turn === "player",
+    canTripleDefense: phase === "battle" && turn === "player",
     canRedrawHand: !playerCard && playerHand.length > 0,
-    canForceOpponentRedraw: phase === "battle" && !!aiCard && aiPool.length > 0,
+    canForceOpponentRedraw: phase === "battle" && turn === "player" && !!aiCard && aiPool.length > 0,
     burnPower,
     reshuffleModalOpen,
     openReshuffle,
@@ -362,5 +387,6 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
     redrawHandPower,
     forceOpponentRedrawPower,
     doubleAttackPower,
+    tripleDefensePower,
   };
 }

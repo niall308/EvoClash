@@ -1,13 +1,30 @@
 import React from "react";
 import { Flame, Zap, Droplet, Snowflake, Mountain, Wind, Sprout, Sparkles, Trash2 } from "lucide-react";
-import { TYPE_COLORS, TYPE_ADVANTAGES, CARD_BACK_URL } from "@/lib/gameConstants";
+import { TYPE_COLORS, TYPE_ADVANTAGES, CARD_BACK_URL, TYPE_EFFECT_GROUP, MAX_STAT_UPGRADES_PER_TIER } from "@/lib/gameConstants";
 
 const TYPE_ICONS = { Fire: Flame, Lava: Zap, Water: Droplet, Ice: Snowflake, Rock: Mountain, Wind: Wind, Earth: Sprout, Magic: Sparkles };
 
-export default function GameCard({ card, size = "md", onDelete, glow, faceDown }) {
+const EFFECT_OVERLAY_CLASS = {
+  burn: "bg-gradient-to-t from-orange-900/80 via-red-700/40 to-transparent mix-blend-multiply",
+  freeze: "bg-gradient-to-b from-cyan-100/60 to-blue-400/40 mix-blend-screen",
+  scratch: "bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.55)_0px,rgba(0,0,0,0.55)_2px,transparent_2px,transparent_8px)]",
+  dissolve: "bg-gradient-to-br from-blue-900/40 via-transparent to-blue-900/60",
+};
+
+export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1 }) {
   const Icon = TYPE_ICONS[card.type] || Sparkles;
   const color = TYPE_COLORS[card.type];
   const sizes = { xs: "w-14 h-20", hand: "w-16 h-24", sm: "w-20 h-28", md: "w-32 h-44", lg: "w-40 h-56" };
+  const intensity = Math.min(0.85, 0.3 + (1 - hpRatio) * 0.55);
+  const effectGroups = [...new Set(statusEffects.map((t) => TYPE_EFFECT_GROUP[t]).filter(Boolean))];
+  const isFading = effectGroups.includes("fade") || effectGroups.includes("dissolve");
+  const cardOpacity = isFading ? Math.max(0.35, hpRatio) : 1;
+  const maxUpgrades = MAX_STAT_UPGRADES_PER_TIER[card.tier] || 0;
+  const isMaxedT4 =
+    card.tier === 4 &&
+    (card.attackUpgradesUsed || 0) >= maxUpgrades &&
+    (card.defenseUpgradesUsed || 0) >= maxUpgrades &&
+    (card.bonusDamageUpgradesUsed || 0) >= maxUpgrades;
 
   if (faceDown) {
     return (
@@ -19,8 +36,14 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown }
 
   return (
     <div
-      className={`relative ${sizes[size]} rounded-2xl border-2 shadow-xl flex flex-col overflow-hidden transition-shadow ${glow ? "shadow-[0_0_25px_rgba(255,215,0,0.8)]" : ""}`}
-      style={{ borderColor: color, background: "linear-gradient(160deg, #0D1B2A 0%, #1A2E45 100%)" }}
+      className={`relative ${sizes[size]} rounded-2xl border-2 shadow-xl flex flex-col overflow-hidden transition-all ${
+        glow || isMaxedT4 ? "shadow-[0_0_25px_6px_rgba(255,215,0,0.85)] animate-pulse" : ""
+      }`}
+      style={{
+        borderColor: isMaxedT4 ? "#FFD700" : color,
+        background: "linear-gradient(160deg, #0D1B2A 0%, #1A2E45 100%)",
+        opacity: cardOpacity,
+      }}
     >
       <div className="absolute top-1 left-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: color }}>
         T{card.tier}
@@ -41,12 +64,15 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown }
           </button>
         )}
       </div>
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 relative flex items-center justify-center">
         {card.imageUrl ? (
           <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover" />
         ) : (
           <Icon className="w-8 h-8" style={{ color }} />
         )}
+        {effectGroups.map((g) => (
+          <div key={g} className={`absolute inset-0 pointer-events-none ${EFFECT_OVERLAY_CLASS[g]}`} style={{ opacity: intensity }} />
+        ))}
       </div>
       <div className="px-1.5 pb-1.5 text-center">
         <p className="text-white font-bold text-[11px] leading-tight truncate">{card.name}</p>

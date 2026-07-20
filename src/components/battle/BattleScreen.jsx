@@ -18,7 +18,7 @@ import { Swords, Flag, Play, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useBattleMatch from "@/hooks/useBattleMatch";
 
-export default function BattleScreen({ playerCards, onMatchEnd }) {
+export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
   const navigate = useNavigate();
   const {
     round,
@@ -41,10 +41,16 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
     playerRemaining,
     rpsDone,
     doubleAttackActive,
+    tripleDefenseActive,
+    playerEffects,
+    aiEffects,
+    playerHpRatio,
+    aiHpRatio,
     powerCooldowns,
     canBurn,
     canReshuffle,
     canDoubleAttack,
+    canTripleDefense,
     canRedrawHand,
     canForceOpponentRedraw,
     burnPower,
@@ -54,7 +60,8 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
     redrawHandPower,
     forceOpponentRedrawPower,
     doubleAttackPower,
-  } = useBattleMatch(playerCards, onMatchEnd);
+    tripleDefensePower,
+  } = useBattleMatch(playerCards, onMatchEnd, difficulty);
 
   const playerLives = Math.max(0, 3 - score.ai);
   const aiLives = Math.max(0, 3 - score.player);
@@ -76,7 +83,7 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
         <AnimatePresence mode="wait">
           {aiCard && (
             <motion.div key={(aiCard.id || aiCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-              <GameCard card={aiCard} size="md" glow={matchResult && phase === "matchEnd"} faceDown={faceDown} />
+              <GameCard card={aiCard} size="md" glow={matchResult && phase === "matchEnd"} faceDown={faceDown} statusEffects={aiEffects} hpRatio={aiHpRatio} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -111,6 +118,11 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
                 <Zap className="w-3.5 h-3.5" /> Double Attack ready!
               </span>
             )}
+            {tripleDefenseActive && (
+              <span className="flex items-center gap-1 text-emerald-300 text-xs font-bold">
+                <Zap className="w-3.5 h-3.5" /> Triple Defense ready!
+              </span>
+            )}
             <button
               onClick={() => attack("player")}
               className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform"
@@ -122,7 +134,21 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
       </div>
 
       <div className="flex items-end justify-between px-4 pb-6 gap-3">
-        <div className="flex-1" />
+        <div className="flex-1 flex justify-start">
+          {phase !== "matchEnd" && (
+            <PowerButtons
+              cooldowns={powerCooldowns}
+              canBurn={canBurn}
+              canReshuffle={canReshuffle}
+              canDoubleAttack={canDoubleAttack}
+              canTripleDefense={canTripleDefense}
+              onBurn={burnPower}
+              onReshuffle={openReshuffle}
+              onDoubleAttack={doubleAttackPower}
+              onTripleDefense={tripleDefensePower}
+            />
+          )}
+        </div>
         <div className="flex flex-col items-center gap-2">
           <LivesIndicator lives={playerLives} />
           {playerCard && (
@@ -133,7 +159,7 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
           <AnimatePresence mode="wait">
             {playerCard && (
               <motion.div key={(playerCard.id || playerCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-                <GameCard card={playerCard} size="md" faceDown={faceDown} />
+                <GameCard card={playerCard} size="md" faceDown={faceDown} statusEffects={playerEffects} hpRatio={playerHpRatio} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -146,17 +172,6 @@ export default function BattleScreen({ playerCards, onMatchEnd }) {
       {!playerCard && playerHand.length > 0 && <PlayerHand hand={playerHand} onSelect={playCard} />}
 
       <GraveyardPile count={graveyard} />
-      {phase !== "matchEnd" && (
-        <PowerButtons
-          cooldowns={powerCooldowns}
-          canBurn={canBurn}
-          canReshuffle={canReshuffle}
-          canDoubleAttack={canDoubleAttack}
-          onBurn={burnPower}
-          onReshuffle={openReshuffle}
-          onDoubleAttack={doubleAttackPower}
-        />
-      )}
       {reshuffleModalOpen && (
         <ReshuffleModal
           canRedrawHand={canRedrawHand}

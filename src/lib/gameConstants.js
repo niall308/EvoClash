@@ -125,3 +125,26 @@ export const TIER_UPGRADE_COST = 15000;
 export const FREE_CARDS_INITIAL = 15;
 export const FREE_CREATIONS_PER_DAY = 3;
 export const EXTRA_CREATURE_COST = 25000;
+
+// AI difficulty -> allowed card tiers the opponent draws from
+export const AI_DIFFICULTY_TIERS = {
+  Easy: [1],
+  Normal: [1, 2],
+  Hard: [2, 3],
+  Extreme: [3, 4],
+};
+
+// Elemental attack visual effect grouping (stacks on the defending card)
+export const TYPE_EFFECT_GROUP = {
+  Fire: "burn",
+  Lava: "burn",
+  Ice: "freeze",
+  Magic: "fade",
+  Rock: "scratch",
+  Earth: "scratch",
+  Wind: "scratch",
+  Water: "dissolve",
+};
+
+// Cost to instantly replenish an already-used tactical power
+export const POWER_REPLENISH_COST = 10000;

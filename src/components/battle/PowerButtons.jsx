@@ -1,5 +1,5 @@
 import React from "react";
-import { Flame, Shuffle, Zap } from "lucide-react";
+import { Flame, Shuffle, Zap, Shield } from "lucide-react";
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
@@ -8,15 +8,26 @@ export function isPowerReady(timestamp) {
   return Date.now() - new Date(timestamp).getTime() >= COOLDOWN_MS;
 }
 
-export default function PowerButtons({ cooldowns, canBurn, canReshuffle, canDoubleAttack, onBurn, onReshuffle, onDoubleAttack }) {
+export default function PowerButtons({
+  cooldowns,
+  canBurn,
+  canReshuffle,
+  canDoubleAttack,
+  canTripleDefense,
+  onBurn,
+  onReshuffle,
+  onDoubleAttack,
+  onTripleDefense,
+}) {
   const powers = [
     { key: "burnPowerUsedAt", icon: Flame, label: "Burn", onClick: onBurn, enabled: canBurn, color: "from-red-600 to-orange-500" },
     { key: "reshufflePowerUsedAt", icon: Shuffle, label: "Redraw", onClick: onReshuffle, enabled: canReshuffle, color: "from-sky-500 to-cyan-500" },
     { key: "doubleAttackPowerUsedAt", icon: Zap, label: "2x Atk", onClick: onDoubleAttack, enabled: canDoubleAttack, color: "from-purple-600 to-fuchsia-500" },
+    { key: "defensePowerUsedAt", icon: Shield, label: "3x Def", onClick: onTripleDefense, enabled: canTripleDefense, color: "from-emerald-600 to-teal-500" },
   ];
 
   return (
-    <div className="fixed left-3 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-20">
+    <div className="flex flex-col gap-3 z-20">
       {powers.map((p) => {
         const ready = isPowerReady(cooldowns[p.key]);
         const disabled = !ready || !p.enabled;

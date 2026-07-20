@@ -55,6 +55,10 @@
     "doubleAttackPowerUsedAt": {
       "type": "string",
       "default": ""
+    },
+    "defensePowerUsedAt": {
+      "type": "string",
+      "default": ""
     }
   }
 }

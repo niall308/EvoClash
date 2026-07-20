@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Bot, Users, ArrowLeft, Trophy } from "lucide-react";
+import { Bot, Users, ArrowLeft, Trophy, Sparkles } from "lucide-react";
+
+const DIFFICULTIES = ["Easy", "Normal", "Hard", "Extreme"];
 
 export default function Play() {
   const navigate = useNavigate();
   const [count, setCount] = useState(null);
+  const [difficulty, setDifficulty] = useState("Normal");
 
   useEffect(() => {
     (async () => {
@@ -23,10 +26,26 @@ export default function Play() {
         <ArrowLeft className="w-4 h-4" /> Back
       </Link>
       <h1 className="text-3xl font-black mb-2">Choose Battle</h1>
-      <p className="text-white/60 mb-8 text-sm">{count === null ? "Loading deck..." : `${count}/15 cards required to play`}</p>
+      <p className="text-white/60 mb-4 text-sm">{count === null ? "Loading deck..." : `${count}/15 cards required to play`}</p>
+
+      <p className="text-white/50 text-xs mb-2 font-semibold">AI Difficulty</p>
+      <div className="grid grid-cols-4 gap-2 mb-6">
+        {DIFFICULTIES.map((d) => (
+          <button
+            key={d}
+            onClick={() => setDifficulty(d)}
+            className={`py-2 rounded-xl text-xs font-bold transition-colors ${
+              difficulty === d ? "bg-gradient-to-r from-red-600 to-orange-500" : "bg-white/10 text-white/60"
+            }`}
+          >
+            {d}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-4">
         <button
-          onClick={() => ready && navigate("/battle")}
+          onClick={() => ready && navigate("/battle", { state: { difficulty } })}
           disabled={!ready}
           className="w-full flex items-center gap-4 bg-gradient-to-r from-red-600 to-orange-500 p-5 rounded-2xl font-bold text-left disabled:opacity-40"
         >
@@ -37,6 +56,9 @@ export default function Play() {
         </button>
         <Link to="/leaderboards" className="w-full flex items-center gap-4 bg-gradient-to-r from-amber-500 to-yellow-600 p-5 rounded-2xl font-bold text-left">
           <Trophy className="w-8 h-8" /> Leaderboards
+        </Link>
+        <Link to="/power-ups" className="w-full flex items-center gap-4 bg-gradient-to-r from-emerald-500 to-teal-600 p-5 rounded-2xl font-bold text-left">
+          <Sparkles className="w-8 h-8" /> Power Ups
         </Link>
       </div>
       {!ready && count !== null && <p className="text-yellow-400 text-sm mt-6">Build your deck to at least 15 cards in the Deck screen.</p>}
