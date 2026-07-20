@@ -32,7 +32,7 @@ export default function CardUpgrade() {
   }
 
   const range = TIER_RANGES[card.tier];
-  const canEvolve = checkUpgradeEligible(card) && card.tier < 4;
+  const canEvolve = (user.role === "admin" || checkUpgradeEligible(card)) && card.tier < 4;
 
   const handlePurchase = async (upg) => {
     if (purchasing) return;

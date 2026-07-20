@@ -32,11 +32,22 @@ function weightedStats(tier, role) {
   return { attack, defense, bonusDamage };
 }
 
-export function generateRandomCard(tier = 1) {
-  const category = randomFrom(CATEGORIES);
-  const baseName = randomFrom(CREATURES[category]);
+export function generateRandomCard(tier = 1, options = {}) {
+  const { creatures, forcedCreature } = options;
+  let baseName, category, role;
+  if (forcedCreature) {
+    ({ baseName, category, role } = forcedCreature);
+  } else if (creatures && creatures.length > 0) {
+    const picked = randomFrom(creatures);
+    baseName = picked.baseName;
+    category = picked.category;
+    role = picked.role;
+  } else {
+    category = randomFrom(CATEGORIES);
+    baseName = randomFrom(CREATURES[category]);
+    role = CREATURE_ROLES[baseName];
+  }
   const type = randomFrom(TYPES);
-  const role = CREATURE_ROLES[baseName];
   const stats = weightedStats(tier, role);
   const name = generateName(baseName, tier);
   return {

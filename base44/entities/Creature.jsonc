@@ -1,0 +1,31 @@
+{
+  "name": "Creature",
+  "type": "object",
+  "properties": {
+    "baseName": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Dinosaur",
+        "Extinct Animal",
+        "Mythical Creature"
+      ]
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "predator",
+        "prey",
+        "balanced"
+      ],
+      "default": "balanced"
+    }
+  },
+  "required": [
+    "baseName",
+    "category",
+    "role"
+  ]
+}

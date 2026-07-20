@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Trophy, Swords, Gamepad2, History, HelpCircle } from "lucide-react";
 import { UPGRADE_REQUIREMENTS } from "@/lib/gameConstants";
 import MilestonesSection from "@/components/profile/MilestonesSection";
+import CreatureManager from "@/components/profile/CreatureManager";
 
 function Stat({ icon: Icon, label, value }) {
   return (
@@ -61,6 +62,8 @@ export default function Profile() {
       </Link>
 
       <MilestonesSection user={user} onUserUpdate={setUser} />
+
+      {user.role === "admin" && <CreatureManager />}
 
       <h2 className="text-lg font-bold mb-3">Upgrade Progress</h2>
       <div className="space-y-3">
