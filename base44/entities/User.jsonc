@@ -43,6 +43,18 @@
     "dailyFreeResetAt": {
       "type": "string",
       "default": ""
+    },
+    "burnPowerUsedAt": {
+      "type": "string",
+      "default": ""
+    },
+    "reshufflePowerUsedAt": {
+      "type": "string",
+      "default": ""
+    },
+    "doubleAttackPowerUsedAt": {
+      "type": "string",
+      "default": ""
     }
   }
 }

@@ -37,9 +37,19 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
   const [matchResult, setMatchResult] = useState(null);
   const [graveyard, setGraveyard] = useState(0);
   const [rpsDone, setRpsDone] = useState(false);
+  const [user, setUser] = useState(null);
+  const [doubleAttackActive, setDoubleAttackActive] = useState(false);
+  const [reshuffleModalOpen, setReshuffleModalOpen] = useState(false);
   const statsRef = useRef({});
   const busyRef = useRef(false);
   const defeatedCountRef = useRef(0);
+
+  useEffect(() => {
+    (async () => {
+      const me = await base44.auth.me();
+      setUser(me);
+    })();
+  }, []);
 
   const recordRoundResult = (cardId, won, vsBonus) => {
     if (!statsRef.current[cardId]) statsRef.current[cardId] = { winsVsBonus: 0, winsVsNonBonus: 0, gamesPlayed: 0, totalWins: 0 };
@@ -133,7 +143,9 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       busyRef.current = true;
       const attacker = attackerSide === "player" ? playerCard : aiCard;
       const defender = attackerSide === "player" ? aiCard : playerCard;
-      const result = computeDamage(attacker, defender);
+      const usingDoubleAttack = attackerSide === "player" && doubleAttackActive;
+      const result = computeDamage(attacker, defender, usingDoubleAttack ? 2 : 1);
+      if (usingDoubleAttack) setDoubleAttackActive(false);
 
       if (result.isCrit && !result.tie && !result.recoil) {
         const newDefense = Math.max(0, Math.round(defender.defense * 0.8));
@@ -179,8 +191,66 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
       setLog(attackerSide === "player" ? "AI's turn..." : "Your turn — attack!");
       busyRef.current = false;
     },
-    [phase, playerCard, aiCard, playerHP, aiHP, finishRound]
+    [phase, playerCard, aiCard, playerHP, aiHP, finishRound, doubleAttackActive]
   );
+
+  const canUsePowerTimestamp = (ts) => !ts || Date.now() - new Date(ts).getTime() >= 24 * 60 * 60 * 1000;
+
+  const activatePower = useCallback(
+    async (field, effectFn) => {
+      if (!user || !canUsePowerTimestamp(user[field])) return;
+      const now = new Date().toISOString();
+      const updatedUser = await base44.auth.updateMe({ [field]: now });
+      setUser(updatedUser);
+      effectFn();
+    },
+    [user]
+  );
+
+  const burnPower = useCallback(() => {
+    if (!aiCard || aiPool.length === 0 || phase !== "battle") return;
+    activatePower("burnPowerUsedAt", () => {
+      const newCard = aiPool[0];
+      setAiPool((p) => p.slice(1));
+      setAiCard(newCard);
+      setAiHP(maxHealth(newCard));
+      setLog("Burn! The opponent's card was destroyed and replaced — no life lost.");
+    });
+  }, [activatePower, aiCard, aiPool, phase]);
+
+  const openReshuffle = useCallback(() => setReshuffleModalOpen(true), []);
+  const closeReshuffle = useCallback(() => setReshuffleModalOpen(false), []);
+
+  const redrawHandPower = useCallback(() => {
+    if (playerCard || playerHand.length === 0) return;
+    activatePower("reshufflePowerUsedAt", () => {
+      const combined = shuffle([...playerHand, ...playerPool]);
+      setPlayerHand(combined.slice(0, 5));
+      setPlayerPool(combined.slice(5));
+      setLog("You drew a new hand!");
+    });
+    setReshuffleModalOpen(false);
+  }, [activatePower, playerHand, playerPool, playerCard]);
+
+  const forceOpponentRedrawPower = useCallback(() => {
+    if (!aiCard || aiPool.length === 0 || phase !== "battle") return;
+    activatePower("reshufflePowerUsedAt", () => {
+      const newCard = aiPool[0];
+      setAiPool((p) => p.slice(1));
+      setAiCard(newCard);
+      setAiHP(maxHealth(newCard));
+      setLog("You forced your opponent to redraw!");
+    });
+    setReshuffleModalOpen(false);
+  }, [activatePower, aiCard, aiPool, phase]);
+
+  const doubleAttackPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePower("doubleAttackPowerUsedAt", () => {
+      setDoubleAttackActive(true);
+      setLog("Double Attack ready — your next strike deals double damage!");
+    });
+  }, [activatePower, phase, turn]);
 
   useEffect(() => {
     if (phase === "battle" && turn === "ai" && !busyRef.current) {
@@ -273,5 +343,24 @@ export default function useBattleMatch(playerCards, onMatchEnd) {
     pickRps,
     graveyard,
     playerRemaining: playerPool.length + playerHand.length,
+    rpsDone,
+    doubleAttackActive,
+    powerCooldowns: {
+      burnPowerUsedAt: user?.burnPowerUsedAt,
+      reshufflePowerUsedAt: user?.reshufflePowerUsedAt,
+      doubleAttackPowerUsedAt: user?.doubleAttackPowerUsedAt,
+    },
+    canBurn: phase === "battle" && !!aiCard && aiPool.length > 0,
+    canReshuffle: (!playerCard && playerHand.length > 0) || (phase === "battle" && !!aiCard && aiPool.length > 0),
+    canDoubleAttack: phase === "battle" && turn === "player",
+    canRedrawHand: !playerCard && playerHand.length > 0,
+    canForceOpponentRedraw: phase === "battle" && !!aiCard && aiPool.length > 0,
+    burnPower,
+    reshuffleModalOpen,
+    openReshuffle,
+    closeReshuffle,
+    redrawHandPower,
+    forceOpponentRedrawPower,
+    doubleAttackPower,
   };
 }

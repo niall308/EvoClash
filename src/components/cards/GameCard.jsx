@@ -1,13 +1,21 @@
 import React from "react";
 import { Flame, Zap, Droplet, Snowflake, Mountain, Wind, Sprout, Sparkles, Trash2 } from "lucide-react";
-import { TYPE_COLORS, TYPE_ADVANTAGES } from "@/lib/gameConstants";
+import { TYPE_COLORS, TYPE_ADVANTAGES, CARD_BACK_URL } from "@/lib/gameConstants";
 
 const TYPE_ICONS = { Fire: Flame, Lava: Zap, Water: Droplet, Ice: Snowflake, Rock: Mountain, Wind: Wind, Earth: Sprout, Magic: Sparkles };
 
-export default function GameCard({ card, size = "md", onDelete, glow }) {
+export default function GameCard({ card, size = "md", onDelete, glow, faceDown }) {
   const Icon = TYPE_ICONS[card.type] || Sparkles;
   const color = TYPE_COLORS[card.type];
   const sizes = { xs: "w-14 h-20", hand: "w-16 h-24", sm: "w-20 h-28", md: "w-32 h-44", lg: "w-40 h-56" };
+
+  if (faceDown) {
+    return (
+      <div className={`relative ${sizes[size]} rounded-2xl border-2 border-white/20 shadow-xl overflow-hidden`}>
+        <img src={CARD_BACK_URL} alt="Face down card" className="w-full h-full object-cover" />
+      </div>
+    );
+  }
 
   return (
     <div
