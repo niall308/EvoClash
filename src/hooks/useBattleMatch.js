@@ -11,6 +11,8 @@ import {
   STYLE_REFERENCE_URL,
   TIER_RANGES,
   DEFAULT_ACTIVE_POWERUPS,
+  TURN_TIME_LIMIT_SECONDS,
+  MAX_CONSECUTIVE_TURN_TIMEOUTS,
 } from "@/lib/gameConstants";
 import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
 import { checkCardMilestones } from "@/lib/coinRewards";
@@ -43,7 +45,10 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const [effect, setEffect] = useState(null);
   const [matchResult, setMatchResult] = useState(null);
   const [coinsBreakdown, setCoinsBreakdown] = useState(null);
-  const [graveyard, setGraveyard] = useState(0);
+  const [graveyardCards, setGraveyardCards] = useState([]);
+  const [turnTimeLeft, setTurnTimeLeft] = useState(TURN_TIME_LIMIT_SECONDS);
+  const consecutiveTimeoutsRef = useRef(0);
+  const timeoutFiredRef = useRef(false);
   const [rpsDone, setRpsDone] = useState(false);
   const [user, setUser] = useState(null);
   const [doubleAttackActive, setDoubleAttackActive] = useState(false);
@@ -194,6 +199,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     async (attackerSide) => {
       if (busyRef.current || phase !== "battle") return;
       busyRef.current = true;
+      if (attackerSide === "player") consecutiveTimeoutsRef.current = 0;
       let attacker = attackerSide === "player" ? playerCard : aiCard;
       const defender = attackerSide === "player" ? aiCard : playerCard;
       const usingDoubleAttack = attackerSide === "player" && doubleAttackActive;
@@ -226,7 +232,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         await sleep(3000);
         setEffect(null);
         setLog("It's a tie! Both cards are destroyed.");
-        setGraveyard((g) => g + 2);
+        setGraveyardCards((g) => [...g, playerCard, aiCard]);
         await sleep(1000);
         setPlayerCard(null);
         setAiCard(null);
@@ -256,7 +262,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       if (newTargetHP <= 0) {
         const winnerSide = targetSide === "player" ? "ai" : "player";
         const survivorHP = winnerSide === "player" ? playerHP : aiHP;
-        setGraveyard((g) => g + 1);
+        setGraveyardCards((g) => [...g, defender]);
         await finishRound(winnerSide, survivorHP);
         busyRef.current = false;
         return;
@@ -411,6 +417,44 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     }
   }, [phase, turn, attack]);
 
+  // Turn timer: the player has a limited time to attack, or they lose the turn.
+  // Losing 3 turns in a row to the timer auto-forfeits the match.
+  const handleTurnTimeout = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    const timeouts = consecutiveTimeoutsRef.current + 1;
+    consecutiveTimeoutsRef.current = timeouts;
+    if (timeouts >= MAX_CONSECUTIVE_TURN_TIMEOUTS) {
+      setLog("You ran out of time 3 times in a row — you forfeit the match!");
+      applyProgression("ai", score);
+    } else {
+      setLog(`Time's up! You lost your turn (${timeouts}/${MAX_CONSECUTIVE_TURN_TIMEOUTS} timeouts).`);
+      setTurn("ai");
+    }
+  }, [phase, turn, score, applyProgression]);
+
+  useEffect(() => {
+    timeoutFiredRef.current = false;
+    if (phase !== "battle" || turn !== "player") {
+      setTurnTimeLeft(TURN_TIME_LIMIT_SECONDS);
+      return;
+    }
+    setTurnTimeLeft(TURN_TIME_LIMIT_SECONDS);
+    const interval = setInterval(() => {
+      setTurnTimeLeft((t) => {
+        if (t <= 1) {
+          clearInterval(interval);
+          if (!timeoutFiredRef.current) {
+            timeoutFiredRef.current = true;
+            handleTurnTimeout();
+          }
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [phase, turn, handleTurnTimeout]);
+
   const drawHand = useCallback(() => {
     if (phase !== "draw" || busyRef.current || playerCard || playerHand.length > 0 || playerPool.length === 0) return;
     const hand = playerPool.slice(0, 5);
@@ -508,7 +552,8 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     playCard,
     attack,
     pickRps,
-    graveyard,
+    graveyardCards,
+    turnTimeLeft,
     playerRemaining: playerPool.length + playerHand.length,
     rpsDone,
     user,

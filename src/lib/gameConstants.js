@@ -71,7 +71,9 @@ export const UPGRADE_REQUIREMENTS = {
   3: { winsVsBonus: 1000, winsVsNonBonus: 500, gamesPlayed: 2000 },
 };
 
-export const CARD_BACK_URL = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/8e6b0b264_Card_Back.jpg";
+export const CARD_BACK_URL = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/c758e901f_EvoClashCardBack.png";
+export const TURN_TIME_LIMIT_SECONDS = 300;
+export const MAX_CONSECUTIVE_TURN_TIMEOUTS = 3;
 export const STYLE_REFERENCE_URL = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/636b60708_Style.png";
 
 export const AI_OPPONENT_NAMES = [

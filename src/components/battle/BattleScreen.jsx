@@ -14,7 +14,7 @@ import ForfeitModal from "@/components/battle/ForfeitModal";
 import PowerButtons from "@/components/battle/PowerButtons";
 import ReshuffleModal from "@/components/battle/ReshuffleModal";
 import { maxHealth } from "@/lib/battleEngine";
-import { Swords, Flag, Play, Zap } from "lucide-react";
+import { Swords, Flag, Play, Zap, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useBattleMatch from "@/hooks/useBattleMatch";
 
@@ -38,7 +38,8 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
     playCard,
     attack,
     pickRps,
-    graveyard,
+    graveyardCards,
+    turnTimeLeft,
     playerRemaining,
     rpsDone,
     user,
@@ -79,6 +80,14 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
           <Flag className="w-3.5 h-3.5" /> Forfeit
         </button>
       </div>
+      {phase === "battle" && turn === "player" && (
+        <div className="flex justify-center items-center gap-1.5 pb-1 text-xs font-bold">
+          <Clock className={`w-3.5 h-3.5 ${turnTimeLeft <= 30 ? "text-red-400" : "text-white/50"}`} />
+          <span className={turnTimeLeft <= 30 ? "text-red-400" : "text-white/50"}>
+            {String(Math.floor(turnTimeLeft / 60)).padStart(1, "0")}:{String(turnTimeLeft % 60).padStart(2, "0")}
+          </span>
+        </div>
+      )}
 
       <div className="flex flex-col items-center pt-2 gap-2">
         <LivesIndicator lives={aiLives} />
@@ -178,7 +187,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
 
       {!playerCard && playerHand.length > 0 && <PlayerHand hand={playerHand} onSelect={playCard} />}
 
-      <GraveyardPile count={graveyard} />
+      <GraveyardPile cards={graveyardCards} />
       {reshuffleModalOpen && (
         <ReshuffleModal
           canRedrawHand={canRedrawHand}

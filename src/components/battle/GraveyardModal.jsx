@@ -1,0 +1,26 @@
+import React from "react";
+import { X } from "lucide-react";
+import GameCard from "@/components/cards/GameCard";
+
+export default function GraveyardModal({ cards, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center px-4" onClick={onClose}>
+      <div
+        className="bg-[#1A2E45] border border-white/10 rounded-2xl p-5 max-w-sm w-full max-h-[80vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-black text-lg text-white">Discard Pile ({cards.length})</h2>
+          <button onClick={onClose} className="text-white/60 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="grid grid-cols-3 gap-3 justify-items-center">
+          {cards.map((card, i) => (
+            <GameCard key={i} card={card} size="xs" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
