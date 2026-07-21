@@ -7,7 +7,6 @@ export default function CreatureRow({ creature, onDelete }) {
       <div>
         <p className="text-sm font-semibold">{creature.baseName}</p>
         <p className="text-[10px] text-white/40">{creature.category} · {creature.role}</p>
-        {creature.description && <p className="text-[10px] text-white/30 mt-1 line-clamp-2">{creature.description}</p>}
       </div>
       <button onClick={() => onDelete(creature.id)} className="text-red-400 hover:text-red-300">
         <Trash2 className="w-4 h-4" />

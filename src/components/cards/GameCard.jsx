@@ -1,5 +1,5 @@
 import React from "react";
-import { Flame, Zap, Droplet, Snowflake, Mountain, Wind, Sprout, Sparkles, Trash2, HelpCircle } from "lucide-react";
+import { Flame, Zap, Droplet, Snowflake, Mountain, Wind, Sprout, Sparkles, Trash2 } from "lucide-react";
 import { TYPE_COLORS, TYPE_ADVANTAGES, CARD_BACK_URL, TYPE_EFFECT_GROUP, MAX_STAT_UPGRADES_PER_TIER } from "@/lib/gameConstants";
 
 const TYPE_ICONS = { Fire: Flame, Lava: Zap, Water: Droplet, Ice: Snowflake, Rock: Mountain, Wind: Wind, Earth: Sprout, Magic: Sparkles };
@@ -12,9 +12,8 @@ const EFFECT_OVERLAY_CLASS = {
 };
 
 export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1, boost = null }) {
-  const isHybrid = card.type === "Hybrid";
-  const Icon = isHybrid ? HelpCircle : TYPE_ICONS[card.type] || Sparkles;
-  const color = isHybrid ? "#FFD700" : TYPE_COLORS[card.type];
+  const Icon = TYPE_ICONS[card.type] || Sparkles;
+  const color = TYPE_COLORS[card.type];
   const sizes = { xs: "w-14 h-20", hand: "w-16 h-24", sm: "w-20 h-28", md: "w-32 h-44", lg: "w-40 h-56" };
   const intensity = Math.min(0.85, 0.3 + (1 - hpRatio) * 0.55);
   const effectGroups = [...new Set(statusEffects.map((t) => TYPE_EFFECT_GROUP[t]).filter(Boolean))];
@@ -37,11 +36,11 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
 
   return (
     <div
-      className={`relative ${sizes[size]} rounded-2xl shadow-xl flex flex-col overflow-hidden transition-all ${
-        isHybrid ? "rainbow-border" : "border-2"
-      } ${glow || isMaxedT4 ? "shadow-[0_0_25px_6px_rgba(255,215,0,0.85)] animate-pulse" : ""}`}
+      className={`relative ${sizes[size]} rounded-2xl border-2 shadow-xl flex flex-col overflow-hidden transition-all ${
+        glow || isMaxedT4 ? "shadow-[0_0_25px_6px_rgba(255,215,0,0.85)] animate-pulse" : ""
+      }`}
       style={{
-        borderColor: isHybrid ? undefined : isMaxedT4 ? "#FFD700" : color,
+        borderColor: isMaxedT4 ? "#FFD700" : color,
         background: "linear-gradient(160deg, #0D1B2A 0%, #1A2E45 100%)",
         opacity: cardOpacity,
       }}
@@ -90,14 +89,10 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
           <div className="flex items-center justify-center gap-1 text-[8px] text-yellow-300">
             <span>+{card.bonusDamage}</span>
             <span className="flex gap-0.5">
-              {isHybrid ? (
-                <HelpCircle className="w-2 h-2" style={{ color: "#FFD700" }} />
-              ) : (
-                (TYPE_ADVANTAGES[card.type] || []).map((t) => {
-                  const TIcon = TYPE_ICONS[t];
-                  return <TIcon key={t} className="w-2 h-2" style={{ color: TYPE_COLORS[t] }} />;
-                })
-              )}
+              {(TYPE_ADVANTAGES[card.type] || []).map((t) => {
+                const TIcon = TYPE_ICONS[t];
+                return <TIcon key={t} className="w-2 h-2" style={{ color: TYPE_COLORS[t] }} />;
+              })}
             </span>
           </div>
         )}

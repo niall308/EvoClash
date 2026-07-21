@@ -10,8 +10,7 @@
       "enum": [
         "Dinosaur",
         "Extinct Animal",
-        "Mythical Creature",
-        "Hybrid"
+        "Mythical Creature"
       ]
     },
     "role": {
@@ -19,14 +18,9 @@
       "enum": [
         "predator",
         "prey",
-        "balanced",
-        "Hyper Rare"
+        "balanced"
       ],
       "default": "balanced"
-    },
-    "description": {
-      "type": "string",
-      "default": ""
     }
   },
   "required": [

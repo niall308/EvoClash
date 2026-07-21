@@ -13,7 +13,6 @@ import {
   DEFAULT_ACTIVE_POWERUPS,
   TURN_TIME_LIMIT_SECONDS,
   MAX_CONSECUTIVE_TURN_TIMEOUTS,
-  TYPES,
 } from "@/lib/gameConstants";
 import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
 import { checkCardMilestones } from "@/lib/coinRewards";
@@ -60,8 +59,6 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const [reshuffleModalOpen, setReshuffleModalOpen] = useState(false);
   const [playerEffects, setPlayerEffects] = useState([]);
   const [aiEffects, setAiEffects] = useState([]);
-  const [hybridPickerCard, setHybridPickerCard] = useState(null);
-  const hybridChoiceUsedRef = useRef(false);
   const statsRef = useRef({});
   const busyRef = useRef(false);
   const defeatedCountRef = useRef(0);
@@ -519,10 +516,6 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const playCard = useCallback(
     (card) => {
       if (phase !== "draw" || busyRef.current || playerCard) return;
-      if (card.type === "Hybrid" && !hybridChoiceUsedRef.current) {
-        setHybridPickerCard(card);
-        return;
-      }
       setPlayerHand((h) => h.filter((c) => c.id !== card.id));
       setPlayerCard(card);
       setPlayerHP(maxHealth(card));
@@ -534,27 +527,9 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     [phase, playerCard]
   );
 
-  const chooseHybridType = useCallback(
-    (chosenType) => {
-      const card = hybridPickerCard;
-      if (!card) return;
-      hybridChoiceUsedRef.current = true;
-      const cardWithType = { ...card, effectiveType: chosenType };
-      setPlayerHand((h) => h.filter((c) => c.id !== card.id));
-      setPlayerCard(cardWithType);
-      setPlayerHP(maxHealth(cardWithType));
-      setPlayerEffects([]);
-      summonCountRef.current += 1;
-      matchTypesRef.current.add(chosenType);
-      roundMinHpRatioRef.current = 1;
-      setHybridPickerCard(null);
-    },
-    [hybridPickerCard]
-  );
-
   useEffect(() => {
     if (phase === "draw" && !aiCard && aiPool.length > 0) {
-      const aCard = aiPool[0].type === "Hybrid" ? { ...aiPool[0], effectiveType: randomFrom(TYPES) } : aiPool[0];
+      const aCard = aiPool[0];
       setAiPool((p) => p.slice(1));
       setAiCard(aCard);
       setAiHP(maxHealth(aCard));
@@ -620,8 +595,6 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     coinsBreakdown,
     drawHand,
     playCard,
-    hybridPickerCard,
-    chooseHybridType,
     attack,
     pickRps,
     graveyardCards,

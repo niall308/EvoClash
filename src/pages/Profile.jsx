@@ -45,7 +45,7 @@ export default function Profile() {
         <h1 className="text-2xl font-black">{user.username || user.full_name}</h1>
         <RankEmblem rp={user.rankPoints} size="sm" />
         <span className="text-sm font-bold" style={{ color: rank.color }}>
-          {rank.name} · #{rank.number} · {user.rankPoints || 0} RP
+          {rank.name} · #{rank.number}
         </span>
         {streak !== 0 && (
           <span className={`flex items-center gap-1 text-xs font-bold ${streak > 0 ? "text-emerald-400" : "text-red-400"}`}>

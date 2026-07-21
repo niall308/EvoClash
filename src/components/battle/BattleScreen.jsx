@@ -13,7 +13,6 @@ import RpsPicker from "@/components/battle/RpsPicker";
 import ForfeitModal from "@/components/battle/ForfeitModal";
 import PowerButtons from "@/components/battle/PowerButtons";
 import ReshuffleModal from "@/components/battle/ReshuffleModal";
-import HybridTypePicker from "@/components/battle/HybridTypePicker";
 import { maxHealth } from "@/lib/battleEngine";
 import { Swords, Flag, Play, Zap, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -37,8 +36,6 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
     coinsBreakdown,
     drawHand,
     playCard,
-    hybridPickerCard,
-    chooseHybridType,
     attack,
     pickRps,
     graveyardCards,
@@ -201,7 +198,6 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
           onCancel={closeReshuffle}
         />
       )}
-      {hybridPickerCard && <HybridTypePicker onPick={chooseHybridType} />}
       {phase === "matchEnd" && <MatchEndModal won={matchResult === "player"} coinsBreakdown={coinsBreakdown} />}
       {showForfeitModal && (
         <ForfeitModal

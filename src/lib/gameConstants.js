@@ -22,14 +22,7 @@ export const TYPE_ADVANTAGES = {
   Magic: ["Rock", "Fire", "Lava"],
 };
 
-export const CATEGORIES = ["Dinosaur", "Extinct Animal", "Mythical Creature", "Hybrid"];
-
-// Hybrid cards: extremely rare "Hyper Rare" cards fused from two creatures, admin-defined via a design-guide description.
-export const HYBRID_CHANCE = 0.005;
-export const HYBRID_MIN_ATTACK = 7300;
-export const HYBRID_MIN_DEFENSE = 5000;
-export const HYBRID_BONUS_DAMAGE = 1000;
-export const HYBRID_TIERS = [3, 4];
+export const CATEGORIES = ["Dinosaur", "Extinct Animal", "Mythical Creature"];
 
 export const CREATURES = {
   Dinosaur: ["Tyrannosaurus Rex", "Velociraptor", "Triceratops", "Stegosaurus", "Spinosaurus", "Brachiosaurus", "Ankylosaurus", "Pterodactyl"],

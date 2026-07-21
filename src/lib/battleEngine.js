@@ -5,7 +5,7 @@ export function getTypeMultiplier(attackerType, defenderType) {
 }
 
 export function computeDamage(attacker, defender, attackMultiplier = 1, defenseMultiplier = 1) {
-  const multiplier = getTypeMultiplier(attacker.effectiveType || attacker.type, defender.effectiveType || defender.type);
+  const multiplier = getTypeMultiplier(attacker.type, defender.type);
   const isCrit = Math.random() < 0.1;
   let rawAttack = Math.round(attacker.attack * multiplier * attackMultiplier) + (attacker.bonusDamage || 0);
   if (isCrit) rawAttack = Math.round(rawAttack * 1.5);

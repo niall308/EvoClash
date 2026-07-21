@@ -13,8 +13,7 @@
       "enum": [
         "Dinosaur",
         "Extinct Animal",
-        "Mythical Creature",
-        "Hybrid"
+        "Mythical Creature"
       ]
     },
     "type": {
@@ -27,8 +26,7 @@
         "Rock",
         "Wind",
         "Earth",
-        "Magic",
-        "Hybrid"
+        "Magic"
       ]
     },
     "tier": {
