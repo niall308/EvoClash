@@ -90,6 +90,10 @@
     "bonusDamageUpgradesUsed": {
       "type": "number",
       "default": 0
+    },
+    "typeChanged": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [

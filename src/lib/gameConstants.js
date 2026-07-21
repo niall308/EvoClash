@@ -143,6 +143,8 @@ export const TIER_STAT_UPGRADE_COST = { 2: 20000, 3: 35000, 4: 50000 };
 
 export const TIER_UPGRADE_COST = 15000;
 
+export const TYPE_CHANGE_COST = 100000;
+
 // Card creation limits (Card Generate screen)
 export const FREE_CARDS_INITIAL = 15;
 export const FREE_CREATIONS_PER_DAY = 3;

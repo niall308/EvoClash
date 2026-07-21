@@ -4,10 +4,11 @@ import { base44 } from "@/api/base44Client";
 import GameCard from "@/components/cards/GameCard";
 import StatUpgradeRow from "@/components/upgrade/StatUpgradeRow";
 import EvolveSection from "@/components/upgrade/EvolveSection";
+import TypeChangeSection from "@/components/upgrade/TypeChangeSection";
 import { checkUpgradeEligible } from "@/lib/upgradeCheck";
 import { getStatUpgradeCost, getStatUpgradeMaxUses } from "@/lib/statUpgradeCost";
 import { evolveName, randomInt } from "@/lib/cardGenerator";
-import { TIER_RANGES, STYLE_REFERENCE_URL, STAT_UPGRADES, TIER_UPGRADE_COST, EVOLVE_ARMOR_PROMPTS } from "@/lib/gameConstants";
+import { TIER_RANGES, STYLE_REFERENCE_URL, STAT_UPGRADES, TIER_UPGRADE_COST, TYPE_CHANGE_COST, EVOLVE_ARMOR_PROMPTS } from "@/lib/gameConstants";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 const USED_FIELD = { attack: "attackUpgradesUsed", defense: "defenseUpgradesUsed", bonusDamage: "bonusDamageUpgradesUsed" };
@@ -23,6 +24,7 @@ export default function CardUpgrade() {
   const [user, setUser] = useState(null);
   const [purchasing, setPurchasing] = useState(null);
   const [evolving, setEvolving] = useState(false);
+  const [typePurchasing, setTypePurchasing] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -67,6 +69,16 @@ export default function CardUpgrade() {
     setCard((c) => ({ ...c, [upg.key]: newVal, [usedField]: usesInTier + 1 }));
     setUser(updatedUser);
     setPurchasing(null);
+  };
+
+  const handleChangeType = async (newType) => {
+    if (card.typeChanged || user.coins < TYPE_CHANGE_COST || typePurchasing) return;
+    setTypePurchasing(newType);
+    await base44.entities.Card.update(card.id, { type: newType, typeChanged: true });
+    const updatedUser = await base44.auth.updateMe({ coins: user.coins - TYPE_CHANGE_COST });
+    setCard((c) => ({ ...c, type: newType, typeChanged: true }));
+    setUser(updatedUser);
+    setTypePurchasing(null);
   };
 
   const handleEvolve = async () => {
@@ -143,6 +155,7 @@ export default function CardUpgrade() {
           );
         })}
       </div>
+      <TypeChangeSection card={card} coins={user.coins || 0} purchasing={typePurchasing} onChangeType={handleChangeType} />
       {card.tier < 4 && (
         <EvolveSection
           canEvolve={canEvolve}
