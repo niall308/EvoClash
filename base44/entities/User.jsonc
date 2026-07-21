@@ -5,6 +5,10 @@
     "username": {
       "type": "string"
     },
+    "friendCode": {
+      "type": "string",
+      "default": ""
+    },
     "isAdmin": {
       "type": "boolean",
       "default": false

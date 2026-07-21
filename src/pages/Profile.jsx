@@ -8,6 +8,7 @@ import RankEmblem from "@/components/rank/RankEmblem";
 import CreatureManager from "@/components/profile/CreatureManager";
 import CardFilterBar from "@/components/cards/CardFilterBar";
 import ActiveMilestonesSummary from "@/components/profile/ActiveMilestonesSummary";
+import FriendsSection from "@/components/profile/FriendsSection";
 
 function Stat({ icon: Icon, label, value }) {
   return (
@@ -83,6 +84,8 @@ export default function Profile() {
       </Link>
 
       <ActiveMilestonesSummary user={user} />
+
+      <FriendsSection user={user} onUserUpdate={setUser} />
 
       <Link to="/how-to-play" className="flex items-center justify-between bg-white/5 rounded-xl p-4 mb-8">
         <span className="flex items-center gap-2 font-semibold text-sm">

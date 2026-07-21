@@ -1,0 +1,16 @@
+{
+  "name": "Friend",
+  "type": "object",
+  "properties": {
+    "friendUserId": {
+      "type": "string"
+    },
+    "friendName": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "friendUserId",
+    "friendName"
+  ]
+}
