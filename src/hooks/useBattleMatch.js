@@ -64,6 +64,15 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const defeatedCountRef = useRef(0);
   const halfAttackCardRef = useRef(null);
   const aiImageLoadingRef = useRef(null);
+  const matchTypesRef = useRef(new Set());
+  const matchDamageRef = useRef(0);
+  const matchBlocksRef = useRef(0);
+  const matchStartRef = useRef(Date.now());
+  const roundMinHpRatioRef = useRef(1);
+  const matchComebackRef = useRef(false);
+  const matchHigherTierDefeatRef = useRef(false);
+  const summonCountRef = useRef(0);
+  const finalWinHPRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -144,12 +153,33 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         milestoneCoins,
         total: coinsEarned,
       });
+      const newStreak = isWin ? (me.currentWinStreak || 0) + 1 : 0;
+      const newMaxStreak = Math.max(me.maxWinStreak || 0, newStreak);
+      const distinctTypesUsed = matchTypesRef.current.size;
+      const isFastWin = isWin && Date.now() - matchStartRef.current < 180000;
+      const isFlawlessWin = isWin && finalScore.ai === 0;
+      const isMonoElementWin = isWin && distinctTypesUsed === 1;
+      const isComebackWin = isWin && matchComebackRef.current;
+      const isHigherTierDefeat = isWin && matchHigherTierDefeatRef.current;
+      const isWinUnder100HP = isWin && finalWinHPRef.current != null && finalWinHPRef.current < 100;
       await base44.auth.updateMe({
         wins: (me.wins || 0) + (winner === "player" ? 1 : 0),
         losses: (me.losses || 0) + (winner === "ai" ? 1 : 0),
         gamesPlayed: (me.gamesPlayed || 0) + 1,
         aiGamesPlayed: (me.aiGamesPlayed || 0) + 1,
         coins: (me.coins || 0) + coinsEarned,
+        creaturesSummoned: (me.creaturesSummoned || 0) + summonCountRef.current,
+        totalDamageDealt: (me.totalDamageDealt || 0) + matchDamageRef.current,
+        successfulBlocks: (me.successfulBlocks || 0) + matchBlocksRef.current,
+        threeElementMatches: (me.threeElementMatches || 0) + (distinctTypesUsed >= 3 ? 1 : 0),
+        winsUnder100HP: (me.winsUnder100HP || 0) + (isWinUnder100HP ? 1 : 0),
+        flawlessWins: (me.flawlessWins || 0) + (isFlawlessWin ? 1 : 0),
+        monoElementWins: (me.monoElementWins || 0) + (isMonoElementWin ? 1 : 0),
+        fastWins: (me.fastWins || 0) + (isFastWin ? 1 : 0),
+        comebackWins: (me.comebackWins || 0) + (isComebackWin ? 1 : 0),
+        defeatedHigherTierOpponent: (me.defeatedHigherTierOpponent || 0) + (isHigherTierDefeat ? 1 : 0),
+        currentWinStreak: newStreak,
+        maxWinStreak: newMaxStreak,
       });
       await base44.entities.BattleHistory.create({
         opponentName,
@@ -167,7 +197,13 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     async (winnerSide, carryHP) => {
       setPhase("roundEnd");
       recordRoundResult(playerCard.id, winnerSide === "player", aiCard.bonusDamage > 0);
-      if (winnerSide === "player") defeatedCountRef.current += 1;
+      if (winnerSide === "player") {
+        defeatedCountRef.current += 1;
+        if (aiCard.tier > playerCard.tier) matchHigherTierDefeatRef.current = true;
+        if (roundMinHpRatioRef.current <= 0.5) matchComebackRef.current = true;
+        finalWinHPRef.current = carryHP;
+      }
+      roundMinHpRatioRef.current = 1;
       const newScore = { ...score, [winnerSide]: score[winnerSide] + 1 };
       setScore(newScore);
       setLog(winnerSide === "player" ? `You win round ${round}!` : `AI wins round ${round}!`);
@@ -256,8 +292,13 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       }
       await sleep(600);
       const newTargetHP = Math.max(0, targetHP - result.damage);
-      if (targetSide === "player") setPlayerHP(newTargetHP);
-      else setAiHP(newTargetHP);
+      if (targetSide === "player") {
+        setPlayerHP(newTargetHP);
+        const ratio = maxHealth(playerCard) > 0 ? newTargetHP / maxHealth(playerCard) : 0;
+        if (ratio < roundMinHpRatioRef.current) roundMinHpRatioRef.current = ratio;
+      } else setAiHP(newTargetHP);
+      if (attackerSide === "player" && !result.recoil && result.damage > 0) matchDamageRef.current += result.damage;
+      if (usingBlock && result.damage === 0) matchBlocksRef.current += 1;
       await sleep(3000);
       setEffect(null);
       if (newTargetHP <= 0) {
@@ -479,6 +520,9 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       setPlayerCard(card);
       setPlayerHP(maxHealth(card));
       setPlayerEffects([]);
+      summonCountRef.current += 1;
+      matchTypesRef.current.add(card.type);
+      roundMinHpRatioRef.current = 1;
     },
     [phase, playerCard]
   );
@@ -507,7 +551,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
 
   const forfeitMatch = useCallback(async () => {
     const me = await base44.auth.me();
-    await base44.auth.updateMe({ losses: (me.losses || 0) + 1, gamesPlayed: (me.gamesPlayed || 0) + 1 });
+    await base44.auth.updateMe({ losses: (me.losses || 0) + 1, gamesPlayed: (me.gamesPlayed || 0) + 1, currentWinStreak: 0 });
     await base44.entities.BattleHistory.create({
       opponentName,
       outcome: "loss",

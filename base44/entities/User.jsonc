@@ -111,6 +111,99 @@
         "doubleAttack",
         "defense"
       ]
+    },
+    "creaturesSummoned": {
+      "type": "number",
+      "default": 0
+    },
+    "creaturesEvolved": {
+      "type": "number",
+      "default": 0
+    },
+    "evolvedCardIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "tier2Upgrades": {
+      "type": "number",
+      "default": 0
+    },
+    "tier3Upgrades": {
+      "type": "number",
+      "default": 0
+    },
+    "tier4Upgrades": {
+      "type": "number",
+      "default": 0
+    },
+    "creatureEvolutionLinesCompleted": {
+      "type": "number",
+      "default": 0
+    },
+    "completedEvolutionCardIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "distinctTypesOwnedCount": {
+      "type": "number",
+      "default": 0
+    },
+    "ownedElementTypesList": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "threeElementMatches": {
+      "type": "number",
+      "default": 0
+    },
+    "winsUnder100HP": {
+      "type": "number",
+      "default": 0
+    },
+    "flawlessWins": {
+      "type": "number",
+      "default": 0
+    },
+    "monoElementWins": {
+      "type": "number",
+      "default": 0
+    },
+    "totalDamageDealt": {
+      "type": "number",
+      "default": 0
+    },
+    "successfulBlocks": {
+      "type": "number",
+      "default": 0
+    },
+    "fastWins": {
+      "type": "number",
+      "default": 0
+    },
+    "comebackWins": {
+      "type": "number",
+      "default": 0
+    },
+    "defeatedHigherTierOpponent": {
+      "type": "number",
+      "default": 0
+    },
+    "currentWinStreak": {
+      "type": "number",
+      "default": 0
+    },
+    "maxWinStreak": {
+      "type": "number",
+      "default": 0
     }
   }
 }

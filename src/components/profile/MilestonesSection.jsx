@@ -2,7 +2,30 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Target, Plus } from "lucide-react";
 
-const METRIC_LABELS = { gamesPlayed: "Games Played", wins: "Wins", losses: "Losses", aiGamesPlayed: "AI Games Played" };
+const METRIC_LABELS = {
+  gamesPlayed: "Games Played",
+  wins: "Wins",
+  losses: "Losses",
+  aiGamesPlayed: "AI Games Played",
+  creaturesSummoned: "Creatures Summoned",
+  creaturesEvolved: "Creatures Evolved",
+  tier2Upgrades: "Tier 2 Upgrades",
+  tier3Upgrades: "Tier 3 Upgrades",
+  tier4Upgrades: "Tier 4 Upgrades",
+  creatureEvolutionLinesCompleted: "Evolution Lines Completed",
+  distinctTypesOwnedCount: "Elemental Types Owned",
+  totalCardsCreated: "Cards Collected",
+  threeElementMatches: "Matches With 3 Types",
+  winsUnder100HP: "Wins Under 100 HP",
+  flawlessWins: "Flawless Wins",
+  monoElementWins: "Single-Type Wins",
+  totalDamageDealt: "Total Damage Dealt",
+  successfulBlocks: "Successful Blocks",
+  fastWins: "Wins Under 3 Minutes",
+  comebackWins: "Comeback Wins",
+  defeatedHigherTierOpponent: "Higher-Tier Defeats",
+  maxWinStreak: "Win Streak",
+};
 
 // How many times a milestone's reward has been earned by the user so far.
 function timesEarned(milestone, user) {
@@ -102,10 +125,11 @@ export default function MilestonesSection({ user, onUserUpdate }) {
             onChange={(e) => setForm({ ...form, metric: e.target.value })}
             className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm outline-none"
           >
-            <option value="gamesPlayed">Games Played</option>
-            <option value="aiGamesPlayed">AI Games Played</option>
-            <option value="wins">Wins</option>
-            <option value="losses">Losses</option>
+            {Object.entries(METRIC_LABELS).map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
           </select>
           <div className="flex gap-2">
             <input

@@ -51,6 +51,11 @@ export default function CardGenerate() {
     if (status.needsPayment && (user.coins || 0) < EXTRA_CREATURE_COST) return;
     setSaving(true);
     const userUpdate = buildCreationUpdate(user, count);
+    const ownedTypes = user.ownedElementTypesList || [];
+    if (!ownedTypes.includes(previewCard.type)) {
+      userUpdate.ownedElementTypesList = [...ownedTypes, previewCard.type];
+      userUpdate.distinctTypesOwnedCount = userUpdate.ownedElementTypesList.length;
+    }
     const [, updatedUser] = await Promise.all([
       base44.entities.Card.create(previewCard),
       Object.keys(userUpdate).length ? base44.auth.updateMe(userUpdate) : Promise.resolve(user),

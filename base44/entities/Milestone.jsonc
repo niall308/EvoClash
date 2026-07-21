@@ -15,7 +15,25 @@
         "gamesPlayed",
         "wins",
         "losses",
-        "aiGamesPlayed"
+        "aiGamesPlayed",
+        "creaturesSummoned",
+        "creaturesEvolved",
+        "tier2Upgrades",
+        "tier3Upgrades",
+        "tier4Upgrades",
+        "creatureEvolutionLinesCompleted",
+        "distinctTypesOwnedCount",
+        "totalCardsCreated",
+        "threeElementMatches",
+        "winsUnder100HP",
+        "flawlessWins",
+        "monoElementWins",
+        "totalDamageDealt",
+        "successfulBlocks",
+        "fastWins",
+        "comebackWins",
+        "defeatedHigherTierOpponent",
+        "maxWinStreak"
       ]
     },
     "target": {

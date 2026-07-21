@@ -11,6 +11,11 @@ import { TIER_RANGES, STYLE_REFERENCE_URL, STAT_UPGRADES, TIER_UPGRADE_COST, EVO
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 const USED_FIELD = { attack: "attackUpgradesUsed", defense: "defenseUpgradesUsed", bonusDamage: "bonusDamageUpgradesUsed" };
+const TIER_UPGRADE_FIELD = { 2: "tier2Upgrades", 3: "tier3Upgrades", 4: "tier4Upgrades" };
+
+function checkEvolutionLineComplete(card) {
+  return (card.attackUpgradesUsed || 0) >= 1 && (card.defenseUpgradesUsed || 0) >= 1 && (card.bonusDamageUpgradesUsed || 0) >= 1;
+}
 
 export default function CardUpgrade() {
   const { id } = useParams();
@@ -50,8 +55,15 @@ export default function CardUpgrade() {
     const newVal = Math.min(capValue, Math.round(currentVal * (1 + upg.percent / 100)));
     if (newVal <= currentVal || user.coins < cost) return;
     setPurchasing(upg.key);
+    const updatedCard = { ...card, [upg.key]: newVal, [usedField]: usesInTier + 1 };
     await base44.entities.Card.update(card.id, { [upg.key]: newVal, [usedField]: usesInTier + 1 });
-    const updatedUser = await base44.auth.updateMe({ coins: user.coins - cost });
+    const userUpdate = { coins: user.coins - cost };
+    const completedIds = user.completedEvolutionCardIds || [];
+    if (card.tier === 4 && checkEvolutionLineComplete(updatedCard) && !completedIds.includes(card.id)) {
+      userUpdate.completedEvolutionCardIds = [...completedIds, card.id];
+      userUpdate.creatureEvolutionLinesCompleted = (user.creatureEvolutionLinesCompleted || 0) + 1;
+    }
+    const updatedUser = await base44.auth.updateMe(userUpdate);
     setCard((c) => ({ ...c, [upg.key]: newVal, [usedField]: usesInTier + 1 }));
     setUser(updatedUser);
     setPurchasing(null);
@@ -88,7 +100,15 @@ export default function CardUpgrade() {
       bonusDamageUpgradesUsed: 0,
     };
     await base44.entities.Card.update(card.id, updated);
-    const updatedUser = await base44.auth.updateMe({ coins: user.coins - TIER_UPGRADE_COST });
+    const evolvedIds = user.evolvedCardIds || [];
+    const userUpdate = { coins: user.coins - TIER_UPGRADE_COST };
+    const tierField = TIER_UPGRADE_FIELD[newTier];
+    if (tierField) userUpdate[tierField] = (user[tierField] || 0) + 1;
+    if (!evolvedIds.includes(card.id)) {
+      userUpdate.evolvedCardIds = [...evolvedIds, card.id];
+      userUpdate.creaturesEvolved = (user.creaturesEvolved || 0) + 1;
+    }
+    const updatedUser = await base44.auth.updateMe(userUpdate);
     setCard((c) => ({ ...c, ...updated }));
     setUser(updatedUser);
     setEvolving(false);
