@@ -204,6 +204,26 @@
     "maxWinStreak": {
       "type": "number",
       "default": 0
+    },
+    "rankPoints": {
+      "type": "number",
+      "default": 500
+    },
+    "pvpGamesPlayed": {
+      "type": "number",
+      "default": 0
+    },
+    "pvpWins": {
+      "type": "number",
+      "default": 0
+    },
+    "pvpLosses": {
+      "type": "number",
+      "default": 0
+    },
+    "currentPvpStreak": {
+      "type": "number",
+      "default": 0
     }
   }
 }

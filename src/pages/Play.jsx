@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Bot, Users, ArrowLeft, Trophy, Sparkles } from "lucide-react";
+import { getRankByRP } from "@/lib/rankSystem";
+import RankEmblem from "@/components/rank/RankEmblem";
 
 const DIFFICULTIES = ["Easy", "Normal", "Hard", "Extreme"];
 
@@ -9,10 +11,12 @@ export default function Play() {
   const navigate = useNavigate();
   const [count, setCount] = useState(null);
   const [difficulty, setDifficulty] = useState("Normal");
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     (async () => {
       const user = await base44.auth.me();
+      setUser(user);
       const cards = await base44.entities.Card.filter({ created_by_id: user.id });
       setCount(cards.length);
     })();
@@ -22,9 +26,18 @@ export default function Play() {
 
   return (
     <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-8">
-      <Link to="/" className="inline-flex items-center gap-1 text-white/60 text-sm mb-8">
+      <Link to="/" className="inline-flex items-center gap-1 text-white/60 text-sm mb-4">
         <ArrowLeft className="w-4 h-4" /> Back
       </Link>
+      {user && (
+        <div className="flex items-center gap-2 mb-4">
+          <RankEmblem rp={user.rankPoints} size="sm" />
+          <span className="font-bold text-sm">{user.username || user.full_name}</span>
+          <span className="text-xs font-bold" style={{ color: getRankByRP(user.rankPoints).color }}>
+            {getRankByRP(user.rankPoints).name}
+          </span>
+        </div>
+      )}
       <h1 className="text-3xl font-black mb-2">Choose Battle</h1>
       <p className="text-white/60 mb-4 text-sm">{count === null ? "Loading deck..." : `${count}/15 cards required to play`}</p>
 

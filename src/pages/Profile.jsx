@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Trophy, Swords, Gamepad2, History, HelpCircle, Target } from "lucide-react";
+import { ArrowLeft, Trophy, Swords, Gamepad2, History, HelpCircle, Target, Flame, Snowflake } from "lucide-react";
 import { UPGRADE_REQUIREMENTS } from "@/lib/gameConstants";
+import { getRankByRP } from "@/lib/rankSystem";
+import RankEmblem from "@/components/rank/RankEmblem";
 import CreatureManager from "@/components/profile/CreatureManager";
 
 function Stat({ icon: Icon, label, value }) {
@@ -31,13 +33,27 @@ export default function Profile() {
   if (!user) return null;
 
   const inProgress = cards.filter((c) => c.tier < 4);
+  const rank = getRankByRP(user.rankPoints);
+  const streak = user.currentPvpStreak || 0;
 
   return (
     <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-6">
       <Link to="/" className="inline-flex items-center gap-1 text-white/60 text-sm mb-6">
         <ArrowLeft className="w-4 h-4" /> Back
       </Link>
-      <h1 className="text-2xl font-black mb-1">{user.username || user.full_name}</h1>
+      <div className="flex items-center gap-2 mb-1 flex-wrap">
+        <h1 className="text-2xl font-black">{user.username || user.full_name}</h1>
+        <RankEmblem rp={user.rankPoints} size="sm" />
+        <span className="text-sm font-bold" style={{ color: rank.color }}>
+          {rank.name} · #{rank.number}
+        </span>
+        {streak !== 0 && (
+          <span className={`flex items-center gap-1 text-xs font-bold ${streak > 0 ? "text-emerald-400" : "text-red-400"}`}>
+            {streak > 0 ? <Flame className="w-3.5 h-3.5" /> : <Snowflake className="w-3.5 h-3.5" />}
+            {Math.abs(streak)} {streak > 0 ? "win" : "loss"} streak
+          </span>
+        )}
+      </div>
       <p className="text-white/50 text-xs mb-6">{user.email}</p>
 
       <div className="grid grid-cols-3 gap-3 mb-8">
