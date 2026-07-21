@@ -47,6 +47,7 @@ export default function Profile() {
         <span className="text-sm font-bold" style={{ color: rank.color }}>
           {rank.name} · #{rank.number}
         </span>
+        <span className="text-xs text-white/50 font-semibold">{user.rankPoints || 0} RP</span>
         {streak !== 0 && (
           <span className={`flex items-center gap-1 text-xs font-bold ${streak > 0 ? "text-emerald-400" : "text-red-400"}`}>
             {streak > 0 ? <Flame className="w-3.5 h-3.5" /> : <Snowflake className="w-3.5 h-3.5" />}
