@@ -90,3 +90,9 @@
     @apply bg-background text-foreground font-body;
   }
 }
+
+.rainbow-border {
+  border-width: 3px;
+  border-style: solid;
+  border-image: linear-gradient(90deg, #ff0000, #ff9900, #ffee00, #33ff00, #00e5ff, #3366ff, #cc00ff, #ff0000) 1;
+}

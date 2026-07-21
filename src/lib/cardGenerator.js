@@ -1,4 +1,17 @@
-import { CATEGORIES, CREATURES, CREATURE_ROLES, TYPES, TIER_RANGES, NAME_PARTS, TIER4_PREFIXES } from "@/lib/gameConstants";
+import {
+  CATEGORIES,
+  CREATURES,
+  CREATURE_ROLES,
+  TYPES,
+  TIER_RANGES,
+  NAME_PARTS,
+  TIER4_PREFIXES,
+  HYBRID_CHANCE,
+  HYBRID_MIN_ATTACK,
+  HYBRID_MIN_DEFENSE,
+  HYBRID_BONUS_DAMAGE,
+  HYBRID_TIERS,
+} from "@/lib/gameConstants";
 
 function randomFrom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -32,8 +45,38 @@ function weightedStats(tier, role) {
   return { attack, defense, bonusDamage };
 }
 
+// Extremely rare "Hyper Rare" cards fused from an admin-defined Hybrid creature template.
+function generateHybridCard(creatures) {
+  const hybridCreatures = (creatures || []).filter((c) => c.category === "Hybrid");
+  if (hybridCreatures.length === 0) return null;
+  const picked = randomFrom(hybridCreatures);
+  const tier = randomFrom(HYBRID_TIERS);
+  const range = TIER_RANGES[tier];
+  const attack = randomInt(HYBRID_MIN_ATTACK, range.statMax);
+  const defense = randomInt(HYBRID_MIN_DEFENSE, range.statMax);
+  const name = generateName(picked.baseName, tier);
+  return {
+    name,
+    baseName: picked.baseName,
+    category: "Hybrid",
+    type: "Hybrid",
+    tier,
+    attack,
+    defense,
+    bonusDamage: HYBRID_BONUS_DAMAGE,
+    winsVsBonus: 0,
+    winsVsNonBonus: 0,
+    gamesPlayed: 0,
+    description: picked.description || "",
+  };
+}
+
 export function generateRandomCard(tier = 1, options = {}) {
   const { creatures, forcedCreature } = options;
+  if (!forcedCreature && Math.random() < HYBRID_CHANCE) {
+    const hybrid = generateHybridCard(creatures);
+    if (hybrid) return hybrid;
+  }
   let baseName, category, role;
   if (forcedCreature) {
     ({ baseName, category, role } = forcedCreature);

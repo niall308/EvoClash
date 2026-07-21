@@ -35,8 +35,12 @@ export default function CardGenerate() {
     setPreviewCard(null);
     const forced = user?.role === "admin" && selectedCreature ? selectedCreature : null;
     const cardData = generateRandomCard(1, { creatures, forcedCreature: forced });
+    const isHybrid = cardData.type === "Hybrid";
+    const prompt = isHybrid
+      ? `A hyper-rare hybrid creature fusion, robot style: ${cardData.description}, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`
+      : `A ${cardData.type}-type ${cardData.baseName}, dynamic full-body creature illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`;
     const { url } = await base44.integrations.Core.GenerateImage({
-      prompt: `A ${cardData.type}-type ${cardData.baseName}, dynamic full-body creature illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`,
+      prompt,
       existing_image_urls: [STYLE_REFERENCE_URL],
     });
     cardData.imageUrl = url;
@@ -56,8 +60,9 @@ export default function CardGenerate() {
       userUpdate.ownedElementTypesList = [...ownedTypes, previewCard.type];
       userUpdate.distinctTypesOwnedCount = userUpdate.ownedElementTypesList.length;
     }
+    const { description, ...cardToSave } = previewCard;
     const [, updatedUser] = await Promise.all([
-      base44.entities.Card.create(previewCard),
+      base44.entities.Card.create(cardToSave),
       Object.keys(userUpdate).length ? base44.auth.updateMe(userUpdate) : Promise.resolve(user),
     ]);
     setUser(updatedUser);
