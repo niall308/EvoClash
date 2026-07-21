@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import BattleScreen from "@/components/battle/BattleScreen";
+import { ensureActiveDeck } from "@/lib/decks";
 import { Loader2 } from "lucide-react";
 
 export default function Battle() {
@@ -13,7 +14,8 @@ export default function Battle() {
   useEffect(() => {
     (async () => {
       const user = await base44.auth.me();
-      const myCards = await base44.entities.Card.filter({ created_by_id: user.id });
+      const { active } = await ensureActiveDeck(user.id);
+      const myCards = await base44.entities.Card.filter({ created_by_id: user.id, deckId: active.id });
       if (myCards.length < 15) {
         navigate("/play");
         return;

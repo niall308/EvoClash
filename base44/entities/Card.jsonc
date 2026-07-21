@@ -98,6 +98,9 @@
     "typeChanged": {
       "type": "boolean",
       "default": false
+    },
+    "deckId": {
+      "type": "string"
     }
   },
   "required": [

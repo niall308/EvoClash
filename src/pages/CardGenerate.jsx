@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { generateRandomCard, generateHybridCard } from "@/lib/cardGenerator";
 import { STYLE_REFERENCE_URL, HYBRID_CHANCE } from "@/lib/gameConstants";
 import { getCreationStatus, buildCreationUpdate, EXTRA_CREATURE_COST } from "@/lib/cardCreationLimits";
+import { ensureActiveDeck } from "@/lib/decks";
 import GameCard from "@/components/cards/GameCard";
 import CreaturePicker from "@/components/generate/CreaturePicker";
 import { ArrowLeft, Sparkles, Loader2, PlusCircle, RefreshCw, Coins } from "lucide-react";
@@ -17,6 +18,7 @@ export default function CardGenerate() {
   const [previewCard, setPreviewCard] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeDeckId, setActiveDeckId] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -26,6 +28,8 @@ export default function CardGenerate() {
       setCount(cards.length);
       const list = await base44.entities.Creature.list();
       setCreatures(list);
+      const { active } = await ensureActiveDeck(me.id);
+      setActiveDeckId(active.id);
     })();
   }, []);
 
@@ -71,7 +75,7 @@ export default function CardGenerate() {
       userUpdate.distinctTypesOwnedCount = userUpdate.ownedElementTypesList.length;
     }
     const [, updatedUser] = await Promise.all([
-      base44.entities.Card.create(previewCard),
+      base44.entities.Card.create({ ...previewCard, deckId: activeDeckId }),
       Object.keys(userUpdate).length ? base44.auth.updateMe(userUpdate) : Promise.resolve(user),
     ]);
     setUser(updatedUser);

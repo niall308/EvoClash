@@ -1,7 +1,7 @@
 import React from "react";
 import GameCard from "./GameCard";
 
-export default function CardGrid({ cards, onDelete, selectedId, onSelect }) {
+export default function CardGrid({ cards, onDelete, selectedId, onSelect, bulkMode, selectedIds = [] }) {
   if (!cards.length) {
     return <p className="text-center text-slate-400 py-12 px-6">No cards yet. Generate some to build your deck!</p>;
   }
@@ -15,7 +15,12 @@ export default function CardGrid({ cards, onDelete, selectedId, onSelect }) {
           onClick={() => onSelect?.(card)}
           className="flex justify-center cursor-pointer"
         >
-          <GameCard card={card} size="md" onDelete={onDelete} glow={selectedId === card.id} />
+          <GameCard
+            card={card}
+            size="md"
+            onDelete={bulkMode ? undefined : onDelete}
+            glow={bulkMode ? selectedIds.includes(card.id) : selectedId === card.id}
+          />
         </div>
       ))}
     </div>

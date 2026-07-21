@@ -142,6 +142,9 @@ export const TIER_UPGRADE_COST = 15000;
 
 export const TYPE_CHANGE_COST = 100000;
 
+export const DECK_COST = 250000;
+export const MAX_DECKS = 5;
+
 // Card creation limits (Card Generate screen)
 export const FREE_CARDS_INITIAL = 15;
 export const FREE_CREATIONS_PER_DAY = 3;

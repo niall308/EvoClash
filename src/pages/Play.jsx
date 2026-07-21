@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Bot, Users, ArrowLeft, Trophy, Sparkles } from "lucide-react";
 import { getRankByRP } from "@/lib/rankSystem";
 import RankEmblem from "@/components/rank/RankEmblem";
+import { ensureActiveDeck } from "@/lib/decks";
 
 const DIFFICULTIES = ["Easy", "Normal", "Hard", "Extreme"];
 
@@ -17,7 +18,8 @@ export default function Play() {
     (async () => {
       const user = await base44.auth.me();
       setUser(user);
-      const cards = await base44.entities.Card.filter({ created_by_id: user.id });
+      const { active } = await ensureActiveDeck(user.id);
+      const cards = await base44.entities.Card.filter({ created_by_id: user.id, deckId: active.id });
       setCount(cards.length);
     })();
   }, []);
@@ -39,7 +41,7 @@ export default function Play() {
         </div>
       )}
       <h1 className="text-3xl font-black mb-2">Choose Battle</h1>
-      <p className="text-white/60 mb-4 text-sm">{count === null ? "Loading deck..." : `${count}/15 cards required to play`}</p>
+      <p className="text-white/60 mb-4 text-sm">{count === null ? "Loading deck..." : `${count}/15 cards required to play (active deck)`}</p>
 
       <p className="text-white/50 text-xs mb-2 font-semibold">AI Difficulty</p>
       <div className="grid grid-cols-4 gap-2 mb-6">
@@ -74,7 +76,7 @@ export default function Play() {
           <Sparkles className="w-8 h-8" /> Power Ups
         </Link>
       </div>
-      {!ready && count !== null && <p className="text-yellow-400 text-sm mt-6">Build your deck to at least 15 cards in the Deck screen.</p>}
+      {!ready && count !== null && <p className="text-yellow-400 text-sm mt-6">Your active deck needs at least 15 cards. Build it up in the Deck screen.</p>}
     </div>
   );
 }
