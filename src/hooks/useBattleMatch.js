@@ -190,6 +190,11 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         cardsUsed,
         playerScore: finalScore.player,
         aiScore: finalScore.ai,
+        cardsDestroyed: defeatedCountRef.current,
+        damageDealt: matchDamageRef.current,
+        blocksUsed: matchBlocksRef.current,
+        distinctTypesUsed: matchTypesRef.current.size,
+        durationSeconds: Math.round((Date.now() - matchStartRef.current) / 1000),
       });
       if (onMatchEnd) onMatchEnd(winner);
     },
@@ -585,6 +590,11 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       cardsUsed: [],
       playerScore: score.player,
       aiScore: score.ai,
+      cardsDestroyed: defeatedCountRef.current,
+      damageDealt: matchDamageRef.current,
+      blocksUsed: matchBlocksRef.current,
+      distinctTypesUsed: matchTypesRef.current.size,
+      durationSeconds: Math.round((Date.now() - matchStartRef.current) / 1000),
     });
   }, [opponentName, score]);
 

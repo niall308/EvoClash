@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { format } from "date-fns";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Trophy, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import BattleLogEntry from "@/components/history/BattleLogEntry";
 
 export default function BattleHistory() {
   const [history, setHistory] = useState(null);
@@ -31,29 +31,7 @@ export default function BattleHistory() {
       ) : (
         <div className="space-y-3">
           {history.map((h) => (
-            <div key={h.id} className="bg-white/5 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="font-bold text-sm">vs {h.opponentName}</p>
-                <span
-                  className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
-                    h.outcome === "win" ? "bg-emerald-600/30 text-emerald-400" : "bg-red-600/30 text-red-400"
-                  }`}
-                >
-                  {h.outcome === "win" ? <Trophy className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                  {h.outcome === "win" ? "Win" : "Loss"}
-                </span>
-              </div>
-              <p className="text-[10px] text-white/40 mb-2">
-                {format(new Date(h.created_date), "MMM d, yyyy · h:mm a")} · Score {h.playerScore}-{h.aiScore}
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {h.cardsUsed.map((name, i) => (
-                  <span key={i} className="text-[10px] bg-white/10 px-2 py-1 rounded-full">
-                    {name}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <BattleLogEntry key={h.id} h={h} />
           ))}
         </div>
       )}

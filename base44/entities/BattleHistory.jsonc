@@ -23,6 +23,26 @@
     },
     "aiScore": {
       "type": "number"
+    },
+    "cardsDestroyed": {
+      "type": "number",
+      "default": 0
+    },
+    "damageDealt": {
+      "type": "number",
+      "default": 0
+    },
+    "blocksUsed": {
+      "type": "number",
+      "default": 0
+    },
+    "distinctTypesUsed": {
+      "type": "number",
+      "default": 0
+    },
+    "durationSeconds": {
+      "type": "number",
+      "default": 0
     }
   },
   "required": [
