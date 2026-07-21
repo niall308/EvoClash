@@ -13,7 +13,8 @@
       "enum": [
         "Dinosaur",
         "Extinct Animal",
-        "Mythical Creature"
+        "Mythical Creature",
+        "Hybrid"
       ]
     },
     "type": {
@@ -26,7 +27,8 @@
         "Rock",
         "Wind",
         "Earth",
-        "Magic"
+        "Magic",
+        "Hyper Rare"
       ]
     },
     "tier": {
@@ -42,6 +44,10 @@
     "bonusDamage": {
       "type": "number",
       "default": 0
+    },
+    "isHybrid": {
+      "type": "boolean",
+      "default": false
     },
     "winsVsBonus": {
       "type": "number",

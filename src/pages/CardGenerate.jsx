@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { generateRandomCard } from "@/lib/cardGenerator";
-import { STYLE_REFERENCE_URL } from "@/lib/gameConstants";
+import { generateRandomCard, generateHybridCard } from "@/lib/cardGenerator";
+import { STYLE_REFERENCE_URL, HYBRID_CHANCE } from "@/lib/gameConstants";
 import { getCreationStatus, buildCreationUpdate, EXTRA_CREATURE_COST } from "@/lib/cardCreationLimits";
 import GameCard from "@/components/cards/GameCard";
 import CreaturePicker from "@/components/generate/CreaturePicker";
@@ -34,9 +34,23 @@ export default function CardGenerate() {
     setGenerating(true);
     setPreviewCard(null);
     const forced = user?.role === "admin" && selectedCreature ? selectedCreature : null;
-    const cardData = generateRandomCard(1, { creatures, forcedCreature: forced });
+    const hybridCreatures = creatures.filter((c) => c.category === "Hybrid");
+    const forcedHybrid = forced?.category === "Hybrid";
+    const rolledHybrid = !forced && hybridCreatures.length > 0 && Math.random() < HYBRID_CHANCE;
+    const useHybrid = forcedHybrid || rolledHybrid;
+
+    const cardData = useHybrid
+      ? generateHybridCard(forcedHybrid ? forced : hybridCreatures[Math.floor(Math.random() * hybridCreatures.length)])
+      : generateRandomCard(1, { creatures, forcedCreature: forced });
+
+    const prompt = useHybrid
+      ? `A hybrid creature combining two creatures into one, robot-style, design guide: ${cardData.baseName} — ${
+          (forcedHybrid ? forced : hybridCreatures.find((c) => c.baseName === cardData.baseName))?.description || ""
+        }. Dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`
+      : `A ${cardData.type}-type ${cardData.baseName}, dynamic full-body creature illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`;
+
     const { url } = await base44.integrations.Core.GenerateImage({
-      prompt: `A ${cardData.type}-type ${cardData.baseName}, dynamic full-body creature illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`,
+      prompt,
       existing_image_urls: [STYLE_REFERENCE_URL],
     });
     cardData.imageUrl = url;

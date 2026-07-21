@@ -1,4 +1,4 @@
-import { CATEGORIES, CREATURES, CREATURE_ROLES, TYPES, TIER_RANGES, NAME_PARTS, TIER4_PREFIXES } from "@/lib/gameConstants";
+import { CATEGORIES, CREATURES, CREATURE_ROLES, TYPES, TIER_RANGES, NAME_PARTS, TIER4_PREFIXES, HYPER_RARE_TYPE, HYBRID_MIN_ATTACK, HYBRID_MIN_DEFENSE, HYBRID_BONUS_DAMAGE } from "@/lib/gameConstants";
 
 function randomFrom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -34,11 +34,12 @@ function weightedStats(tier, role) {
 
 export function generateRandomCard(tier = 1, options = {}) {
   const { creatures, forcedCreature } = options;
+  const normalCreatures = creatures?.filter((c) => c.category !== "Hybrid");
   let baseName, category, role;
   if (forcedCreature) {
     ({ baseName, category, role } = forcedCreature);
-  } else if (creatures && creatures.length > 0) {
-    const picked = randomFrom(creatures);
+  } else if (normalCreatures && normalCreatures.length > 0) {
+    const picked = randomFrom(normalCreatures);
     baseName = picked.baseName;
     category = picked.category;
     role = picked.role;
@@ -57,6 +58,30 @@ export function generateRandomCard(tier = 1, options = {}) {
     type,
     tier,
     ...stats,
+    winsVsBonus: 0,
+    winsVsNonBonus: 0,
+    gamesPlayed: 0,
+  };
+}
+
+// Hybrid creatures are extremely rare (Hyper Rare): only ever T3/T4, high minimum stats,
+// no fixed elemental type (the player chooses one in-battle), flat bonus damage vs everything.
+export function generateHybridCard(hybridCreature) {
+  const tier = randomFrom([3, 4]);
+  const { statMax } = TIER_RANGES[tier];
+  const attack = randomInt(HYBRID_MIN_ATTACK, statMax);
+  const defense = randomInt(HYBRID_MIN_DEFENSE, statMax);
+  const name = generateName(hybridCreature.baseName, tier);
+  return {
+    name,
+    baseName: hybridCreature.baseName,
+    category: "Hybrid",
+    type: HYPER_RARE_TYPE,
+    tier,
+    attack,
+    defense,
+    bonusDamage: HYBRID_BONUS_DAMAGE,
+    isHybrid: true,
     winsVsBonus: 0,
     winsVsNonBonus: 0,
     gamesPlayed: 0,

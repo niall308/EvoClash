@@ -57,6 +57,8 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const [halfAttackTurnsLeft, setHalfAttackTurnsLeft] = useState(0);
   const [tempTierBoost, setTempTierBoost] = useState(null);
   const [reshuffleModalOpen, setReshuffleModalOpen] = useState(false);
+  const [pendingHybridCard, setPendingHybridCard] = useState(null);
+  const hybridChoicesRef = useRef({});
   const [playerEffects, setPlayerEffects] = useState([]);
   const [aiEffects, setAiEffects] = useState([]);
   const statsRef = useRef({});
@@ -517,14 +519,38 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     (card) => {
       if (phase !== "draw" || busyRef.current || playerCard) return;
       setPlayerHand((h) => h.filter((c) => c.id !== card.id));
-      setPlayerCard(card);
-      setPlayerHP(maxHealth(card));
+      if (card.isHybrid && !hybridChoicesRef.current[card.id]) {
+        setPendingHybridCard(card);
+        setPhase("chooseType");
+        return;
+      }
+      const finalCard = card.isHybrid ? { ...card, type: hybridChoicesRef.current[card.id] } : card;
+      setPlayerCard(finalCard);
+      setPlayerHP(maxHealth(finalCard));
       setPlayerEffects([]);
       summonCountRef.current += 1;
-      matchTypesRef.current.add(card.type);
+      matchTypesRef.current.add(finalCard.type);
       roundMinHpRatioRef.current = 1;
     },
     [phase, playerCard]
+  );
+
+  // Hyper Rare (hybrid) cards let the player choose their elemental type once — locked for the rest of the match.
+  const chooseHybridType = useCallback(
+    (type) => {
+      if (!pendingHybridCard) return;
+      hybridChoicesRef.current[pendingHybridCard.id] = type;
+      const finalCard = { ...pendingHybridCard, type };
+      setPlayerCard(finalCard);
+      setPlayerHP(maxHealth(finalCard));
+      setPlayerEffects([]);
+      summonCountRef.current += 1;
+      matchTypesRef.current.add(type);
+      roundMinHpRatioRef.current = 1;
+      setPendingHybridCard(null);
+      setPhase("draw");
+    },
+    [pendingHybridCard]
   );
 
   useEffect(() => {
@@ -652,5 +678,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     redrawHandPower,
     forceOpponentRedrawPower,
     forfeitMatch,
+    pendingHybridCard,
+    chooseHybridType,
   };
 }

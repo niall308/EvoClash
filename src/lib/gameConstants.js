@@ -23,6 +23,13 @@ export const TYPE_ADVANTAGES = {
 };
 
 export const CATEGORIES = ["Dinosaur", "Extinct Animal", "Mythical Creature"];
+export const HYBRID_CATEGORY = "Hybrid";
+export const HYPER_RARE_TYPE = "Hyper Rare";
+export const HYBRID_CHANCE = 0.005; // 0.5% chance per generation
+export const HYBRID_TIERS = [3, 4];
+export const HYBRID_MIN_ATTACK = 7300;
+export const HYBRID_MIN_DEFENSE = 5000;
+export const HYBRID_BONUS_DAMAGE = 1000;
 
 export const CREATURES = {
   Dinosaur: ["Tyrannosaurus Rex", "Velociraptor", "Triceratops", "Stegosaurus", "Spinosaurus", "Brachiosaurus", "Ankylosaurus", "Pterodactyl"],
