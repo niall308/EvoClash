@@ -23,6 +23,7 @@ import HowToPlay from '@/pages/HowToPlay';
 import CardUpgrade from '@/pages/CardUpgrade';
 import Leaderboards from '@/pages/Leaderboards';
 import PowerUps from '@/pages/PowerUps';
+import BuyCoins from '@/pages/BuyCoins';
 import AppLayout from '@/components/layout/AppLayout';
 // Add page imports here
 
@@ -69,6 +70,7 @@ const AuthenticatedApp = () => {
           <Route path="/card-upgrade/:id" element={<CardUpgrade />} />
           <Route path="/leaderboards" element={<Leaderboards />} />
           <Route path="/power-ups" element={<PowerUps />} />
+          <Route path="/buy-coins" element={<BuyCoins />} />
         </Route>
         <Route path="/battle" element={<Battle />} />
       </Route>
