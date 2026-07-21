@@ -42,6 +42,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const [log, setLog] = useState("Tap Start Game to begin!");
   const [effect, setEffect] = useState(null);
   const [matchResult, setMatchResult] = useState(null);
+  const [coinsBreakdown, setCoinsBreakdown] = useState(null);
   const [graveyard, setGraveyard] = useState(0);
   const [rpsDone, setRpsDone] = useState(false);
   const [user, setUser] = useState(null);
@@ -123,9 +124,21 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         await Promise.all(updates.map(({ id, ...rest }) => base44.entities.Card.update(id, rest)));
       }
       const me = await base44.auth.me();
-      const outcomeCoins =
-        winner === "player" ? COINS_WIN_AI + (AI_DIFFICULTY_WIN_BONUS[difficulty] || 0) : COINS_LOSS_AI;
-      const coinsEarned = defeatedCountRef.current * COINS_PER_CARD_DEFEATED + outcomeCoins + milestoneCoins;
+      const isWin = winner === "player";
+      const base = isWin ? COINS_WIN_AI : COINS_LOSS_AI;
+      const difficultyBonus = isWin ? AI_DIFFICULTY_WIN_BONUS[difficulty] || 0 : 0;
+      const cardsDefeatedCoins = defeatedCountRef.current * COINS_PER_CARD_DEFEATED;
+      const coinsEarned = cardsDefeatedCoins + base + difficultyBonus + milestoneCoins;
+      setCoinsBreakdown({
+        isWin,
+        base,
+        difficultyBonus,
+        difficulty,
+        cardsDefeated: defeatedCountRef.current,
+        cardsDefeatedCoins,
+        milestoneCoins,
+        total: coinsEarned,
+      });
       await base44.auth.updateMe({
         wins: (me.wins || 0) + (winner === "player" ? 1 : 0),
         losses: (me.losses || 0) + (winner === "ai" ? 1 : 0),
@@ -490,6 +503,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     log,
     effect,
     matchResult,
+    coinsBreakdown,
     drawHand,
     playCard,
     attack,

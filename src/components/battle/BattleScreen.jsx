@@ -33,6 +33,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
     log,
     effect,
     matchResult,
+    coinsBreakdown,
     drawHand,
     playCard,
     attack,
@@ -187,7 +188,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
           onCancel={closeReshuffle}
         />
       )}
-      {phase === "matchEnd" && <MatchEndModal won={matchResult === "player"} />}
+      {phase === "matchEnd" && <MatchEndModal won={matchResult === "player"} coinsBreakdown={coinsBreakdown} />}
       {showForfeitModal && (
         <ForfeitModal
           onConfirm={async () => {

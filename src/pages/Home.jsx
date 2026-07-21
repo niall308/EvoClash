@@ -16,6 +16,7 @@ export default function Home() {
 
   useEffect(() => {
     base44.auth.me().then(setUser);
+    base44.auth.updateMe({ lastSeenAt: new Date().toISOString() });
   }, []);
 
   return (

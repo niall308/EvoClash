@@ -88,6 +88,10 @@
       "type": "string",
       "default": ""
     },
+    "lastSeenAt": {
+      "type": "string",
+      "default": ""
+    },
     "activePowerUps": {
       "type": "array",
       "items": {

@@ -51,9 +51,9 @@ export default function Play() {
         >
           <Bot className="w-8 h-8" /> Battle vs AI
         </button>
-        <button disabled className="w-full flex items-center gap-4 bg-white/5 p-5 rounded-2xl font-bold text-left opacity-40">
-          <Users className="w-8 h-8" /> Battle vs Human <span className="text-xs font-normal ml-auto">Coming soon</span>
-        </button>
+        <Link to="/lobby" className="w-full flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-500 p-5 rounded-2xl font-bold text-left">
+          <Users className="w-8 h-8" /> Battle vs Human
+        </Link>
         <Link to="/leaderboards" className="w-full flex items-center gap-4 bg-gradient-to-r from-amber-500 to-yellow-600 p-5 rounded-2xl font-bold text-left">
           <Trophy className="w-8 h-8" /> Leaderboards
         </Link>
