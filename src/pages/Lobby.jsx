@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Trophy } from "lucide-react";
+import { ArrowLeft, Trophy, PlusCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 export default function Lobby() {
@@ -15,7 +15,15 @@ export default function Lobby() {
       <Link to="/play" className="inline-flex items-center gap-1 text-white/60 text-sm mb-8">
         <ArrowLeft className="w-4 h-4" /> Back
       </Link>
-      <h1 className="text-3xl font-black mb-2">Player Lobby</h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-3xl font-black">Player Lobby</h1>
+        <Link
+          to="/create-lobby"
+          className="flex items-center gap-1.5 bg-amber-500 text-black text-xs font-bold px-3 py-2 rounded-full active:scale-95 transition-transform"
+        >
+          <PlusCircle className="w-4 h-4" /> Create Lobby
+        </Link>
+      </div>
       <p className="text-white/60 mb-6 text-sm">Active players waiting for a match</p>
 
       {players === null && <p className="text-white/50 text-sm">Loading players...</p>}

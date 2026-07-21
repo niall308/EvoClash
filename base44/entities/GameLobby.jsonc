@@ -1,0 +1,20 @@
+{
+  "name": "GameLobby",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed"
+      ],
+      "default": "open"
+    }
+  },
+  "required": [
+    "code"
+  ]
+}
