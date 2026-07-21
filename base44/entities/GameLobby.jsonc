@@ -12,6 +12,18 @@
         "closed"
       ],
       "default": "open"
+    },
+    "hostName": {
+      "type": "string",
+      "default": ""
+    },
+    "joinedUserId": {
+      "type": "string",
+      "default": ""
+    },
+    "joinedUserName": {
+      "type": "string",
+      "default": ""
     }
   },
   "required": [

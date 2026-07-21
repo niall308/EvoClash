@@ -27,6 +27,7 @@ import Milestones from '@/pages/Milestones';
 import BuyCoins from '@/pages/BuyCoins';
 import Lobby from '@/pages/Lobby';
 import CreateLobby from '@/pages/CreateLobby';
+import JoinLobby from '@/pages/JoinLobby';
 import AppLayout from '@/components/layout/AppLayout';
 // Add page imports here
 
@@ -77,6 +78,7 @@ const AuthenticatedApp = () => {
           <Route path="/buy-coins" element={<BuyCoins />} />
           <Route path="/lobby" element={<Lobby />} />
           <Route path="/create-lobby" element={<CreateLobby />} />
+          <Route path="/join-lobby/:code" element={<JoinLobby />} />
         </Route>
         <Route path="/battle" element={<Battle />} />
       </Route>

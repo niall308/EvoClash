@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Send } from "lucide-react";
+import { ArrowLeft, Copy, Check, Send, Link2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 const generateCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -9,6 +9,7 @@ export default function CreateLobby() {
   const [lobby, setLobby] = useState(null);
   const [players, setPlayers] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [invitedIds, setInvitedIds] = useState([]);
   const [sendingId, setSendingId] = useState(null);
 
@@ -16,17 +17,27 @@ export default function CreateLobby() {
     (async () => {
       const me = await base44.auth.me();
       const existing = await base44.entities.GameLobby.filter({ created_by_id: me.id, status: "open" }, "-created_date", 1);
-      const activeLobby = existing[0] || (await base44.entities.GameLobby.create({ code: generateCode(), status: "open" }));
+      const activeLobby =
+        existing[0] ||
+        (await base44.entities.GameLobby.create({ code: generateCode(), status: "open", hostName: me.username || me.full_name }));
       setLobby(activeLobby);
       const { data } = await base44.functions.invoke("getLobbyPlayers", {});
       setPlayers(data?.players || []);
     })();
   }, []);
 
+  const inviteLink = lobby ? `${window.location.origin}/join-lobby/${lobby.code}` : "";
+
   const copyCode = () => {
     navigator.clipboard.writeText(lobby.code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(inviteLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   };
 
   const invite = async (player) => {
@@ -51,19 +62,29 @@ export default function CreateLobby() {
       {!lobby ? (
         <p className="text-white/50 text-sm">Setting up your lobby...</p>
       ) : (
-        <div className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-4 mb-8">
-          <div>
-            <p className="text-white/40 text-xs mb-1">Lobby Code</p>
-            <p className="text-2xl font-black tracking-widest text-amber-300">{lobby.code}</p>
+        <>
+          <div className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-4 mb-3">
+            <div>
+              <p className="text-white/40 text-xs mb-1">Lobby Code</p>
+              <p className="text-2xl font-black tracking-widest text-amber-300">{lobby.code}</p>
+            </div>
+            <button
+              onClick={copyCode}
+              className="flex items-center gap-1.5 bg-white/10 text-xs font-bold px-3 py-2 rounded-full active:scale-95 transition-transform"
+            >
+              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              {copied ? "Copied" : "Copy"}
+            </button>
           </div>
+
           <button
-            onClick={copyCode}
-            className="flex items-center gap-1.5 bg-white/10 text-xs font-bold px-3 py-2 rounded-full active:scale-95 transition-transform"
+            onClick={copyLink}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-sm font-bold px-4 py-3 rounded-2xl mb-8 active:scale-95 transition-transform"
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-            {copied ? "Copied" : "Copy"}
+            {linkCopied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+            {linkCopied ? "Invite Link Copied!" : "Copy Invite Link to Share on Discord"}
           </button>
-        </div>
+        </>
       )}
 
       <h2 className="text-lg font-bold mb-3">Invite a Friend</h2>
