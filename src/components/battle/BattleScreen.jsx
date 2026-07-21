@@ -53,6 +53,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
     aiHpRatio,
     canUseMap,
     handlers,
+    boostPreview,
     canRedrawHand,
     canForceOpponentRedraw,
     reshuffleModalOpen,
@@ -60,6 +61,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
     closeReshuffle,
     redrawHandPower,
     forceOpponentRedrawPower,
+    forfeitMatch,
   } = useBattleMatch(playerCards, onMatchEnd, difficulty);
 
   const playerLives = Math.max(0, 3 - score.ai);
@@ -163,7 +165,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
           <AnimatePresence mode="wait">
             {playerCard && (
               <motion.div key={(playerCard.id || playerCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-                <GameCard card={playerCard} size="md" faceDown={faceDown} statusEffects={playerEffects} hpRatio={playerHpRatio} />
+                <GameCard card={playerCard} size="md" faceDown={faceDown} statusEffects={playerEffects} hpRatio={playerHpRatio} boost={boostPreview} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -187,7 +189,13 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
       )}
       {phase === "matchEnd" && <MatchEndModal won={matchResult === "player"} />}
       {showForfeitModal && (
-        <ForfeitModal onConfirm={() => navigate("/")} onCancel={() => setShowForfeitModal(false)} />
+        <ForfeitModal
+          onConfirm={async () => {
+            await forfeitMatch();
+            navigate("/");
+          }}
+          onCancel={() => setShowForfeitModal(false)}
+        />
       )}
     </div>
   );

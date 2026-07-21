@@ -50,7 +50,9 @@ export default function PowerUpRow({ def, user, isActive, isReady, selectDisable
       </div>
       <div className="flex-1">
         <p className="font-bold">{def.label}</p>
-        <p className={`text-xs ${isReady ? "text-emerald-400" : "text-white/50"}`}>{statusLabel}</p>
+        <p className="text-xs text-white/60 mt-0.5">{def.description}</p>
+        <p className={`text-xs mt-1 ${isReady ? "text-emerald-400" : "text-white/50"}`}>{statusLabel}</p>
+        <p className="text-[10px] text-white/40">{def.replenishTime}</p>
       </div>
       {!isReady && (
         <button

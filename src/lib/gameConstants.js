@@ -98,7 +98,20 @@ export const EVOLVE_ARMOR_PROMPTS = {
 
 // Coin economy (LC)
 export const COINS_PER_CARD_DEFEATED = 50;
-export const COINS_PER_WIN = 250;
+export const COINS_WIN_AI = 250;
+export const COINS_LOSS_AI = 50;
+export const COINS_FORFEIT = 0;
+export const COINS_WIN_HUMAN = 500;
+export const COINS_LOSS_HUMAN = 150;
+// Bonus LC added on top of COINS_WIN_AI, based on the AI difficulty beaten
+export const AI_DIFFICULTY_WIN_BONUS = { Easy: 25, Normal: 50, Hard: 75, Extreme: 125 };
+
+// Real-money LC purchase packs (Buy Coins screen)
+export const COIN_PACKS = [
+  { id: "pack_small", coins: 25000, priceUsd: 2 },
+  { id: "pack_medium", coins: 80000, priceUsd: 6 },
+  { id: "pack_large", coins: 175000, priceUsd: 12 },
+];
 
 // Lifetime per-card milestones (never reset by tier upgrades)
 export const CARD_MILESTONES = [
@@ -152,15 +165,15 @@ export const POWER_REPLENISH_COST = 10000;
 // Full catalog of tactical power-ups. cooldownType: "daily" (1 use/24h, usedAtField),
 // "dailyMulti" (N uses/24h, usesField + resetField), "weekly" (1 use/7 days, usedAtField).
 export const POWER_DEFINITIONS = [
-  { key: "burn", label: "Burn", cooldownType: "daily", usedAtField: "burnPowerUsedAt", replenishCost: 10000 },
-  { key: "reshuffle", label: "Redraw", cooldownType: "daily", usedAtField: "reshufflePowerUsedAt", replenishCost: 10000 },
-  { key: "doubleAttack", label: "2x Attack", cooldownType: "daily", usedAtField: "doubleAttackPowerUsedAt", replenishCost: 10000 },
-  { key: "defense", label: "3x Defense", cooldownType: "daily", usedAtField: "defensePowerUsedAt", replenishCost: 10000 },
-  { key: "block", label: "Block", cooldownType: "dailyMulti", usesField: "blockPowerUsesToday", resetField: "blockPowerResetAt", maxPerDay: 5, replenishCost: 5000 },
-  { key: "halfAttack", label: "Half Attack", cooldownType: "dailyMulti", usesField: "halfAttackPowerUsesToday", resetField: "halfAttackPowerResetAt", maxPerDay: 2, replenishCost: 10000 },
-  { key: "t2Upgrade", label: "T2 Upgrade", cooldownType: "weekly", usedAtField: "t2UpgradePowerUsedAt", replenishCost: 50000 },
-  { key: "t3Upgrade", label: "T3 Upgrade", cooldownType: "weekly", usedAtField: "t3UpgradePowerUsedAt", replenishCost: 75000 },
-  { key: "t4Upgrade", label: "T4 Upgrade", cooldownType: "weekly", usedAtField: "t4UpgradePowerUsedAt", replenishCost: 100000 },
+  { key: "burn", label: "Burn", description: "Destroys the opponent's active card and forces them to draw a new one — no life lost.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "burnPowerUsedAt", replenishCost: 10000 },
+  { key: "reshuffle", label: "Redraw", description: "Redraw your own hand, or force the opponent to redraw their active card.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "reshufflePowerUsedAt", replenishCost: 10000 },
+  { key: "doubleAttack", label: "2x Attack", description: "Your card's next attack deals double damage.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "doubleAttackPowerUsedAt", replenishCost: 10000 },
+  { key: "defense", label: "3x Defense", description: "Triples your card's defense against the opponent's next attack.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "defensePowerUsedAt", replenishCost: 10000 },
+  { key: "block", label: "Block", description: "Completely blocks the opponent's next attack, taking zero damage.", replenishTime: "5 uses per day", cooldownType: "dailyMulti", usesField: "blockPowerUsesToday", resetField: "blockPowerResetAt", maxPerDay: 5, replenishCost: 5000 },
+  { key: "halfAttack", label: "Half Attack", description: "Halves the opponent's attack for their next 2 attacks.", replenishTime: "2 uses per day", cooldownType: "dailyMulti", usesField: "halfAttackPowerUsesToday", resetField: "halfAttackPowerResetAt", maxPerDay: 2, replenishCost: 10000 },
+  { key: "t2Upgrade", label: "T2 Upgrade", description: "Temporarily boosts your card to randomized Tier 2 stats for its next attack.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "t2UpgradePowerUsedAt", replenishCost: 50000 },
+  { key: "t3Upgrade", label: "T3 Upgrade", description: "Temporarily boosts your card to randomized Tier 3 stats for its next attack.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "t3UpgradePowerUsedAt", replenishCost: 75000 },
+  { key: "t4Upgrade", label: "T4 Upgrade", description: "Temporarily boosts your card to randomized Tier 4 stats for its next attack.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "t4UpgradePowerUsedAt", replenishCost: 100000 },
 ];
 
 export const MAX_ACTIVE_POWERUPS = 4;

@@ -11,7 +11,7 @@ const EFFECT_OVERLAY_CLASS = {
   dissolve: "bg-gradient-to-br from-blue-900/40 via-transparent to-blue-900/60",
 };
 
-export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1 }) {
+export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1, boost = null }) {
   const Icon = TYPE_ICONS[card.type] || Sparkles;
   const color = TYPE_COLORS[card.type];
   const sizes = { xs: "w-14 h-20", hand: "w-16 h-24", sm: "w-20 h-28", md: "w-32 h-44", lg: "w-40 h-56" };
@@ -45,8 +45,13 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
         opacity: cardOpacity,
       }}
     >
-      <div className="absolute top-1 left-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: color }}>
-        T{card.tier}
+      <div
+        className={`absolute top-1 left-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${
+          boost?.tier ? "ring-2 ring-yellow-300 animate-pulse" : ""
+        }`}
+        style={{ background: boost?.tier ? "#FFD700" : color }}
+      >
+        T{boost?.tier || card.tier}
       </div>
       <div className="absolute top-1 right-1 flex flex-col items-end gap-1">
         <div className="p-1 rounded-full bg-black/50">
@@ -77,8 +82,8 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
       <div className="px-1.5 pb-1.5 text-center">
         <p className="text-white font-bold text-[11px] leading-tight truncate">{card.name}</p>
         <div className="flex justify-center gap-1 mt-1 text-[9px] font-semibold">
-          <span className="text-orange-300">A{card.attack}</span>
-          <span className="text-blue-300">D{card.defense}</span>
+          <span className={boost?.attack ? "text-yellow-300 animate-pulse" : "text-orange-300"}>A{boost?.attack || card.attack}</span>
+          <span className={boost?.defense ? "text-yellow-300 animate-pulse" : "text-blue-300"}>D{boost?.defense || card.defense}</span>
         </div>
         {card.bonusDamage > 0 && (
           <div className="flex items-center justify-center gap-1 text-[8px] text-yellow-300">

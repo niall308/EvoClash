@@ -84,7 +84,7 @@ export default function PowerUps() {
       </div>
 
       <div className="space-y-3">
-        {POWER_DEFINITIONS.map((def) => (
+        {[...POWER_DEFINITIONS].sort((a, b) => active.includes(b.key) - active.includes(a.key)).map((def) => (
           <PowerUpRow
             key={def.key}
             def={def}
