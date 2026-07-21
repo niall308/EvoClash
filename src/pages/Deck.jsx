@@ -2,12 +2,23 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import CardGrid from "@/components/cards/CardGrid";
+import CardFilterBar from "@/components/cards/CardFilterBar";
 import { ArrowLeft, Sparkles, Loader2, ArrowUpCircle } from "lucide-react";
 
 export default function Deck() {
   const navigate = useNavigate();
   const [cards, setCards] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
+  const [filterType, setFilterType] = useState("all");
+  const [filterTier, setFilterTier] = useState("all");
+  const [hybridOnly, setHybridOnly] = useState(false);
+
+  const filteredCards = (cards || []).filter(
+    (c) =>
+      (filterType === "all" || c.type === filterType) &&
+      (filterTier === "all" || String(c.tier) === filterTier) &&
+      (!hybridOnly || c.isHybrid)
+  );
 
   const load = async () => {
     const user = await base44.auth.me();
@@ -48,7 +59,17 @@ export default function Deck() {
           <Loader2 className="w-6 h-6 animate-spin text-white/50" />
         </div>
       ) : (
-        <CardGrid cards={cards} onDelete={handleDelete} selectedId={selectedId} onSelect={handleSelect} />
+        <>
+          <CardFilterBar
+            type={filterType}
+            onTypeChange={setFilterType}
+            tier={filterTier}
+            onTierChange={setFilterTier}
+            hybridOnly={hybridOnly}
+            onHybridToggle={setHybridOnly}
+          />
+          <CardGrid cards={filteredCards} onDelete={handleDelete} selectedId={selectedId} onSelect={handleSelect} />
+        </>
       )}
       {selectedId && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0D1B2A]/95 border-t border-white/10">

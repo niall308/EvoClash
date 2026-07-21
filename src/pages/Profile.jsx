@@ -6,6 +6,7 @@ import { UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
 import { getRankByRP } from "@/lib/rankSystem";
 import RankEmblem from "@/components/rank/RankEmblem";
 import CreatureManager from "@/components/profile/CreatureManager";
+import CardFilterBar from "@/components/cards/CardFilterBar";
 
 function Stat({ icon: Icon, label, value }) {
   return (
@@ -20,6 +21,9 @@ function Stat({ icon: Icon, label, value }) {
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [cards, setCards] = useState([]);
+  const [filterType, setFilterType] = useState("all");
+  const [filterTier, setFilterTier] = useState("all");
+  const [hybridOnly, setHybridOnly] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -32,7 +36,14 @@ export default function Profile() {
 
   if (!user) return null;
 
-  const inProgress = cards.filter((c) => c.tier < 4);
+  const inProgress = cards
+    .filter((c) => c.tier < 4)
+    .filter(
+      (c) =>
+        (filterType === "all" || c.type === filterType) &&
+        (filterTier === "all" || String(c.tier) === filterTier) &&
+        (!hybridOnly || c.isHybrid)
+    );
   const rank = getRankByRP(user.rankPoints);
   const streak = user.currentPvpStreak || 0;
 
@@ -87,6 +98,16 @@ export default function Profile() {
       {user.role === "admin" && <CreatureManager />}
 
       <h2 className="text-lg font-bold mb-3">Upgrade Progress</h2>
+      <div className="-mx-6 mb-1">
+        <CardFilterBar
+          type={filterType}
+          onTypeChange={setFilterType}
+          tier={filterTier}
+          onTierChange={setFilterTier}
+          hybridOnly={hybridOnly}
+          onHybridToggle={setHybridOnly}
+        />
+      </div>
       <div className="space-y-3">
         {inProgress.map((c) => (
           <div key={c.id} className="bg-white/5 rounded-xl p-3">
