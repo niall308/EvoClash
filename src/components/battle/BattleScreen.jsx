@@ -73,19 +73,20 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
 
   return (
     <div className="min-h-screen flex flex-col text-white" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
-      <div className="flex justify-between items-center px-4 py-2 text-xs font-bold">
-        <span>Round {round}/5</span>
-        <span>You {score.player} — {score.ai} AI</span>
-        <button onClick={() => setShowForfeitModal(true)} className="flex items-center gap-1 text-white/60 hover:text-red-400">
+      <div className="grid grid-cols-3 items-center px-3 py-2 text-xs font-bold">
+        <span className="justify-self-start">Round {round}/5</span>
+        <span className="justify-self-center whitespace-nowrap">You {score.player} — {score.ai} AI</span>
+        <button
+          onClick={() => setShowForfeitModal(true)}
+          className="justify-self-end flex items-center gap-1 text-white/60 hover:text-red-400 p-2 -m-2"
+        >
           <Flag className="w-3.5 h-3.5" /> Forfeit
         </button>
       </div>
       {phase === "battle" && turn === "player" && (
         <div className="flex justify-center items-center gap-1.5 pb-1 text-xs font-bold">
           <Clock className={`w-3.5 h-3.5 ${turnTimeLeft <= 30 ? "text-red-400" : "text-white/50"}`} />
-          <span className={turnTimeLeft <= 30 ? "text-red-400" : "text-white/50"}>
-            {String(Math.floor(turnTimeLeft / 60)).padStart(1, "0")}:{String(turnTimeLeft % 60).padStart(2, "0")}
-          </span>
+          <span className={turnTimeLeft <= 30 ? "text-red-400" : "text-white/50"}>{turnTimeLeft}s</span>
         </div>
       )}
 

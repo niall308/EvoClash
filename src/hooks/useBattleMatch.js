@@ -148,6 +148,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         wins: (me.wins || 0) + (winner === "player" ? 1 : 0),
         losses: (me.losses || 0) + (winner === "ai" ? 1 : 0),
         gamesPlayed: (me.gamesPlayed || 0) + 1,
+        aiGamesPlayed: (me.aiGamesPlayed || 0) + 1,
         coins: (me.coins || 0) + coinsEarned,
       });
       await base44.entities.BattleHistory.create({

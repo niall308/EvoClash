@@ -2,12 +2,19 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Target, Plus } from "lucide-react";
 
-const METRIC_LABELS = { gamesPlayed: "Games Played", wins: "Wins", losses: "Losses" };
+const METRIC_LABELS = { gamesPlayed: "Games Played", wins: "Wins", losses: "Losses", aiGamesPlayed: "AI Games Played" };
+
+// How many times a milestone's reward has been earned by the user so far.
+function timesEarned(milestone, user) {
+  const value = user[milestone.metric] || 0;
+  if (milestone.repeatable) return Math.floor(value / milestone.target);
+  return value >= milestone.target ? 1 : 0;
+}
 
 export default function MilestonesSection({ user, onUserUpdate }) {
   const [milestones, setMilestones] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", metric: "gamesPlayed", target: "", coinReward: "" });
+  const [form, setForm] = useState({ title: "", description: "", metric: "gamesPlayed", target: "", coinReward: "", repeatable: false });
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -21,14 +28,24 @@ export default function MilestonesSection({ user, onUserUpdate }) {
 
   useEffect(() => {
     if (!milestones || !user) return;
-    const claimed = user.claimedMilestoneIds || [];
-    const toClaim = milestones.filter((m) => !claimed.includes(m.id) && (user[m.metric] || 0) >= m.target);
-    if (toClaim.length === 0) return;
+    const counts = user.milestoneClaimCounts || {};
+    let totalCoins = 0;
+    const newCounts = { ...counts };
+    let changed = false;
+    for (const m of milestones) {
+      const earned = timesEarned(m, user);
+      const claimed = counts[m.id] || 0;
+      if (earned > claimed) {
+        totalCoins += (earned - claimed) * m.coinReward;
+        newCounts[m.id] = earned;
+        changed = true;
+      }
+    }
+    if (!changed) return;
     (async () => {
-      const totalCoins = toClaim.reduce((sum, m) => sum + m.coinReward, 0);
       const updated = await base44.auth.updateMe({
         coins: (user.coins || 0) + totalCoins,
-        claimedMilestoneIds: [...claimed, ...toClaim.map((m) => m.id)],
+        milestoneClaimCounts: newCounts,
       });
       onUserUpdate(updated);
     })();
@@ -40,11 +57,13 @@ export default function MilestonesSection({ user, onUserUpdate }) {
     setSaving(true);
     await base44.entities.Milestone.create({
       title: form.title,
+      description: form.description,
       metric: form.metric,
       target: Number(form.target),
       coinReward: Number(form.coinReward),
+      repeatable: form.repeatable,
     });
-    setForm({ title: "", metric: "gamesPlayed", target: "", coinReward: "" });
+    setForm({ title: "", description: "", metric: "gamesPlayed", target: "", coinReward: "", repeatable: false });
     setShowForm(false);
     setSaving(false);
     load();
@@ -68,8 +87,15 @@ export default function MilestonesSection({ user, onUserUpdate }) {
           <input
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="Title (e.g. Play 100 games)"
+            placeholder="Title (e.g. Play 1 game)"
             className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm outline-none"
+          />
+          <textarea
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            placeholder="Description"
+            rows={2}
+            className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm outline-none resize-none"
           />
           <select
             value={form.metric}
@@ -77,6 +103,7 @@ export default function MilestonesSection({ user, onUserUpdate }) {
             className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm outline-none"
           >
             <option value="gamesPlayed">Games Played</option>
+            <option value="aiGamesPlayed">AI Games Played</option>
             <option value="wins">Wins</option>
             <option value="losses">Losses</option>
           </select>
@@ -85,7 +112,7 @@ export default function MilestonesSection({ user, onUserUpdate }) {
               type="number"
               value={form.target}
               onChange={(e) => setForm({ ...form, target: e.target.value })}
-              placeholder="Target"
+              placeholder="How many times"
               className="w-1/2 bg-white/10 rounded-lg px-3 py-2 text-sm outline-none"
             />
             <input
@@ -96,6 +123,14 @@ export default function MilestonesSection({ user, onUserUpdate }) {
               className="w-1/2 bg-white/10 rounded-lg px-3 py-2 text-sm outline-none"
             />
           </div>
+          <label className="flex items-center gap-2 text-xs text-white/70 px-1">
+            <input
+              type="checkbox"
+              checked={form.repeatable}
+              onChange={(e) => setForm({ ...form, repeatable: e.target.checked })}
+            />
+            Repeatable (can be earned again each time the target is reached)
+          </label>
           <button disabled={saving} className="w-full bg-amber-500 text-black font-bold rounded-lg py-2 text-sm disabled:opacity-50">
             {saving ? "Saving..." : "Create Milestone"}
           </button>
@@ -110,23 +145,27 @@ export default function MilestonesSection({ user, onUserUpdate }) {
         <div className="space-y-2">
           {milestones.map((m) => {
             const value = user[m.metric] || 0;
-            const claimed = (user.claimedMilestoneIds || []).includes(m.id);
-            const pct = Math.min(100, Math.round((value / m.target) * 100));
+            const claimedCount = (user.milestoneClaimCounts || {})[m.id] || 0;
+            const isDone = m.repeatable ? false : claimedCount >= 1;
+            const progressValue = m.repeatable ? value % m.target || (value >= m.target ? m.target : value) : Math.min(value, m.target);
+            const pct = isDone ? 100 : Math.min(100, Math.round((progressValue / m.target) * 100));
             return (
               <div key={m.id} className="bg-white/5 rounded-xl p-3">
                 <div className="flex items-center justify-between mb-1">
                   <span className="flex items-center gap-2 font-semibold text-sm">
                     <Target className="w-3.5 h-3.5 text-amber-400" /> {m.title}
                   </span>
-                  <span className={`text-xs font-bold ${claimed ? "text-emerald-400" : "text-amber-300"}`}>
-                    {claimed ? "Claimed" : `+${m.coinReward} LC`}
+                  <span className={`text-xs font-bold ${isDone ? "text-emerald-400" : "text-amber-300"}`}>
+                    {isDone ? "Claimed" : `+${m.coinReward} LC`}
                   </span>
                 </div>
+                {m.description && <p className="text-[10px] text-white/40 mb-1">{m.description}</p>}
                 <div className="w-full bg-white/10 rounded-full h-1.5 mb-1">
                   <div className="bg-amber-400 h-1.5 rounded-full" style={{ width: `${pct}%` }} />
                 </div>
                 <p className="text-[10px] text-white/40">
-                  {Math.min(value, m.target)}/{m.target} {METRIC_LABELS[m.metric]}
+                  {isDone ? `${m.target}/${m.target}` : `${progressValue}/${m.target}`} {METRIC_LABELS[m.metric]}
+                  {m.repeatable ? ` · Earned ${claimedCount}x` : ""}
                 </p>
               </div>
             );

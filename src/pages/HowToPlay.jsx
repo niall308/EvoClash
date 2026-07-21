@@ -11,11 +11,13 @@ const STEPS = [
   "Take turns attacking — tap Attack on your turn to strike the opponent's card.",
   "Damage is based on attack vs. defense, plus a type bonus if your type has an advantage.",
   "There's a 10% chance of a critical hit, dealing 1.5x damage and weakening the target's defense.",
-  "When a card's health reaches 0, it's defeated and moved to the graveyard pile.",
+  "When a card's health reaches 0, it's defeated and moved to the discard pile — tap it to scroll through defeated cards.",
   "Your hand automatically refills back up to 5 cards as you play or lose cards.",
   "Win 3 rounds before the AI does to win the match — it's best of 5.",
+  "You have 5 minutes to attack on your turn — miss it 3 times in a row and you automatically forfeit the match.",
   "You can forfeit at any time, but it counts as a loss.",
   "Winning battles helps your cards earn upgrades and evolve into stronger tiers.",
+  "Complete milestones from your Profile to earn bonus LC — some can be earned again and again.",
 ];
 
 export default function HowToPlay() {

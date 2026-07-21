@@ -21,6 +21,14 @@
       "type": "number",
       "default": 0
     },
+    "aiGamesPlayed": {
+      "type": "number",
+      "default": 0
+    },
+    "milestoneClaimCounts": {
+      "type": "object",
+      "default": {}
+    },
     "coins": {
       "type": "number",
       "default": 0

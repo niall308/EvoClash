@@ -23,6 +23,7 @@ import HowToPlay from '@/pages/HowToPlay';
 import CardUpgrade from '@/pages/CardUpgrade';
 import Leaderboards from '@/pages/Leaderboards';
 import PowerUps from '@/pages/PowerUps';
+import Milestones from '@/pages/Milestones';
 import BuyCoins from '@/pages/BuyCoins';
 import Lobby from '@/pages/Lobby';
 import AppLayout from '@/components/layout/AppLayout';
@@ -71,6 +72,7 @@ const AuthenticatedApp = () => {
           <Route path="/card-upgrade/:id" element={<CardUpgrade />} />
           <Route path="/leaderboards" element={<Leaderboards />} />
           <Route path="/power-ups" element={<PowerUps />} />
+          <Route path="/milestones" element={<Milestones />} />
           <Route path="/buy-coins" element={<BuyCoins />} />
           <Route path="/lobby" element={<Lobby />} />
         </Route>

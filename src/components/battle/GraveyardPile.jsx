@@ -11,7 +11,7 @@ export default function GraveyardPile({ cards = [] }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed left-[38%] -translate-x-1/2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10"
+        className="fixed right-2 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10"
         style={{ perspective: 500 }}
       >
         <div className="relative" style={{ width: 36, height: 50, transformStyle: "preserve-3d" }}>

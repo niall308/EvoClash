@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Trophy, Swords, Gamepad2, History, HelpCircle } from "lucide-react";
+import { ArrowLeft, Trophy, Swords, Gamepad2, History, HelpCircle, Target } from "lucide-react";
 import { UPGRADE_REQUIREMENTS } from "@/lib/gameConstants";
-import MilestonesSection from "@/components/profile/MilestonesSection";
 import CreatureManager from "@/components/profile/CreatureManager";
 
 function Stat({ icon: Icon, label, value }) {
@@ -54,14 +53,19 @@ export default function Profile() {
         <span className="text-white/40 text-xs">View all →</span>
       </Link>
 
+      <Link to="/milestones" className="flex items-center justify-between bg-white/5 rounded-xl p-4 mb-3">
+        <span className="flex items-center gap-2 font-semibold text-sm">
+          <Target className="w-4 h-4 text-amber-400" /> Milestones
+        </span>
+        <span className="text-white/40 text-xs">View →</span>
+      </Link>
+
       <Link to="/how-to-play" className="flex items-center justify-between bg-white/5 rounded-xl p-4 mb-8">
         <span className="flex items-center gap-2 font-semibold text-sm">
           <HelpCircle className="w-4 h-4 text-amber-400" /> How To Play
         </span>
         <span className="text-white/40 text-xs">View →</span>
       </Link>
-
-      <MilestonesSection user={user} onUserUpdate={setUser} />
 
       {user.role === "admin" && <CreatureManager />}
 

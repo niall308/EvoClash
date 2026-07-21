@@ -5,12 +5,17 @@
     "title": {
       "type": "string"
     },
+    "description": {
+      "type": "string",
+      "default": ""
+    },
     "metric": {
       "type": "string",
       "enum": [
         "gamesPlayed",
         "wins",
-        "losses"
+        "losses",
+        "aiGamesPlayed"
       ]
     },
     "target": {
@@ -18,6 +23,10 @@
     },
     "coinReward": {
       "type": "number"
+    },
+    "repeatable": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [
