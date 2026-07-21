@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Trophy, Swords, Gamepad2, History, HelpCircle, Target, Flame, Snowflake } from "lucide-react";
-import { UPGRADE_REQUIREMENTS } from "@/lib/gameConstants";
+import { UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
 import { getRankByRP } from "@/lib/rankSystem";
 import RankEmblem from "@/components/rank/RankEmblem";
 import CreatureManager from "@/components/profile/CreatureManager";
@@ -88,19 +88,16 @@ export default function Profile() {
 
       <h2 className="text-lg font-bold mb-3">Upgrade Progress</h2>
       <div className="space-y-3">
-        {inProgress.map((c) => {
-          const req = UPGRADE_REQUIREMENTS[c.tier];
-          return (
-            <div key={c.id} className="bg-white/5 rounded-xl p-3">
-              <p className="font-semibold text-sm">
-                {c.name} <span className="text-white/40 text-xs">Tier {c.tier}</span>
-              </p>
-              <p className="text-[10px] text-white/50 mt-1">
-                Bonus wins {c.winsVsBonus}/{req.winsVsBonus} · Wins {c.winsVsNonBonus}/{req.winsVsNonBonus} · Games {c.gamesPlayed}/{req.gamesPlayed}
-              </p>
-            </div>
-          );
-        })}
+        {inProgress.map((c) => (
+          <div key={c.id} className="bg-white/5 rounded-xl p-3">
+            <p className="font-semibold text-sm">
+              {c.name} <span className="text-white/40 text-xs">Tier {c.tier}</span>
+            </p>
+            <p className="text-[10px] text-white/50 mt-1">
+              Destroyed {c.totalWins || 0}/{UPGRADE_REQUIREMENT.cardsDestroyed} · Games {c.totalGames || 0}/{UPGRADE_REQUIREMENT.gamesPlayed} · Match wins {c.matchWins || 0}/{UPGRADE_REQUIREMENT.matchWins}
+            </p>
+          </div>
+        ))}
         {inProgress.length === 0 && <p className="text-white/40 text-sm">No cards in progress.</p>}
       </div>
     </div>

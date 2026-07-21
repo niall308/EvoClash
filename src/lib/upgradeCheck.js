@@ -1,11 +1,10 @@
-import { UPGRADE_REQUIREMENTS } from "@/lib/gameConstants";
+import { UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
 
 export function checkUpgradeEligible(card) {
   if (card.tier >= 4) return false;
-  const req = UPGRADE_REQUIREMENTS[card.tier];
   return (
-    card.winsVsBonus >= req.winsVsBonus &&
-    card.winsVsNonBonus >= req.winsVsNonBonus &&
-    card.gamesPlayed >= req.gamesPlayed
+    (card.totalWins || 0) >= UPGRADE_REQUIREMENT.cardsDestroyed &&
+    (card.totalGames || 0) >= UPGRADE_REQUIREMENT.gamesPlayed &&
+    (card.matchWins || 0) >= UPGRADE_REQUIREMENT.matchWins
   );
 }

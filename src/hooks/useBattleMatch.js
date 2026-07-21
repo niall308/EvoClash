@@ -130,6 +130,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
           gamesPlayed: card.gamesPlayed + delta.gamesPlayed,
           totalWins: (card.totalWins || 0) + delta.totalWins,
           totalGames: (card.totalGames || 0) + delta.gamesPlayed,
+          matchWins: (card.matchWins || 0) + (winner === "player" ? 1 : 0),
         };
         const { coins, claimedCardMilestones } = checkCardMilestones(merged);
         merged.claimedCardMilestones = claimedCardMilestones;

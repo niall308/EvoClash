@@ -72,11 +72,8 @@ export const TIER_RANGES = {
   4: { statMin: 7501, statMax: 10000, bonusMin: 251, bonusMax: 300 },
 };
 
-export const UPGRADE_REQUIREMENTS = {
-  1: { winsVsBonus: 100, winsVsNonBonus: 50, gamesPlayed: 200 },
-  2: { winsVsBonus: 200, winsVsNonBonus: 100, gamesPlayed: 400 },
-  3: { winsVsBonus: 1000, winsVsNonBonus: 500, gamesPlayed: 2000 },
-};
+// Flat, lifetime requirement a card must meet (once) before any tier upgrade.
+export const UPGRADE_REQUIREMENT = { cardsDestroyed: 100, gamesPlayed: 200, matchWins: 50 };
 
 export const CARD_BACK_URL = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/c758e901f_EvoClashCardBack.png";
 export const TURN_TIME_LIMIT_SECONDS = 300;

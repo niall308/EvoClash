@@ -8,7 +8,7 @@ import TypeChangeSection from "@/components/upgrade/TypeChangeSection";
 import { checkUpgradeEligible } from "@/lib/upgradeCheck";
 import { getStatUpgradeCost, getStatUpgradeMaxUses } from "@/lib/statUpgradeCost";
 import { evolveName, randomInt } from "@/lib/cardGenerator";
-import { TIER_RANGES, STYLE_REFERENCE_URL, STAT_UPGRADES, TIER_UPGRADE_COST, TYPE_CHANGE_COST, EVOLVE_ARMOR_PROMPTS } from "@/lib/gameConstants";
+import { TIER_RANGES, STYLE_REFERENCE_URL, STAT_UPGRADES, TIER_UPGRADE_COST, TYPE_CHANGE_COST, EVOLVE_ARMOR_PROMPTS, UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 const USED_FIELD = { attack: "attackUpgradesUsed", defense: "defenseUpgradesUsed", bonusDamage: "bonusDamageUpgradesUsed" };
@@ -155,16 +155,23 @@ export default function CardUpgrade() {
           );
         })}
       </div>
-      <TypeChangeSection card={card} coins={user.coins || 0} purchasing={typePurchasing} onChangeType={handleChangeType} />
+      {!card.isHybrid && (
+        <TypeChangeSection card={card} coins={user.coins || 0} purchasing={typePurchasing} onChangeType={handleChangeType} />
+      )}
       {card.tier < 4 && (
-        <EvolveSection
-          canEvolve={canEvolve}
-          cost={TIER_UPGRADE_COST}
-          coins={user.coins || 0}
-          evolving={evolving}
-          onEvolve={handleEvolve}
-          tier={card.tier}
-        />
+        <>
+          <p className="text-[10px] text-white/40 mt-4">
+            Destroyed {card.totalWins || 0}/{UPGRADE_REQUIREMENT.cardsDestroyed} · Games {card.totalGames || 0}/{UPGRADE_REQUIREMENT.gamesPlayed} · Match wins {card.matchWins || 0}/{UPGRADE_REQUIREMENT.matchWins}
+          </p>
+          <EvolveSection
+            canEvolve={canEvolve}
+            cost={TIER_UPGRADE_COST}
+            coins={user.coins || 0}
+            evolving={evolving}
+            onEvolve={handleEvolve}
+            tier={card.tier}
+          />
+        </>
       )}
     </div>
   );
