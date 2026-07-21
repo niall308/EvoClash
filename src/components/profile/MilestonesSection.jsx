@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Target, Plus } from "lucide-react";
+import CoinFlyAnimation from "@/components/profile/CoinFlyAnimation";
 
 const METRIC_LABELS = {
   gamesPlayed: "Games Played",
@@ -39,6 +40,7 @@ export default function MilestonesSection({ user, onUserUpdate }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", metric: "gamesPlayed", target: "", coinReward: "", repeatable: false });
   const [saving, setSaving] = useState(false);
+  const [flyOrigin, setFlyOrigin] = useState(null);
 
   const load = async () => {
     const data = await base44.entities.Milestone.list("-created_date");
@@ -49,30 +51,20 @@ export default function MilestonesSection({ user, onUserUpdate }) {
     load();
   }, []);
 
-  useEffect(() => {
-    if (!milestones || !user) return;
-    const counts = user.milestoneClaimCounts || {};
-    let totalCoins = 0;
-    const newCounts = { ...counts };
-    let changed = false;
-    for (const m of milestones) {
-      const earned = timesEarned(m, user);
-      const claimed = counts[m.id] || 0;
-      if (earned > claimed) {
-        totalCoins += (earned - claimed) * m.coinReward;
-        newCounts[m.id] = earned;
-        changed = true;
-      }
-    }
-    if (!changed) return;
-    (async () => {
-      const updated = await base44.auth.updateMe({
-        coins: (user.coins || 0) + totalCoins,
-        milestoneClaimCounts: newCounts,
-      });
-      onUserUpdate(updated);
-    })();
-  }, [milestones, user]);
+  const handleClaim = async (m, e) => {
+    const earned = timesEarned(m, user);
+    const claimed = (user.milestoneClaimCounts || {})[m.id] || 0;
+    if (earned <= claimed) return;
+    const coinsGained = (earned - claimed) * m.coinReward;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setFlyOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, key: Date.now() });
+    const updated = await base44.auth.updateMe({
+      coins: (user.coins || 0) + coinsGained,
+      milestoneClaimCounts: { ...(user.milestoneClaimCounts || {}), [m.id]: earned },
+    });
+    onUserUpdate(updated);
+    window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: updated.coins } }));
+  };
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -170,25 +162,36 @@ export default function MilestonesSection({ user, onUserUpdate }) {
           {milestones.map((m) => {
             const value = user[m.metric] || 0;
             const claimedCount = (user.milestoneClaimCounts || {})[m.id] || 0;
-            const isDone = m.repeatable ? false : claimedCount >= 1;
-            const progressValue = m.repeatable ? value % m.target || (value >= m.target ? m.target : value) : Math.min(value, m.target);
-            const pct = isDone ? 100 : Math.min(100, Math.round((progressValue / m.target) * 100));
+            const earned = timesEarned(m, user);
+            const claimable = earned > claimedCount;
+            const doneForever = !m.repeatable && claimedCount >= 1 && !claimable;
+            const progressValue = m.repeatable ? Math.min(value - claimedCount * m.target, m.target) : Math.min(value, m.target);
+            const pct = claimable || doneForever ? 100 : Math.min(100, Math.round((progressValue / m.target) * 100));
             return (
               <div key={m.id} className="bg-white/5 rounded-xl p-3">
                 <div className="flex items-center justify-between mb-1">
                   <span className="flex items-center gap-2 font-semibold text-sm">
                     <Target className="w-3.5 h-3.5 text-amber-400" /> {m.title}
                   </span>
-                  <span className={`text-xs font-bold ${isDone ? "text-emerald-400" : "text-amber-300"}`}>
-                    {isDone ? "Claimed" : `+${m.coinReward} LC`}
-                  </span>
+                  {claimable ? (
+                    <button
+                      onClick={(e) => handleClaim(m, e)}
+                      className="text-xs font-bold text-black bg-amber-400 px-2.5 py-1 rounded-full animate-pulse"
+                    >
+                      Claim +{(earned - claimedCount) * m.coinReward} LC
+                    </button>
+                  ) : doneForever ? (
+                    <span className="text-xs font-bold text-emerald-400">Claimed</span>
+                  ) : (
+                    <span className="text-xs font-bold text-amber-300">+{m.coinReward} LC</span>
+                  )}
                 </div>
                 {m.description && <p className="text-[10px] text-white/40 mb-1">{m.description}</p>}
                 <div className="w-full bg-white/10 rounded-full h-1.5 mb-1">
                   <div className="bg-amber-400 h-1.5 rounded-full" style={{ width: `${pct}%` }} />
                 </div>
                 <p className="text-[10px] text-white/40">
-                  {isDone ? `${m.target}/${m.target}` : `${progressValue}/${m.target}`} {METRIC_LABELS[m.metric]}
+                  {claimable || doneForever ? `${m.target}/${m.target}` : `${progressValue}/${m.target}`} {METRIC_LABELS[m.metric]}
                   {m.repeatable ? ` · Earned ${claimedCount}x` : ""}
                 </p>
               </div>
@@ -196,6 +199,7 @@ export default function MilestonesSection({ user, onUserUpdate }) {
           })}
         </div>
       )}
+      {flyOrigin && <CoinFlyAnimation key={flyOrigin.key} origin={flyOrigin} onDone={() => setFlyOrigin(null)} />}
     </div>
   );
 }
