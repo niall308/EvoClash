@@ -40,7 +40,7 @@ export default function Login() {
   return (
     <AuthLayout
       icon={LogIn}
-      title="Welcome back"
+      title="Welcome to EvoClash"
       subtitle="Log in to your account"
       footer={
         <>
