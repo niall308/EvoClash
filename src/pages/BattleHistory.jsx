@@ -3,19 +3,23 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import BattleLogEntry from "@/components/history/BattleLogEntry";
+import PullToRefresh from "@/components/common/PullToRefresh";
 
 export default function BattleHistory() {
   const [history, setHistory] = useState(null);
 
+  const fetchHistory = async () => {
+    const user = await base44.auth.me();
+    const records = await base44.entities.BattleHistory.filter({ created_by_id: user.id }, "-created_date");
+    setHistory(records);
+  };
+
   useEffect(() => {
-    (async () => {
-      const user = await base44.auth.me();
-      const records = await base44.entities.BattleHistory.filter({ created_by_id: user.id }, "-created_date");
-      setHistory(records);
-    })();
+    fetchHistory();
   }, []);
 
   return (
+    <PullToRefresh onRefresh={fetchHistory}>
     <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-6">
       <Link to="/profile" className="inline-flex items-center gap-1 text-white/60 text-sm mb-6 py-2 px-1 -ml-1">
         <ArrowLeft className="w-4 h-4" /> Back
@@ -36,5 +40,6 @@ export default function BattleHistory() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   );
 }

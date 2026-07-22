@@ -2,18 +2,22 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Trophy, Loader2 } from "lucide-react";
+import PullToRefresh from "@/components/common/PullToRefresh";
 
 export default function Leaderboards() {
   const [leaderboard, setLeaderboard] = useState(null);
 
+  const fetchLeaderboard = async () => {
+    const res = await base44.functions.invoke("getLeaderboard", {});
+    setLeaderboard(res.data.leaderboard);
+  };
+
   useEffect(() => {
-    (async () => {
-      const res = await base44.functions.invoke("getLeaderboard", {});
-      setLeaderboard(res.data.leaderboard);
-    })();
+    fetchLeaderboard();
   }, []);
 
   return (
+    <PullToRefresh onRefresh={fetchLeaderboard}>
     <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-8">
       <Link to="/play" className="inline-flex items-center gap-1 text-white/60 text-sm mb-8 py-2 px-1 -ml-1">
         <ArrowLeft className="w-4 h-4" /> Back
@@ -44,5 +48,6 @@ export default function Leaderboards() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   );
 }

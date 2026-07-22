@@ -9,6 +9,7 @@ import { ensureActiveDeck } from "@/lib/decks";
 import { DECK_COST, MAX_DECKS } from "@/lib/gameConstants";
 import { ArrowLeft, Sparkles, Loader2, ArrowUpCircle, ListChecks, PlusCircle, Trash2 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import PullToRefresh from "@/components/common/PullToRefresh";
 
 export default function Deck() {
   const navigate = useNavigate();
@@ -47,9 +48,14 @@ export default function Deck() {
   );
 
   const handleDelete = async (id) => {
-    await base44.entities.Card.delete(id);
+    const prevCards = cards;
     setCards((prev) => prev.filter((c) => c.id !== id));
     if (selectedId === id) setSelectedId(null);
+    try {
+      await base44.entities.Card.delete(id);
+    } catch (err) {
+      setCards(prevCards);
+    }
   };
 
   const handleSelect = (card) => {
@@ -69,10 +75,16 @@ export default function Deck() {
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
     if (!window.confirm(`Delete ${selectedIds.length} card(s)? This cannot be undone.`)) return;
-    await base44.entities.Card.deleteMany({ id: { $in: selectedIds } });
-    setCards((prev) => prev.filter((c) => !selectedIds.includes(c.id)));
+    const prevCards = cards;
+    const idsToDelete = selectedIds;
+    setCards((prev) => prev.filter((c) => !idsToDelete.includes(c.id)));
     setSelectedIds([]);
     setBulkMode(false);
+    try {
+      await base44.entities.Card.deleteMany({ id: { $in: idsToDelete } });
+    } catch (err) {
+      setCards(prevCards);
+    }
   };
 
   const handleSwitchDeck = async (deckId) => {
@@ -113,6 +125,7 @@ export default function Deck() {
   const loading = !cards || !decks;
 
   return (
+    <PullToRefresh onRefresh={() => authUser && load(authUser)}>
     <div className="min-h-screen bg-[#0D1B2A] text-white pb-24">
       <div className="px-6 py-6 flex items-center justify-between">
         <div>
@@ -205,5 +218,6 @@ export default function Deck() {
         />
       )}
     </div>
+    </PullToRefresh>
   );
 }

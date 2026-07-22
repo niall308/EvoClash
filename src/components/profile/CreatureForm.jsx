@@ -1,8 +1,56 @@
 import React, { useState } from "react";
 import { CATEGORIES } from "@/lib/gameConstants";
-import { Plus } from "lucide-react";
+import { Plus, ChevronDown } from "lucide-react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
 const ALL_CATEGORIES = [...CATEGORIES, "Hybrid"];
+const ROLE_OPTIONS = [
+  { value: "predator", label: "Predator" },
+  { value: "prey", label: "Prey" },
+  { value: "balanced", label: "Balanced" },
+];
+
+function PickerField({ label, options, value, onSelect, disabled }) {
+  const [open, setOpen] = useState(false);
+  const current = options.find((o) => o.value === value)?.label || value;
+
+  return (
+    <>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+        className="flex-1 flex items-center justify-between bg-white/10 text-white rounded-md px-3 py-2 text-xs disabled:opacity-60"
+      >
+        {current} <ChevronDown className="w-3.5 h-3.5" />
+      </button>
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerContent className="bg-[#0D1B2A] border-white/10 text-white">
+          <DrawerHeader>
+            <DrawerTitle className="text-white">{label}</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-8 space-y-1 max-h-[60vh] overflow-y-auto">
+            {options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => {
+                  onSelect(o.value);
+                  setOpen(false);
+                }}
+                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-semibold ${
+                  value === o.value ? "bg-amber-500 text-black" : "bg-white/5 text-white"
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
+  );
+}
 
 export default function CreatureForm({ onAdd }) {
   const [baseName, setBaseName] = useState("");
@@ -28,19 +76,16 @@ export default function CreatureForm({ onAdd }) {
         className="w-full bg-white/10 rounded-md px-3 py-2 text-sm outline-none"
       />
       <div className="flex gap-2">
-        <select value={category} onChange={(e) => setCategory(e.target.value)} className="flex-1 bg-white/10 text-white rounded-md px-2 py-2 text-xs">
-          {ALL_CATEGORIES.map((c) => <option key={c} value={c} className="bg-slate-800 text-white">{c}</option>)}
-        </select>
+        <PickerField
+          label="Category"
+          options={ALL_CATEGORIES.map((c) => ({ value: c, label: c }))}
+          value={category}
+          onSelect={setCategory}
+        />
         {isHybrid ? (
-          <select value="hyper_rare" disabled className="flex-1 bg-white/10 text-white rounded-md px-2 py-2 text-xs">
-            <option value="hyper_rare" className="bg-slate-800 text-white">Hyper Rare</option>
-          </select>
+          <PickerField label="Role" options={[{ value: "hyper_rare", label: "Hyper Rare" }]} value="hyper_rare" onSelect={() => {}} disabled />
         ) : (
-          <select value={role} onChange={(e) => setRole(e.target.value)} className="flex-1 bg-white/10 text-white rounded-md px-2 py-2 text-xs">
-            <option value="predator" className="bg-slate-800 text-white">Predator</option>
-            <option value="prey" className="bg-slate-800 text-white">Prey</option>
-            <option value="balanced" className="bg-slate-800 text-white">Balanced</option>
-          </select>
+          <PickerField label="Role" options={ROLE_OPTIONS} value={role} onSelect={setRole} />
         )}
       </div>
       {isHybrid && (

@@ -57,18 +57,27 @@ export default function CardUpgrade() {
     const newVal = Math.min(capValue, Math.round(currentVal * (1 + upg.percent / 100)));
     if (newVal <= currentVal || user.coins < cost) return;
     setPurchasing(upg.key);
+    const prevCard = card;
+    const prevUser = user;
     const updatedCard = { ...card, [upg.key]: newVal, [usedField]: usesInTier + 1 };
-    await base44.entities.Card.update(card.id, { [upg.key]: newVal, [usedField]: usesInTier + 1 });
     const userUpdate = { coins: user.coins - cost };
     const completedIds = user.completedEvolutionCardIds || [];
     if (card.tier === 4 && checkEvolutionLineComplete(updatedCard) && !completedIds.includes(card.id)) {
       userUpdate.completedEvolutionCardIds = [...completedIds, card.id];
       userUpdate.creatureEvolutionLinesCompleted = (user.creatureEvolutionLinesCompleted || 0) + 1;
     }
-    const updatedUser = await base44.auth.updateMe(userUpdate);
-    setCard((c) => ({ ...c, [upg.key]: newVal, [usedField]: usesInTier + 1 }));
-    setUser(updatedUser);
-    setPurchasing(null);
+    setCard(updatedCard);
+    setUser({ ...user, ...userUpdate });
+    try {
+      await base44.entities.Card.update(card.id, { [upg.key]: newVal, [usedField]: usesInTier + 1 });
+      const updatedUser = await base44.auth.updateMe(userUpdate);
+      setUser(updatedUser);
+    } catch (err) {
+      setCard(prevCard);
+      setUser(prevUser);
+    } finally {
+      setPurchasing(null);
+    }
   };
 
   const handleChangeType = async (newType) => {
