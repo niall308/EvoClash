@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { UserPlus, Users, Copy, Check } from "lucide-react";
+import { UserPlus, Users, Copy, Check, ArrowLeftRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import ProposeTradeModal from "@/components/trades/ProposeTradeModal";
 
 const generateFriendCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
@@ -10,9 +11,13 @@ export default function FriendsSection({ user, onUserUpdate }) {
   const [status, setStatus] = useState("");
   const [adding, setAdding] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [myCards, setMyCards] = useState([]);
+  const [tradeFriend, setTradeFriend] = useState(null);
+  const [tradeMessage, setTradeMessage] = useState("");
 
   useEffect(() => {
     base44.entities.Friend.filter({ created_by_id: user.id }, "-created_date").then(setFriends);
+    base44.entities.Card.filter({ created_by_id: user.id }).then(setMyCards);
   }, [user.id]);
 
   useEffect(() => {
@@ -93,10 +98,30 @@ export default function FriendsSection({ user, onUserUpdate }) {
           friends.map((f) => (
             <div key={f.id} className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2.5">
               <span className="font-semibold text-sm">{f.friendName}</span>
+              <button
+                onClick={() => setTradeFriend(f)}
+                className="flex items-center gap-1 bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-1.5 rounded-full"
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5" /> Trade
+              </button>
             </div>
           ))
         )}
       </div>
+      {tradeMessage && <p className="text-xs text-emerald-400 mt-3">{tradeMessage}</p>}
+
+      {tradeFriend && (
+        <ProposeTradeModal
+          friend={tradeFriend}
+          myCards={myCards}
+          onClose={() => setTradeFriend(null)}
+          onProposed={() => {
+            setTradeFriend(null);
+            setTradeMessage(`Trade request sent to ${tradeFriend.friendName}!`);
+            setTimeout(() => setTradeMessage(""), 4000);
+          }}
+        />
+      )}
     </div>
   );
 }

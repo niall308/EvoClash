@@ -31,6 +31,7 @@ import BuyCoins from '@/pages/BuyCoins';
 import Lobby from '@/pages/Lobby';
 import CreateLobby from '@/pages/CreateLobby';
 import JoinLobby from '@/pages/JoinLobby';
+import Trades from '@/pages/Trades';
 import AppLayout from '@/components/layout/AppLayout';
 // Add page imports here
 
@@ -84,6 +85,7 @@ const AuthenticatedApp = () => {
           <Route path="/lobby" element={<Lobby />} />
           <Route path="/create-lobby" element={<CreateLobby />} />
           <Route path="/join-lobby/:code" element={<JoinLobby />} />
+          <Route path="/trades" element={<Trades />} />
         </Route>
         <Route path="/battle" element={<Battle />} />
         <Route path="/pvp-battle/:code" element={<PvpBattle />} />

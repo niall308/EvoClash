@@ -1,0 +1,102 @@
+{
+  "name": "TradeRequest",
+  "type": "object",
+  "properties": {
+    "toUserId": {
+      "type": "string"
+    },
+    "toUserName": {
+      "type": "string"
+    },
+    "fromCardId": {
+      "type": "string"
+    },
+    "fromCardName": {
+      "type": "string"
+    },
+    "fromCardType": {
+      "type": "string"
+    },
+    "fromCardTier": {
+      "type": "number"
+    },
+    "fromCardAttack": {
+      "type": "number"
+    },
+    "fromCardDefense": {
+      "type": "number"
+    },
+    "fromCardBonusDamage": {
+      "type": "number",
+      "default": 0
+    },
+    "fromCardIsHybrid": {
+      "type": "boolean",
+      "default": false
+    },
+    "fromCardImageUrl": {
+      "type": "string"
+    },
+    "toCardId": {
+      "type": "string"
+    },
+    "toCardName": {
+      "type": "string"
+    },
+    "toCardType": {
+      "type": "string"
+    },
+    "toCardTier": {
+      "type": "number"
+    },
+    "toCardAttack": {
+      "type": "number"
+    },
+    "toCardDefense": {
+      "type": "number"
+    },
+    "toCardBonusDamage": {
+      "type": "number",
+      "default": 0
+    },
+    "toCardIsHybrid": {
+      "type": "boolean",
+      "default": false
+    },
+    "toCardImageUrl": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "declined",
+        "cancelled"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "toUserId",
+    "toUserName",
+    "fromCardId",
+    "fromCardName",
+    "toCardId",
+    "toCardName"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}
