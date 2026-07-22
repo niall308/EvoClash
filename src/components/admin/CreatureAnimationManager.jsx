@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { CREATURES, CATEGORIES } from "@/lib/gameConstants";
 import { Upload, Loader2 } from "lucide-react";
+import DrawerPicker from "@/components/common/DrawerPicker";
 
 const ALL_CREATURES = CATEGORIES.flatMap((cat) => CREATURES[cat].map((name) => ({ name, category: cat })));
 const TIERS = [1, 2, 3, 4];
@@ -40,13 +41,13 @@ export default function CreatureAnimationManager() {
   return (
     <section>
       <h2 className="text-lg font-bold mb-3">Creature Animations</h2>
-      <select value={selected} onChange={(e) => setSelected(e.target.value)} className="bg-white/10 rounded-lg px-3 py-2 text-sm mb-4 w-full">
-        {ALL_CREATURES.map((c) => (
-          <option key={c.name} value={c.name} className="text-black">
-            {c.name}
-          </option>
-        ))}
-      </select>
+      <DrawerPicker
+        label="Select Creature"
+        value={selected}
+        onSelect={setSelected}
+        options={ALL_CREATURES.map((c) => ({ value: c.name, label: c.name }))}
+        triggerClassName="bg-white/10 rounded-lg px-3 py-2 text-sm mb-4 w-full justify-between"
+      />
       <div className="grid grid-cols-2 gap-3">
         {TIERS.map((tier) => {
           const field = `tier${tier}Animation`;

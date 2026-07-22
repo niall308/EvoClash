@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Target, Plus } from "lucide-react";
 import CoinFlyAnimation from "@/components/profile/CoinFlyAnimation";
+import DrawerPicker from "@/components/common/DrawerPicker";
 
 const METRIC_LABELS = {
   gamesPlayed: "Games Played",
@@ -112,17 +113,13 @@ export default function MilestonesSection({ user, onUserUpdate }) {
             rows={2}
             className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm outline-none resize-none"
           />
-          <select
+          <DrawerPicker
+            label="Metric"
             value={form.metric}
-            onChange={(e) => setForm({ ...form, metric: e.target.value })}
-            className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm outline-none"
-          >
-            {Object.entries(METRIC_LABELS).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
+            onSelect={(v) => setForm({ ...form, metric: v })}
+            options={Object.entries(METRIC_LABELS).map(([key, label]) => ({ value: key, label }))}
+            triggerClassName="w-full bg-white/10 rounded-lg px-3 py-2 text-sm justify-between"
+          />
           <div className="flex gap-2">
             <input
               type="number"

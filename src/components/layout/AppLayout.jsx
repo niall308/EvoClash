@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import CoinsBadge from "@/components/layout/CoinsBadge";
+import BottomNav from "@/components/layout/BottomNav";
 
 export default function AppLayout() {
   const location = useLocation();
@@ -15,11 +16,12 @@ export default function AppLayout() {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -24, opacity: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+          style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(env(safe-area-inset-bottom) + 4rem)" }}
         >
           <Outlet />
         </motion.div>
       </AnimatePresence>
+      <BottomNav />
     </div>
   );
 }
