@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import CardGrid from "@/components/cards/CardGrid";
 import CardFilterBar from "@/components/cards/CardFilterBar";
+import CardActionModal from "@/components/cards/CardActionModal";
+import CardStatsModal from "@/components/cards/CardStatsModal";
 import DeckTabs from "@/components/decks/DeckTabs";
 import NewDeckModal from "@/components/decks/NewDeckModal";
 import { ensureActiveDeck } from "@/lib/decks";
@@ -25,6 +27,7 @@ export default function Deck() {
   const [showNewDeckModal, setShowNewDeckModal] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [statsCard, setStatsCard] = useState(null);
 
   const load = async (me) => {
     setUser(me);
@@ -123,6 +126,7 @@ export default function Deck() {
   };
 
   const loading = !cards || !decks;
+  const selectedCard = selectedId ? (cards || []).find((c) => c.id === selectedId) : null;
 
   return (
     <PullToRefresh onRefresh={() => authUser && load(authUser)}>
@@ -180,10 +184,24 @@ export default function Deck() {
             onSelect={handleSelect}
             bulkMode={bulkMode}
             selectedIds={selectedIds}
-            onUpgrade={(id) => navigate(`/card-upgrade/${id}`)}
           />
         </>
       )}
+
+      {selectedCard && !bulkMode && (
+        <CardActionModal
+          card={selectedCard}
+          onClose={() => setSelectedId(null)}
+          onUpgrade={() => navigate(`/card-upgrade/${selectedCard.id}`)}
+          onTrade={() => navigate("/trades")}
+          onStats={() => {
+            setStatsCard(selectedCard);
+            setSelectedId(null);
+          }}
+        />
+      )}
+
+      {statsCard && <CardStatsModal card={statsCard} onClose={() => setStatsCard(null)} />}
 
       {bulkMode && selectedIds.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0D1B2A]/95 border-t border-white/10">
