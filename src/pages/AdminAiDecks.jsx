@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { buildDeckCards, DECK_COMPOSITIONS } from "@/lib/aiDeckGenerator";
 import { STYLE_REFERENCE_URL } from "@/lib/gameConstants";
+import AiDeckCardsModal from "@/components/admin/AiDeckCardsModal";
 
 const DIFFICULTIES = Object.keys(DECK_COMPOSITIONS);
 
@@ -11,6 +12,15 @@ export default function AdminAiDecks() {
   const [counts, setCounts] = useState({});
   const [generating, setGenerating] = useState(null);
   const [progress, setProgress] = useState(0);
+  const [viewingDifficulty, setViewingDifficulty] = useState(null);
+  const [viewingCards, setViewingCards] = useState(null);
+
+  const openViewCards = async (difficulty) => {
+    setViewingDifficulty(difficulty);
+    setViewingCards(null);
+    const cards = await base44.entities.AiDeckCard.filter({ difficulty });
+    setViewingCards(cards);
+  };
 
   useEffect(() => {
     (async () => {
@@ -61,22 +71,39 @@ export default function AdminAiDecks() {
               <p className="font-bold">{d}</p>
               <p className="text-white/40 text-xs">{counts[d] ?? "..."} cards stored</p>
             </div>
-            <button
-              onClick={() => generateDeck(d)}
-              disabled={!!generating}
-              className="bg-amber-500 text-black text-xs font-bold px-3 py-2 rounded-full disabled:opacity-40 flex items-center gap-2"
-            >
-              {generating === d ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> {progress}/100
-                </>
-              ) : (
-                "Generate"
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => openViewCards(d)}
+                disabled={!!generating || !counts[d]}
+                className="bg-white/10 text-white text-xs font-bold px-3 py-2 rounded-full disabled:opacity-40"
+              >
+                View Cards
+              </button>
+              <button
+                onClick={() => generateDeck(d)}
+                disabled={!!generating}
+                className="bg-amber-500 text-black text-xs font-bold px-3 py-2 rounded-full disabled:opacity-40 flex items-center gap-2"
+              >
+                {generating === d ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> {progress}/100
+                  </>
+                ) : (
+                  "Regenerate"
+                )}
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
+      {viewingDifficulty && (
+        <AiDeckCardsModal
+          difficulty={viewingDifficulty}
+          cards={viewingCards}
+          onClose={() => setViewingDifficulty(null)}
+        />
+      )}
     </div>
   );
 }
