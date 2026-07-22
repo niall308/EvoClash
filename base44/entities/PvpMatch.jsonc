@@ -49,6 +49,68 @@
       "type": "object",
       "default": {}
     },
+    "player1Hand": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    },
+    "player2Hand": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    },
+    "player1PendingHybrid": {
+      "type": "object",
+      "default": {}
+    },
+    "player2PendingHybrid": {
+      "type": "object",
+      "default": {}
+    },
+    "player1DoubleAttackActive": {
+      "type": "boolean",
+      "default": false
+    },
+    "player2DoubleAttackActive": {
+      "type": "boolean",
+      "default": false
+    },
+    "player1TripleDefenseActive": {
+      "type": "boolean",
+      "default": false
+    },
+    "player2TripleDefenseActive": {
+      "type": "boolean",
+      "default": false
+    },
+    "player1BlockActive": {
+      "type": "boolean",
+      "default": false
+    },
+    "player2BlockActive": {
+      "type": "boolean",
+      "default": false
+    },
+    "player1AttackHalvedTurns": {
+      "type": "number",
+      "default": 0
+    },
+    "player2AttackHalvedTurns": {
+      "type": "number",
+      "default": 0
+    },
+    "player1TempTierBoost": {
+      "type": "object",
+      "default": {}
+    },
+    "player2TempTierBoost": {
+      "type": "object",
+      "default": {}
+    },
     "player1Hp": {
       "type": "number",
       "default": 0
