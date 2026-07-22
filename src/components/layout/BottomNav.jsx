@@ -1,11 +1,12 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Swords, Layers, Sparkles, User } from "lucide-react";
+import { Swords, Layers, Sparkles, User, ArrowLeftRight } from "lucide-react";
 
 const TABS = [
   { path: "/", label: "Play", icon: Swords },
   { path: "/deck", label: "Deck", icon: Layers },
   { path: "/generate", label: "Generate", icon: Sparkles },
+  { path: "/trades", label: "Trades", icon: ArrowLeftRight },
   { path: "/profile", label: "Profile", icon: User },
 ];
 
@@ -17,7 +18,6 @@ const SUB_ROUTE_MAP = {
   "/power-ups": "/",
   "/card-upgrade": "/deck",
   "/history": "/profile",
-  "/trades": "/profile",
   "/how-to-play": "/profile",
   "/milestones": "/profile",
 };
