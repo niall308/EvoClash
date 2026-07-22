@@ -104,6 +104,14 @@
     "winnerId": {
       "type": "string",
       "default": ""
+    },
+    "player1CoinsEarned": {
+      "type": "number",
+      "default": 0
+    },
+    "player2CoinsEarned": {
+      "type": "number",
+      "default": 0
     }
   },
   "required": [

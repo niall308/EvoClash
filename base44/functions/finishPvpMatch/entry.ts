@@ -47,7 +47,12 @@ Deno.serve(async (req) => {
 
     await Promise.all([applyResult(player1, player2, p1Won), applyResult(player2, player1, !p1Won)]);
 
-    await base44.asServiceRole.entities.PvpMatch.update(match.id, { status: 'finished', winnerId });
+    await base44.asServiceRole.entities.PvpMatch.update(match.id, {
+      status: 'finished',
+      winnerId,
+      player1CoinsEarned: p1Won ? COINS_WIN_HUMAN : COINS_LOSS_HUMAN,
+      player2CoinsEarned: p1Won ? COINS_LOSS_HUMAN : COINS_WIN_HUMAN,
+    });
 
     return Response.json({ status: 'finished' });
   } catch (error) {

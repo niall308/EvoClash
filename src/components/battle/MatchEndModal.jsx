@@ -2,11 +2,21 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Coins } from "lucide-react";
+import confetti from "canvas-confetti";
+import CoinFlyAnimation from "@/components/profile/CoinFlyAnimation";
 
 export default function MatchEndModal({ won, coinsBreakdown }) {
   const navigate = useNavigate();
   const total = coinsBreakdown?.total || 0;
   const [displayTotal, setDisplayTotal] = useState(0);
+  const [showCoinFly, setShowCoinFly] = useState(false);
+
+  useEffect(() => {
+    if (!won) return;
+    confetti({ particleCount: 140, spread: 100, startVelocity: 45, origin: { y: 0.4 }, colors: ["#FFD700", "#FFA500", "#FFEC8B", "#FFFFFF"] });
+    const t = setTimeout(() => setShowCoinFly(true), 350);
+    return () => clearTimeout(t);
+  }, [won]);
 
   useEffect(() => {
     if (!total) return;
@@ -74,6 +84,12 @@ export default function MatchEndModal({ won, coinsBreakdown }) {
           </button>
         </div>
       </div>
+      {showCoinFly && (
+        <CoinFlyAnimation
+          origin={{ x: window.innerWidth / 2, y: window.innerHeight / 2 }}
+          onDone={() => setShowCoinFly(false)}
+        />
+      )}
     </div>
   );
 }

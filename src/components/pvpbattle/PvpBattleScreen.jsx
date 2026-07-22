@@ -111,6 +111,7 @@ export default function PvpBattleScreen({ matchCode }) {
         <PvpMatchEndModal
           matchStatus={match.status}
           won={match.status === "finished" ? match.winnerId === (myRole === "player1" ? match.player1Id : match.player2Id) : null}
+          coinsEarned={match[`${myRole}CoinsEarned`] || 0}
         />
       )}
       {showForfeitModal && (
