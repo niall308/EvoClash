@@ -29,6 +29,17 @@ export default function JoinLobby() {
     })();
   }, [code]);
 
+  // Once joined, wait for the host to start the match, then jump straight into it.
+  useEffect(() => {
+    if (status !== "joined" || !lobby) return;
+    const unsubscribe = base44.entities.GameLobby.subscribe((event) => {
+      if (event.data?.id === lobby.id && event.data.status === "in_progress") {
+        navigate(`/pvp-battle/${lobby.code}`);
+      }
+    });
+    return unsubscribe;
+  }, [status, lobby, navigate]);
+
   const joinLobby = async () => {
     const me = await base44.auth.me();
     const updated = await base44.entities.GameLobby.update(lobby.id, {
@@ -91,8 +102,12 @@ export default function JoinLobby() {
             <h1 className="text-2xl font-black">You're In!</h1>
           </div>
           <p className="text-white/60 text-sm mb-6">
-            You joined {lobby.hostName || "the host"}'s lobby. Let them know you're ready — they'll start the match from their side.
+            You joined {lobby.hostName || "the host"}'s lobby. Waiting for them to start the match...
           </p>
+          <div className="flex items-center gap-2 text-white/50 text-sm mb-6">
+            <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+            You'll jump into battle automatically once they start
+          </div>
           <Link to="/play" className="inline-block bg-amber-500 text-black font-bold px-4 py-3 rounded-2xl text-sm">
             Back to Play Menu
           </Link>

@@ -1,0 +1,26 @@
+{
+  "name": "MatchQueue",
+  "type": "object",
+  "properties": {
+    "rankPoints": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "searching",
+        "matched",
+        "cancelled"
+      ],
+      "default": "searching"
+    },
+    "matchCode": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "required": [
+    "rankPoints"
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "name": "PvpMatch",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "player1Id": {
+      "type": "string"
+    },
+    "player1Name": {
+      "type": "string",
+      "default": ""
+    },
+    "player2Id": {
+      "type": "string"
+    },
+    "player2Name": {
+      "type": "string",
+      "default": ""
+    },
+    "player1Rp": {
+      "type": "number",
+      "default": 0
+    },
+    "player2Rp": {
+      "type": "number",
+      "default": 0
+    },
+    "player1Pool": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    },
+    "player2Pool": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "default": []
+    },
+    "player1Card": {
+      "type": "object",
+      "default": {}
+    },
+    "player2Card": {
+      "type": "object",
+      "default": {}
+    },
+    "player1Hp": {
+      "type": "number",
+      "default": 0
+    },
+    "player2Hp": {
+      "type": "number",
+      "default": 0
+    },
+    "player1Rps": {
+      "type": "string",
+      "default": ""
+    },
+    "player2Rps": {
+      "type": "string",
+      "default": ""
+    },
+    "rpsDone": {
+      "type": "boolean",
+      "default": false
+    },
+    "round": {
+      "type": "number",
+      "default": 1
+    },
+    "scoreP1": {
+      "type": "number",
+      "default": 0
+    },
+    "scoreP2": {
+      "type": "number",
+      "default": 0
+    },
+    "turn": {
+      "type": "string",
+      "default": ""
+    },
+    "phase": {
+      "type": "string",
+      "default": "draw"
+    },
+    "log": {
+      "type": "string",
+      "default": "Waiting for both players..."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "finished"
+      ],
+      "default": "active"
+    },
+    "winnerId": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "required": [
+    "code",
+    "player1Id",
+    "player2Id"
+  ]
+}

@@ -16,6 +16,7 @@ import Deck from '@/pages/Deck';
 import CardGenerate from '@/pages/CardGenerate';
 import Play from '@/pages/Play';
 import Battle from '@/pages/Battle';
+import PvpBattle from '@/pages/PvpBattle';
 import Profile from '@/pages/Profile';
 import BattleHistory from '@/pages/BattleHistory';
 import AdminPanel from '@/pages/AdminPanel';
@@ -85,6 +86,7 @@ const AuthenticatedApp = () => {
           <Route path="/join-lobby/:code" element={<JoinLobby />} />
         </Route>
         <Route path="/battle" element={<Battle />} />
+        <Route path="/pvp-battle/:code" element={<PvpBattle />} />
       </Route>
       {/* Add your page Route elements here */}
       <Route path="*" element={<PageNotFound />} />

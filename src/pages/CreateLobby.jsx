@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Copy, Check, Send, Link2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Copy, Check, Send, Link2, Play, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 const generateCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
 export default function CreateLobby() {
+  const navigate = useNavigate();
   const [lobby, setLobby] = useState(null);
   const [players, setPlayers] = useState(null);
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [invitedIds, setInvitedIds] = useState([]);
   const [sendingId, setSendingId] = useState(null);
+  const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -25,6 +27,25 @@ export default function CreateLobby() {
       setPlayers(data?.players || []);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!lobby) return;
+    const unsubscribe = base44.entities.GameLobby.subscribe((event) => {
+      if (event.data?.id === lobby.id) setLobby(event.data);
+    });
+    return unsubscribe;
+  }, [lobby?.id]);
+
+  const handleStart = async () => {
+    if (!lobby?.joinedUserId || starting) return;
+    setStarting(true);
+    const { data } = await base44.functions.invoke("startPvpMatch", { lobbyId: lobby.id });
+    if (data?.code) {
+      navigate(`/pvp-battle/${data.code}`);
+    } else {
+      setStarting(false);
+    }
+  };
 
   const inviteLink = lobby ? `${window.location.origin}/join-lobby/${lobby.code}` : "";
 
@@ -83,6 +104,18 @@ export default function CreateLobby() {
           >
             {linkCopied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
             {linkCopied ? "Invite Link Copied!" : "Copy Invite Link to Share on Discord"}
+          </button>
+
+          {lobby.joinedUserId && (
+            <p className="text-emerald-400 text-sm font-bold mb-3">{lobby.joinedUserName} has joined!</p>
+          )}
+          <button
+            onClick={handleStart}
+            disabled={!lobby.joinedUserId || starting}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-sm font-bold px-4 py-3 rounded-2xl mb-8 active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {starting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+            {lobby.joinedUserId ? (starting ? "Starting..." : "Start Game") : "Waiting for a player to join..."}
           </button>
         </>
       )}

@@ -1,14 +1,46 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Trophy, PlusCircle } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Trophy, PlusCircle, Search, X, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 export default function Lobby() {
+  const navigate = useNavigate();
   const [players, setPlayers] = useState(null);
+  const [searching, setSearching] = useState(false);
+  const pollRef = useRef(null);
+  const searchingRef = useRef(false);
 
   useEffect(() => {
     base44.functions.invoke("getLobbyPlayers", {}).then(({ data }) => setPlayers(data?.players || []));
+    return () => {
+      clearInterval(pollRef.current);
+      if (searchingRef.current) base44.functions.invoke("findMatch", { action: "cancel" });
+    };
   }, []);
+
+  const poll = async () => {
+    const { data } = await base44.functions.invoke("findMatch", { action: "search" });
+    if (data?.status === "matched" && data.matchCode) {
+      clearInterval(pollRef.current);
+      setSearching(false);
+      searchingRef.current = false;
+      navigate(`/pvp-battle/${data.matchCode}`);
+    }
+  };
+
+  const startSearch = async () => {
+    setSearching(true);
+    searchingRef.current = true;
+    await poll();
+    pollRef.current = setInterval(poll, 3000);
+  };
+
+  const cancelSearch = async () => {
+    clearInterval(pollRef.current);
+    setSearching(false);
+    searchingRef.current = false;
+    await base44.functions.invoke("findMatch", { action: "cancel" });
+  };
 
   return (
     <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-8">
@@ -24,7 +56,24 @@ export default function Lobby() {
           <PlusCircle className="w-4 h-4" /> Create Lobby
         </Link>
       </div>
-      <p className="text-white/60 mb-6 text-sm">Active players waiting for a match</p>
+      <p className="text-white/60 mb-4 text-sm">Active players waiting for a match</p>
+
+      {searching ? (
+        <button
+          onClick={cancelSearch}
+          className="w-full flex items-center justify-center gap-2 bg-white/10 border border-white/20 py-4 rounded-2xl font-bold mb-6 active:scale-95 transition-transform"
+        >
+          <Loader2 className="w-5 h-5 animate-spin" /> Searching for a match...
+          <X className="w-4 h-4 ml-1" />
+        </button>
+      ) : (
+        <button
+          onClick={startSearch}
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 py-4 rounded-2xl font-bold mb-6 active:scale-95 transition-transform"
+        >
+          <Search className="w-5 h-5" /> Find Game
+        </button>
+      )}
 
       {players === null && <p className="text-white/50 text-sm">Loading players...</p>}
       {players?.length === 0 && <p className="text-white/50 text-sm">No other players yet.</p>}

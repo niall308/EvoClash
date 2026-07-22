@@ -9,7 +9,8 @@
       "type": "string",
       "enum": [
         "open",
-        "closed"
+        "closed",
+        "in_progress"
       ],
       "default": "open"
     },
