@@ -16,7 +16,7 @@ export default function CardStatsModal({ card, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6" onClick={onClose}>
       <div
-        className="bg-[#132338] rounded-2xl p-5 w-full max-w-xs flex flex-col items-center gap-4"
+        className="bg-[#132338] rounded-2xl p-5 w-full max-w-xs max-h-[85vh] overflow-y-auto flex flex-col items-center gap-4"
         onClick={(e) => e.stopPropagation()}
       >
         <button onClick={onClose} className="self-end -mt-2 -mr-2 text-white/50">
