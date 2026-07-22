@@ -8,8 +8,10 @@ import GameCard from "@/components/cards/GameCard";
 import CreaturePicker from "@/components/generate/CreaturePicker";
 import { Sparkles, Loader2, PlusCircle, RefreshCw, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function CardGenerate() {
+  const { toast } = useToast();
   const [user, setUser] = useState(null);
   const [count, setCount] = useState(null);
   const [creatures, setCreatures] = useState([]);
@@ -52,13 +54,18 @@ export default function CardGenerate() {
         }. Dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`
       : `A ${cardData.type}-type ${cardData.baseName}, dynamic full-body creature illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`;
 
-    const { url } = await base44.integrations.Core.GenerateImage({
-      prompt,
-      existing_image_urls: [STYLE_REFERENCE_URL],
-    });
-    cardData.imageUrl = url;
-    setPreviewCard(cardData);
-    setGenerating(false);
+    try {
+      const { url } = await base44.integrations.Core.GenerateImage({
+        prompt,
+        existing_image_urls: [STYLE_REFERENCE_URL],
+      });
+      cardData.imageUrl = url;
+      setPreviewCard(cardData);
+    } catch (err) {
+      toast({ title: "Generation failed", description: "Couldn't generate the card image. Please try again.", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const status = user ? getCreationStatus(user, count) : null;
@@ -73,14 +80,19 @@ export default function CardGenerate() {
       userUpdate.ownedElementTypesList = [...ownedTypes, previewCard.type];
       userUpdate.distinctTypesOwnedCount = userUpdate.ownedElementTypesList.length;
     }
-    const [, updatedUser] = await Promise.all([
-      base44.entities.Card.create({ ...previewCard, deckId: activeDeckId }),
-      Object.keys(userUpdate).length ? base44.auth.updateMe(userUpdate) : Promise.resolve(user),
-    ]);
-    setUser(updatedUser);
-    setCount((c) => c + 1);
-    setPreviewCard(null);
-    setSaving(false);
+    try {
+      const [, updatedUser] = await Promise.all([
+        base44.entities.Card.create({ ...previewCard, deckId: activeDeckId }),
+        Object.keys(userUpdate).length ? base44.auth.updateMe(userUpdate) : Promise.resolve(user),
+      ]);
+      setUser(updatedUser);
+      setCount((c) => c + 1);
+      setPreviewCard(null);
+    } catch (err) {
+      toast({ title: "Couldn't add card", description: "Something went wrong saving this card. Please try again.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const isAdmin = user?.role === "admin";
