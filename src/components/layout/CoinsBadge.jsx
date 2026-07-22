@@ -28,7 +28,7 @@ export default function CoinsBadge() {
     <div id="coins-badge" className="fixed top-3 right-3 z-40 flex items-center gap-2">
       <Link
         to="/buy-coins"
-        className="flex items-center justify-center w-9 h-9 bg-amber-400 text-[#0D1B2A] rounded-full active:scale-90 transition-transform"
+        className="flex items-center justify-center w-11 h-11 bg-amber-400 text-[#0D1B2A] rounded-full active:scale-90 transition-transform"
       >
         <Plus className="w-5 h-5" />
       </Link>

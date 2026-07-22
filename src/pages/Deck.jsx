@@ -115,7 +115,7 @@ export default function Deck() {
     <div className="min-h-screen bg-[#0D1B2A] text-white pb-24">
       <div className="px-6 py-6 flex items-center justify-between">
         <div>
-          <Link to="/" className="inline-flex items-center gap-1 text-white/60 text-sm mb-2">
+          <Link to="/" className="inline-flex items-center gap-1 text-white/60 text-sm mb-2 py-2 px-1 -ml-1">
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
           <h1 className="text-2xl font-black">Your Deck</h1>
