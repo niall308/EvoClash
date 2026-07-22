@@ -12,6 +12,9 @@ Deno.serve(async (req) => {
     const friendship = await base44.entities.Friend.filter({ created_by_id: user.id, friendUserId });
     if (friendship.length === 0) return Response.json({ error: 'Not friends with this player' }, { status: 403 });
 
+    const reciprocal = await base44.asServiceRole.entities.Friend.filter({ created_by_id: friendUserId, friendUserId: user.id });
+    if (reciprocal.length === 0) return Response.json({ error: 'Not friends with this player' }, { status: 403 });
+
     const cards = await base44.asServiceRole.entities.Card.filter({ created_by_id: friendUserId });
     const slim = cards.map((c) => ({
       id: c.id,
