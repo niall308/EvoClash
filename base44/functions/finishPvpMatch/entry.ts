@@ -15,6 +15,12 @@ Deno.serve(async (req) => {
     const match = matches[0];
     if (!match) return Response.json({ error: 'Match not found' }, { status: 404 });
     if (match.status === 'finished') return Response.json({ status: 'already_finished' });
+    if (user.id !== match.player1Id && user.id !== match.player2Id) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (winnerId !== match.player1Id && winnerId !== match.player2Id) {
+      return Response.json({ error: 'Invalid winnerId' }, { status: 400 });
+    }
 
     const [p1Matches, p2Matches] = await Promise.all([
       base44.asServiceRole.entities.User.filter({ id: match.player1Id }),
