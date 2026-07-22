@@ -27,10 +27,21 @@ const RPS_BEATS = { rock: "scissors", scissors: "paper", paper: "rock" };
 
 export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "Normal") {
   const [opponentName] = useState(() => randomFrom(AI_OPPONENT_NAMES));
-  const [aiPool, setAiPool] = useState(() => {
-    const tiers = AI_DIFFICULTY_TIERS[difficulty] || AI_DIFFICULTY_TIERS.Normal;
-    return shuffle(Array.from({ length: 15 }, () => generateRandomCard(randomFrom(tiers))));
-  });
+  const [aiPool, setAiPool] = useState([]);
+
+  // Draw the AI's 15-card pool from the pre-generated 100-card deck for this difficulty
+  // (falls back to live generation if that deck hasn't been seeded yet by an admin).
+  useEffect(() => {
+    (async () => {
+      const deckCards = await base44.entities.AiDeckCard.filter({ difficulty });
+      if (deckCards.length > 0) {
+        setAiPool(shuffle(deckCards).slice(0, 15));
+      } else {
+        const tiers = AI_DIFFICULTY_TIERS[difficulty] || AI_DIFFICULTY_TIERS.Normal;
+        setAiPool(shuffle(Array.from({ length: 15 }, () => generateRandomCard(randomFrom(tiers)))));
+      }
+    })();
+  }, [difficulty]);
   const [playerPool, setPlayerPool] = useState(() => shuffle(playerCards));
   const [round, setRound] = useState(1);
   const [score, setScore] = useState({ player: 0, ai: 0 });

@@ -19,6 +19,8 @@ import Battle from '@/pages/Battle';
 import Profile from '@/pages/Profile';
 import BattleHistory from '@/pages/BattleHistory';
 import AdminPanel from '@/pages/AdminPanel';
+import AdminCreatures from '@/pages/AdminCreatures';
+import AdminAiDecks from '@/pages/AdminAiDecks';
 import HowToPlay from '@/pages/HowToPlay';
 import CardUpgrade from '@/pages/CardUpgrade';
 import Leaderboards from '@/pages/Leaderboards';
@@ -71,6 +73,8 @@ const AuthenticatedApp = () => {
           <Route path="/history" element={<BattleHistory />} />
           <Route path="/how-to-play" element={<HowToPlay />} />
           <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/admin/creatures" element={<AdminCreatures />} />
+          <Route path="/admin/ai-decks" element={<AdminAiDecks />} />
           <Route path="/card-upgrade/:id" element={<CardUpgrade />} />
           <Route path="/leaderboards" element={<Leaderboards />} />
           <Route path="/power-ups" element={<PowerUps />} />

@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Trophy, Swords, Gamepad2, History, HelpCircle, Target, Flame, Snowflake } from "lucide-react";
+import { ArrowLeft, Trophy, Swords, Gamepad2, History, HelpCircle, Target, Flame, Snowflake, ShieldCheck } from "lucide-react";
 import { UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
 import { getRankByRP } from "@/lib/rankSystem";
 import RankEmblem from "@/components/rank/RankEmblem";
-import CreatureManager from "@/components/profile/CreatureManager";
 import CardFilterBar from "@/components/cards/CardFilterBar";
 import ActiveMilestonesSummary from "@/components/profile/ActiveMilestonesSummary";
 import FriendsSection from "@/components/profile/FriendsSection";
@@ -54,6 +53,16 @@ export default function Profile() {
       <Link to="/" className="inline-flex items-center gap-1 text-white/60 text-sm mb-6">
         <ArrowLeft className="w-4 h-4" /> Back
       </Link>
+
+      {user.role === "admin" && (
+        <Link
+          to="/admin"
+          className="inline-flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-orange-500 text-xs font-bold px-3 py-2 rounded-full mb-4"
+        >
+          <ShieldCheck className="w-3.5 h-3.5" /> Admin
+        </Link>
+      )}
+
       <div className="flex items-center gap-2 mb-1 flex-wrap">
         <h1 className="text-2xl font-black">{user.username || user.full_name}</h1>
         <RankEmblem rp={user.rankPoints} size="sm" />
@@ -93,8 +102,6 @@ export default function Profile() {
         </span>
         <span className="text-white/40 text-xs">View →</span>
       </Link>
-
-      {user.role === "admin" && <CreatureManager />}
 
       <h2 className="text-lg font-bold mb-3">Upgrade Progress</h2>
       <div className="-mx-6 mb-1">
