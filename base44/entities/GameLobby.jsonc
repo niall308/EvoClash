@@ -29,5 +29,25 @@
   },
   "required": [
     "code"
-  ]
+  ],
+  "rls": {
+    "create": null,
+    "read": null,
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.joinedUserId": "{{user.id}}"
+        },
+        {
+          "data.joinedUserId": ""
+        }
+      ]
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
 }
