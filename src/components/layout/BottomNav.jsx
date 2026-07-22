@@ -9,9 +9,31 @@ const TABS = [
   { path: "/profile", label: "Profile", icon: User },
 ];
 
+const SUB_ROUTE_MAP = {
+  "/lobby": "/",
+  "/create-lobby": "/",
+  "/join-lobby": "/",
+  "/leaderboards": "/",
+  "/power-ups": "/",
+  "/card-upgrade": "/deck",
+  "/history": "/profile",
+  "/trades": "/profile",
+  "/how-to-play": "/profile",
+  "/milestones": "/profile",
+};
+
+function getActiveTabPath(pathname) {
+  if (pathname === "/") return "/";
+  for (const prefix of Object.keys(SUB_ROUTE_MAP)) {
+    if (pathname.startsWith(prefix)) return SUB_ROUTE_MAP[prefix];
+  }
+  return pathname;
+}
+
 export default function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const activeTabPath = getActiveTabPath(location.pathname);
 
   return (
     <nav
@@ -19,7 +41,7 @@ export default function BottomNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {TABS.map((tab) => {
-        const active = location.pathname === tab.path;
+        const active = activeTabPath === tab.path;
         const Icon = tab.icon;
         return (
           <button

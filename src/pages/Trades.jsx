@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeftRight, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeftRight, Loader2, ChevronLeft } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import TradeRequestCard from "@/components/trades/TradeRequestCard";
+import PullToRefresh from "@/components/common/PullToRefresh";
 
 export default function Trades() {
   const [trades, setTrades] = useState(null);
@@ -38,7 +40,11 @@ export default function Trades() {
   };
 
   return (
+    <PullToRefresh onRefresh={load}>
     <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-6 pb-24">
+      <Link to="/profile" className="inline-flex items-center gap-1 text-white/60 text-sm font-semibold mb-4">
+        <ChevronLeft className="w-4 h-4" /> Back
+      </Link>
       <h1 className="text-2xl font-black mb-1 flex items-center gap-2">
         <ArrowLeftRight className="w-6 h-6 text-amber-400" /> Trade Requests
       </h1>
@@ -81,5 +87,6 @@ export default function Trades() {
         </>
       )}
     </div>
+    </PullToRefresh>
   );
 }
