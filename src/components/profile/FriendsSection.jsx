@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { UserPlus, Users, Copy, Check, ArrowLeftRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import ProposeTradeModal from "@/components/trades/ProposeTradeModal";
+import FriendDetailModal from "@/components/profile/FriendDetailModal";
 
 const generateFriendCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
@@ -14,6 +15,7 @@ export default function FriendsSection({ user, onUserUpdate }) {
   const [myCards, setMyCards] = useState([]);
   const [tradeFriend, setTradeFriend] = useState(null);
   const [tradeMessage, setTradeMessage] = useState("");
+  const [selectedFriend, setSelectedFriend] = useState(null);
 
   useEffect(() => {
     base44.entities.Friend.filter({ created_by_id: user.id }, "-created_date").then(setFriends);
@@ -97,7 +99,9 @@ export default function FriendsSection({ user, onUserUpdate }) {
         ) : (
           friends.map((f) => (
             <div key={f.id} className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2.5">
-              <span className="font-semibold text-sm">{f.friendName}</span>
+              <button onClick={() => setSelectedFriend(f)} className="font-semibold text-sm text-left">
+                {f.friendName}
+              </button>
               <button
                 onClick={() => setTradeFriend(f)}
                 className="flex items-center gap-1 bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-1.5 rounded-full"
@@ -119,6 +123,17 @@ export default function FriendsSection({ user, onUserUpdate }) {
             setTradeFriend(null);
             setTradeMessage(`Trade request sent to ${tradeFriend.friendName}!`);
             setTimeout(() => setTradeMessage(""), 4000);
+          }}
+        />
+      )}
+
+      {selectedFriend && (
+        <FriendDetailModal
+          friend={selectedFriend}
+          onClose={() => setSelectedFriend(null)}
+          onRemove={(id) => {
+            setFriends((prev) => prev.filter((f) => f.id !== id));
+            setSelectedFriend(null);
           }}
         />
       )}
