@@ -8,10 +8,12 @@ import NewDeckModal from "@/components/decks/NewDeckModal";
 import { ensureActiveDeck } from "@/lib/decks";
 import { DECK_COST, MAX_DECKS } from "@/lib/gameConstants";
 import { ArrowLeft, Sparkles, Loader2, ArrowUpCircle, ListChecks, PlusCircle, Trash2 } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Deck() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user: authUser } = useAuth();
+  const [user, setUser] = useState(authUser);
   const [decks, setDecks] = useState(null);
   const [activeDeckId, setActiveDeckId] = useState(null);
   const [cards, setCards] = useState(null);
@@ -23,8 +25,7 @@ export default function Deck() {
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
 
-  const load = async () => {
-    const me = await base44.auth.me();
+  const load = async (me) => {
     setUser(me);
     const { decks: userDecks, active } = await ensureActiveDeck(me.id);
     setDecks(userDecks);
@@ -34,8 +35,8 @@ export default function Deck() {
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    if (authUser) load(authUser);
+  }, [authUser?.id]);
 
   const deckCards = (cards || []).filter((c) => c.deckId === activeDeckId);
   const filteredCards = deckCards.filter(

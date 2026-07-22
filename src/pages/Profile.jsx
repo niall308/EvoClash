@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Trophy, Swords, Gamepad2, History, HelpCircle, Target, Flame, Snowflake, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Trophy, Swords, Gamepad2, History, HelpCircle, Target, Flame, Snowflake, ShieldCheck, Trash2 } from "lucide-react";
 import { UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
 import { getRankByRP } from "@/lib/rankSystem";
+import { useAuth } from "@/lib/AuthContext";
 import RankEmblem from "@/components/rank/RankEmblem";
 import CardFilterBar from "@/components/cards/CardFilterBar";
 import ActiveMilestonesSummary from "@/components/profile/ActiveMilestonesSummary";
 import FriendsSection from "@/components/profile/FriendsSection";
+import DeleteAccountModal from "@/components/profile/DeleteAccountModal";
 
 function Stat({ icon: Icon, label, value }) {
   return (
@@ -20,20 +22,24 @@ function Stat({ icon: Icon, label, value }) {
 }
 
 export default function Profile() {
-  const [user, setUser] = useState(null);
+  const { user: authUser, logout } = useAuth();
+  const [user, setUser] = useState(authUser);
   const [cards, setCards] = useState([]);
   const [filterType, setFilterType] = useState("all");
   const [filterTier, setFilterTier] = useState("all");
   const [hybridOnly, setHybridOnly] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      const me = await base44.auth.me();
-      setUser(me);
-      const myCards = await base44.entities.Card.filter({ created_by_id: me.id });
-      setCards(myCards);
-    })();
-  }, []);
+    if (!authUser) return;
+    setUser(authUser);
+    base44.entities.Card.filter({ created_by_id: authUser.id }).then(setCards);
+  }, [authUser?.id]);
+
+  const handleDeleteAccount = async () => {
+    await base44.entities.User.delete(user.id);
+    logout(false);
+  };
 
   if (!user) return null;
 
@@ -127,6 +133,17 @@ export default function Profile() {
         ))}
         {inProgress.length === 0 && <p className="text-white/40 text-sm">No cards in progress.</p>}
       </div>
+
+      <button
+        onClick={() => setShowDeleteModal(true)}
+        className="w-full flex items-center justify-center gap-2 text-red-400 text-sm font-semibold py-4 mt-8"
+      >
+        <Trash2 className="w-4 h-4" /> Delete Account
+      </button>
+
+      {showDeleteModal && (
+        <DeleteAccountModal onConfirm={handleDeleteAccount} onCancel={() => setShowDeleteModal(false)} />
+      )}
     </div>
   );
 }

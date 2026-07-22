@@ -86,7 +86,20 @@
     @apply border-border outline-ring/50;
   }
 
-  body {
+  html, body {
     @apply bg-background text-foreground font-body;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+
+  button, a, [role="button"], .card-interactive, img, svg {
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input, textarea {
+    user-select: text;
+    -webkit-touch-callout: default;
   }
 }

@@ -5,24 +5,24 @@ import { Bot, Users, ArrowLeft, Trophy, Sparkles } from "lucide-react";
 import { getRankByRP } from "@/lib/rankSystem";
 import RankEmblem from "@/components/rank/RankEmblem";
 import { ensureActiveDeck } from "@/lib/decks";
+import { useAuth } from "@/lib/AuthContext";
 
 const DIFFICULTIES = ["Easy", "Normal", "Hard", "Extreme"];
 
 export default function Play() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [count, setCount] = useState(null);
   const [difficulty, setDifficulty] = useState("Normal");
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
+    if (!user) return;
     (async () => {
-      const user = await base44.auth.me();
-      setUser(user);
       const { active } = await ensureActiveDeck(user.id);
       const cards = await base44.entities.Card.filter({ created_by_id: user.id, deckId: active.id });
       setCount(cards.length);
     })();
-  }, []);
+  }, [user?.id]);
 
   const ready = count !== null && count >= 15;
 

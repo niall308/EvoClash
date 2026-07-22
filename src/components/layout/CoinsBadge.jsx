@@ -25,7 +25,11 @@ export default function CoinsBadge() {
   if (coins === null) return null;
 
   return (
-    <div id="coins-badge" className="fixed top-3 right-3 z-40 flex items-center gap-2">
+    <div
+      id="coins-badge"
+      className="fixed z-40 flex items-center gap-2"
+      style={{ top: "calc(env(safe-area-inset-top) + 0.75rem)", right: "calc(env(safe-area-inset-right) + 0.75rem)" }}
+    >
       <Link
         to="/buy-coins"
         className="flex items-center justify-center w-9 h-9 bg-amber-400 text-[#0D1B2A] rounded-full active:scale-90 transition-transform"

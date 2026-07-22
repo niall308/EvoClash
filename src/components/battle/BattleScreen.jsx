@@ -76,7 +76,10 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
 
   return (
     <div className="min-h-screen flex flex-col text-white" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
-      <div className="grid grid-cols-3 items-center px-3 py-2 text-xs font-bold">
+      <div
+        className="grid grid-cols-3 items-center px-3 py-2 text-xs font-bold"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}
+      >
         <span className="justify-self-start">Round {round}/5</span>
         <span className="justify-self-center whitespace-nowrap">You {score.player} — {score.ai} AI</span>
         <button
@@ -163,7 +166,10 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
         )}
       </div>
 
-      <div className="flex items-end justify-between px-4 pb-6 gap-3">
+      <div
+        className="flex items-end justify-between px-4 gap-3"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
+      >
         <div className="flex-1 flex justify-start">
           {phase !== "matchEnd" && (
             <PowerButtons user={user} activeKeys={activePowerUps} canUseMap={canUseMap} handlers={handlers} />

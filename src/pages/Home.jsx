@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Swords, Layers, Sparkles, User, ShieldCheck } from "lucide-react";
 import { CARD_BACK_URL } from "@/lib/gameConstants";
+import { useAuth } from "@/lib/AuthContext";
 
 const BUTTONS = [
   { to: "/play", label: "Play", icon: Swords, color: "from-red-600 to-orange-500" },
@@ -12,12 +13,15 @@ const BUTTONS = [
 ];
 
 export default function Home() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
+  const hasMarkedSeen = useRef(false);
 
   useEffect(() => {
-    base44.auth.me().then(setUser);
-    base44.auth.updateMe({ lastSeenAt: new Date().toISOString() });
-  }, []);
+    if (user && !hasMarkedSeen.current) {
+      hasMarkedSeen.current = true;
+      base44.auth.updateMe({ lastSeenAt: new Date().toISOString() });
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 text-white" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
