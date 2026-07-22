@@ -180,19 +180,9 @@ export default function Deck() {
             onSelect={handleSelect}
             bulkMode={bulkMode}
             selectedIds={selectedIds}
+            onUpgrade={(id) => navigate(`/card-upgrade/${id}`)}
           />
         </>
-      )}
-
-      {selectedId && !bulkMode && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0D1B2A]/95 border-t border-white/10">
-          <button
-            onClick={() => navigate(`/card-upgrade/${selectedId}`)}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 py-3 rounded-full font-bold"
-          >
-            <ArrowUpCircle className="w-5 h-5" /> Upgrade Card
-          </button>
-        </div>
       )}
 
       {bulkMode && selectedIds.length > 0 && (
