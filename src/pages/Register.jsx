@@ -46,6 +46,7 @@ export default function Register() {
       if (result?.access_token) {
         base44.auth.setToken(result.access_token);
       }
+      base44.functions.invoke("sendWelcomeEmail", { email }).catch(() => {});
       window.location.href = "/";
     } catch (err) {
       setError(err.message || "Invalid verification code");
