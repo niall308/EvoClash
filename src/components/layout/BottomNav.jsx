@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Swords, Layers, Sparkles, User } from "lucide-react";
 
 const TABS = [
@@ -11,6 +11,7 @@ const TABS = [
 
 export default function BottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   return (
     <nav
@@ -21,10 +22,14 @@ export default function BottomNav() {
         const active = location.pathname === tab.path;
         const Icon = tab.icon;
         return (
-          <Link key={tab.path} to={tab.path} className="flex-1 flex flex-col items-center gap-1 py-2.5 active:scale-95 transition-transform">
+          <button
+            key={tab.path}
+            onClick={() => navigate(tab.path)}
+            className="flex-1 flex flex-col items-center gap-1 py-2.5 active:scale-95 transition-transform"
+          >
             <Icon className={`w-5 h-5 ${active ? "text-amber-400" : "text-white/40"}`} />
             <span className={`text-[10px] font-bold ${active ? "text-amber-400" : "text-white/40"}`}>{tab.label}</span>
-          </Link>
+          </button>
         );
       })}
     </nav>

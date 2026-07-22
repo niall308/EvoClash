@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { generateRandomCard, generateHybridCard } from "@/lib/cardGenerator";
 import { STYLE_REFERENCE_URL, HYBRID_CHANCE } from "@/lib/gameConstants";
@@ -7,7 +6,7 @@ import { getCreationStatus, buildCreationUpdate, EXTRA_CREATURE_COST } from "@/l
 import { ensureActiveDeck } from "@/lib/decks";
 import GameCard from "@/components/cards/GameCard";
 import CreaturePicker from "@/components/generate/CreaturePicker";
-import { ArrowLeft, Sparkles, Loader2, PlusCircle, RefreshCw, Coins } from "lucide-react";
+import { Sparkles, Loader2, PlusCircle, RefreshCw, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CardGenerate() {
@@ -88,12 +87,7 @@ export default function CardGenerate() {
 
   return (
     <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-6 flex flex-col items-center">
-      <div className="w-full">
-        <Link to="/" className="inline-flex items-center gap-1 text-white/60 text-sm mb-6 py-2 px-1 -ml-1">
-          <ArrowLeft className="w-4 h-4" /> Back
-        </Link>
-      </div>
-      <h1 className="text-2xl font-black mb-1">AI Generate</h1>
+      <h1 className="text-2xl font-black mb-1 mt-2">AI Generate</h1>
       <p className="text-white/50 text-xs mb-1">{count === null ? "Loading..." : `${count}/50 cards owned`}</p>
       <p className="text-[11px] mb-8 h-4">
         {status && !isAdmin && status.pastInitialFree && (

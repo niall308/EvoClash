@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Trophy, Swords, Gamepad2, History, HelpCircle, Target, Flame, Snowflake, ShieldCheck, Trash2 } from "lucide-react";
+import { Trophy, Swords, Gamepad2, History, HelpCircle, Target, Flame, Snowflake, ShieldCheck, Trash2 } from "lucide-react";
 import { UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
 import { getRankByRP } from "@/lib/rankSystem";
 import { useAuth } from "@/lib/AuthContext";
@@ -56,10 +56,6 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-6">
-      <Link to="/" className="inline-flex items-center gap-1 text-white/60 text-sm mb-6 py-2 px-1">
-        <ArrowLeft className="w-4 h-4" /> Back
-      </Link>
-
       {user.role === "admin" && (
         <Link
           to="/admin"
