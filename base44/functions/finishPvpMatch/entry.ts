@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { matchCode, winnerId } = await req.json();
+    const { matchCode } = await req.json();
     const matches = await base44.entities.PvpMatch.filter({ code: matchCode });
     const match = matches[0];
     if (!match) return Response.json({ error: 'Match not found' }, { status: 404 });
@@ -18,8 +18,17 @@ Deno.serve(async (req) => {
     if (user.id !== match.player1Id && user.id !== match.player2Id) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
-    if (winnerId !== match.player1Id && winnerId !== match.player2Id) {
-      return Response.json({ error: 'Invalid winnerId' }, { status: 400 });
+
+    // Winner is never trusted from the client. Derive it from the match's own
+    // server-stored score, falling back to "caller forfeited" (winner = the
+    // other participant) when neither side has reached the winning score.
+    let winnerId;
+    if (match.scoreP1 >= 3) {
+      winnerId = match.player1Id;
+    } else if (match.scoreP2 >= 3) {
+      winnerId = match.player2Id;
+    } else {
+      winnerId = user.id === match.player1Id ? match.player2Id : match.player1Id;
     }
 
     const [p1Matches, p2Matches] = await Promise.all([

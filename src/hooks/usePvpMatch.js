@@ -121,7 +121,6 @@ export default function usePvpMatch(matchCode) {
       const winnerName = roundWinner === "player1" ? match.player1Name : match.player2Name;
 
       if (matchOver) {
-        const winnerId = roundWinner === "player1" ? match.player1Id : match.player2Id;
         await base44.entities.PvpMatch.update(match.id, {
           scoreP1: newScoreP1,
           scoreP2: newScoreP2,
@@ -129,7 +128,7 @@ export default function usePvpMatch(matchCode) {
           phase: "matchEnd",
           log: `${winnerName} wins the match!`,
         });
-        await base44.functions.invoke("finishPvpMatch", { matchCode: match.code, winnerId });
+        await base44.functions.invoke("finishPvpMatch", { matchCode: match.code });
         return;
       }
 
@@ -155,9 +154,8 @@ export default function usePvpMatch(matchCode) {
 
   const forfeit = useCallback(async () => {
     if (!match || !myRole) return;
-    const winnerId = myRole === "player1" ? match.player2Id : match.player1Id;
     await base44.entities.PvpMatch.update(match.id, { phase: "matchEnd", log: "Your opponent forfeited!" });
-    await base44.functions.invoke("finishPvpMatch", { matchCode: match.code, winnerId });
+    await base44.functions.invoke("finishPvpMatch", { matchCode: match.code });
   }, [match, myRole]);
 
   return { match, myRole, oppRole, pickRps, attack, forfeit };
