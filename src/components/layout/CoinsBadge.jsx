@@ -32,9 +32,9 @@ export default function CoinsBadge() {
     >
       <Link
         to="/buy-coins"
-        className="flex items-center justify-center w-11 h-11 bg-amber-400 text-[#0D1B2A] rounded-full active:scale-90 transition-transform"
+        className="flex items-center justify-center w-[22px] h-[22px] bg-amber-400 text-[#0D1B2A] rounded-full active:scale-90 transition-transform shrink-0"
       >
-        <Plus className="w-5 h-5" />
+        <Plus className="w-[10px] h-[10px]" />
       </Link>
       <motion.div
         key={bump}
