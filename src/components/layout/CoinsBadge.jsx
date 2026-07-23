@@ -28,8 +28,8 @@ export default function CoinsBadge() {
   return createPortal(
     <div
       id="coins-badge"
-      className="fixed z-40 flex items-center gap-2"
-      style={{ top: "calc(env(safe-area-inset-top) + 0.75rem)", right: "calc(env(safe-area-inset-right) + 0.75rem)" }}
+      className="fixed top-0 left-0 right-0 z-40 flex items-center justify-end gap-2 bg-[#0D1B2A] border-b border-white/10 px-3"
+      style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)", paddingBottom: "0.75rem" }}
     >
       <Link
         to="/buy-coins"
