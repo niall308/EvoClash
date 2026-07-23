@@ -16,7 +16,7 @@ export default function AppLayout() {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -24, opacity: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(env(safe-area-inset-bottom) + 4rem)" }}
+          style={{ paddingTop: "calc(env(safe-area-inset-top) + 3rem)", paddingBottom: "calc(env(safe-area-inset-bottom) + 4rem)" }}
         >
           <Outlet />
         </motion.div>
