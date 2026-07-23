@@ -33,6 +33,7 @@ import CreateLobby from '@/pages/CreateLobby';
 import JoinLobby from '@/pages/JoinLobby';
 import Trades from '@/pages/Trades';
 import AppLayout from '@/components/layout/AppLayout';
+import AdminRoute from '@/components/AdminRoute';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -74,9 +75,11 @@ const AuthenticatedApp = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/history" element={<BattleHistory />} />
           <Route path="/how-to-play" element={<HowToPlay />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/admin/creatures" element={<AdminCreatures />} />
-          <Route path="/admin/ai-decks" element={<AdminAiDecks />} />
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin/creatures" element={<AdminCreatures />} />
+            <Route path="/admin/ai-decks" element={<AdminAiDecks />} />
+          </Route>
           <Route path="/card-upgrade/:id" element={<CardUpgrade />} />
           <Route path="/leaderboards" element={<Leaderboards />} />
           <Route path="/power-ups" element={<PowerUps />} />
