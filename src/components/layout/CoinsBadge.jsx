@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, Link } from "react-router-dom";
 import { Coins, Plus } from "lucide-react";
 import { motion } from "framer-motion";
@@ -24,7 +25,7 @@ export default function CoinsBadge() {
 
   if (coins === null) return null;
 
-  return (
+  return createPortal(
     <div
       id="coins-badge"
       className="fixed z-40 flex items-center gap-2"
@@ -45,6 +46,7 @@ export default function CoinsBadge() {
         <Coins className="w-3.5 h-3.5" />
         {coins} LC
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }
