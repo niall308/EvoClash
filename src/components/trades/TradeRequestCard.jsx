@@ -9,7 +9,8 @@ const STATUS_LABEL = {
   cancelled: { text: "Cancelled", color: "text-white/40" },
 };
 
-export default function TradeRequestCard({ trade, direction, onAccept, onDecline, onCancel, busy }) {
+export default function TradeRequestCard({ trade, direction, onAccept, onDecline, onCancel, onClaim, busy }) {
+  const claimed = direction === "incoming" ? trade.recipientClaimed : trade.proposerClaimed;
   const fromCard = {
     name: trade.fromCardName,
     type: trade.fromCardType,
@@ -82,6 +83,20 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
         >
           <X className="w-3.5 h-3.5" /> Cancel Request
         </button>
+      )}
+
+      {trade.status === "completed" && !claimed && (
+        <button
+          onClick={() => onClaim(trade.id)}
+          disabled={busy}
+          className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 text-white text-xs font-bold py-2 rounded-full disabled:opacity-50"
+        >
+          <Check className="w-3.5 h-3.5" /> Accept Card
+        </button>
+      )}
+
+      {trade.status === "completed" && claimed && (
+        <p className="text-center text-emerald-400 text-[11px] font-semibold">Card added to your deck</p>
       )}
     </div>
   );

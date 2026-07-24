@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { tradeId, action } = await req.json();
-    if (!tradeId || !['accept', 'decline', 'cancel'].includes(action)) {
+    if (!tradeId || !['accept', 'decline', 'cancel', 'claimCard'].includes(action)) {
       return Response.json({ error: 'Invalid request' }, { status: 400 });
     }
 
@@ -28,6 +28,40 @@ Deno.serve(async (req) => {
       return Response.json({ status: 'cancelled' });
     }
 
+    if (action === 'claimCard') {
+      if (trade.status !== 'completed') return Response.json({ error: 'Trade is not completed yet' }, { status: 400 });
+
+      const isProposer = user.id === trade.created_by_id;
+      const isRecipient = user.id === trade.toUserId;
+      if (!isProposer && !isRecipient) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
+      const claimedField = isProposer ? 'proposerClaimed' : 'recipientClaimed';
+      if (trade[claimedField]) return Response.json({ error: 'Already claimed' }, { status: 400 });
+
+      // Proposer receives the recipient's card (toCard), recipient receives the proposer's card (fromCard).
+      const cardIdToClaim = isProposer ? trade.toCardId : trade.fromCardId;
+      const originalOwnerId = isProposer ? trade.toUserId : trade.created_by_id;
+
+      const cardMatches = await base44.asServiceRole.entities.Card.filter({ id: cardIdToClaim });
+      const card = cardMatches[0];
+      if (!card || card.created_by_id !== originalOwnerId) {
+        return Response.json({ error: 'This card is no longer available' }, { status: 409 });
+      }
+
+      const myCards = await base44.asServiceRole.entities.Card.filter({ created_by_id: user.id });
+      if (myCards.length >= 50) {
+        return Response.json({ error: 'Your deck is full' }, { status: 400 });
+      }
+
+      const myDecks = await base44.asServiceRole.entities.Deck.filter({ created_by_id: user.id, isActive: true });
+      const myDeckId = myDecks[0]?.id || null;
+
+      await base44.asServiceRole.entities.Card.update(card.id, { created_by_id: user.id, deckId: myDeckId });
+      await base44.asServiceRole.entities.TradeRequest.update(tradeId, { [claimedField]: true });
+
+      return Response.json({ status: 'claimed' });
+    }
+
     // Only the recipient of the trade may accept or decline it.
     if (user.id !== trade.toUserId) return Response.json({ error: 'Forbidden' }, { status: 403 });
     if (trade.status !== 'pending') return Response.json({ error: 'Trade is no longer pending' }, { status: 400 });
@@ -39,7 +73,9 @@ Deno.serve(async (req) => {
 
     // action === 'accept': re-verify both cards still belong to the expected
     // owners right now (they may have been traded, deleted, or upgraded away
-    // since the proposal was made) before touching anything.
+    // since the proposal was made) before marking the trade completed. Cards
+    // are not swapped here — each player claims their new card separately
+    // (via the 'claimCard' action) once their deck has room for it.
     const proposerId = trade.created_by_id;
     const [fromMatches, toMatches] = await Promise.all([
       base44.asServiceRole.entities.Card.filter({ id: trade.fromCardId }),
@@ -52,19 +88,6 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.TradeRequest.update(tradeId, { status: 'declined' });
       return Response.json({ error: 'One of the cards is no longer available for this trade' }, { status: 409 });
     }
-
-    const [proposerDecks, recipientDecks] = await Promise.all([
-      base44.asServiceRole.entities.Deck.filter({ created_by_id: proposerId, isActive: true }),
-      base44.asServiceRole.entities.Deck.filter({ created_by_id: trade.toUserId, isActive: true }),
-    ]);
-    const proposerDeckId = proposerDecks[0]?.id || null;
-    const recipientDeckId = recipientDecks[0]?.id || null;
-
-    // Swap ownership of the two cards.
-    await Promise.all([
-      base44.asServiceRole.entities.Card.update(fromCard.id, { created_by_id: trade.toUserId, deckId: recipientDeckId }),
-      base44.asServiceRole.entities.Card.update(toCard.id, { created_by_id: proposerId, deckId: proposerDeckId }),
-    ]);
 
     await base44.asServiceRole.entities.TradeRequest.update(tradeId, { status: 'completed' });
 

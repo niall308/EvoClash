@@ -75,6 +75,14 @@
         "cancelled"
       ],
       "default": "pending"
+    },
+    "proposerClaimed": {
+      "type": "boolean",
+      "default": false
+    },
+    "recipientClaimed": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [

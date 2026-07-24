@@ -39,6 +39,14 @@ export default function Trades() {
     setBusyId(null);
   };
 
+  const handleClaim = async (tradeId) => {
+    setBusyId(tradeId);
+    const { data } = await base44.functions.invoke("respondTrade", { tradeId, action: "claimCard" });
+    if (data?.error) window.alert(data.error);
+    await load();
+    setBusyId(null);
+  };
+
   return (
     <PullToRefresh onRefresh={load}>
     <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-6 pb-24">
@@ -68,6 +76,7 @@ export default function Trades() {
                   direction="incoming"
                   onAccept={handleAccept}
                   onDecline={handleDecline}
+                  onClaim={handleClaim}
                   busy={busyId === t.id}
                 />
               ))}
@@ -80,7 +89,7 @@ export default function Trades() {
           ) : (
             <div>
               {trades.outgoing.map((t) => (
-                <TradeRequestCard key={t.id} trade={t} direction="outgoing" onCancel={handleCancel} busy={busyId === t.id} />
+                <TradeRequestCard key={t.id} trade={t} direction="outgoing" onCancel={handleCancel} onClaim={handleClaim} busy={busyId === t.id} />
               ))}
             </div>
           )}
