@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { generateRandomCard, generateHybridCard } from "@/lib/cardGenerator";
-import { STYLE_REFERENCE_URL, HYBRID_CHANCE } from "@/lib/gameConstants";
+import { STYLE_REFERENCE_URL, HYBRID_CHANCE, CREATURE_ANATOMY, CREATURE_STANCES } from "@/lib/gameConstants";
 import { getCreationStatus, buildCreationUpdate, EXTRA_CREATURE_COST } from "@/lib/cardCreationLimits";
 import { ensureActiveDeck } from "@/lib/decks";
 import GameCard from "@/components/cards/GameCard";
@@ -49,11 +49,12 @@ export default function CardGenerate() {
       ? generateHybridCard(forcedHybrid ? forced : hybridCreatures[Math.floor(Math.random() * hybridCreatures.length)])
       : generateRandomCard(1, { creatures, forcedCreature: forced });
 
+    const stance = CREATURE_STANCES[Math.floor(Math.random() * CREATURE_STANCES.length)];
     const prompt = useHybrid
       ? `A hybrid creature combining two creatures into one, robot-style, design guide: ${cardData.baseName} — ${
           (forcedHybrid ? forced : hybridCreatures.find((c) => c.baseName === cardData.baseName))?.description || ""
-        }. Dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`
-      : `A ${cardData.type}-type ${cardData.baseName}, dynamic full-body creature illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`;
+        }. Pose: ${stance}. Dynamic full-body illustration true to this exact hybrid description and anatomy. Match ONLY the art style, color palette, lighting, and mystical trading-card aesthetic of the reference image — completely ignore the reference image's own creature/subject and pose. Centered on a plain background, no text, no border, no frame`
+      : `A ${cardData.type}-type ${cardData.baseName}: ${CREATURE_ANATOMY[cardData.baseName] || `a creature true to a real ${cardData.baseName}`}. Pose: ${stance}. Dynamic full-body creature illustration, anatomically true to this exact creature (not a generic dinosaur). Match ONLY the art style, color palette, lighting, and mystical trading-card aesthetic of the reference image — completely ignore the reference image's own creature/subject and pose. Centered on a plain background, no text, no border, no frame`;
 
     try {
       const { url } = await base44.integrations.Core.GenerateImage({

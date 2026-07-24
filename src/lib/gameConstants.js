@@ -37,6 +37,47 @@ export const CREATURES = {
   "Mythical Creature": ["Fire Dragon", "Phoenix", "Griffin", "Kraken", "Chimera", "Hydra", "Basilisk", "Unicorn"],
 };
 
+// Real anatomy/body-plan description for each creature, used to keep AI-generated art
+// true to the actual creature instead of drifting toward the reference image's subject.
+export const CREATURE_ANATOMY = {
+  "Tyrannosaurus Rex": "a massive bipedal theropod dinosaur with a huge head, powerful jaws lined with sharp teeth, tiny clawed arms, a thick muscular tail, and heavy clawed feet",
+  "Velociraptor": "a lean, feathered bipedal raptor with sickle-shaped claws on its feet, a long stiff tail, and a narrow snout",
+  "Triceratops": "a quadrupedal dinosaur with a large bony neck frill, three long horns on its face, and a stocky armored body",
+  "Stegosaurus": "a quadrupedal dinosaur with a row of large bony plates running along its spine and sharp spikes at the end of its tail",
+  "Spinosaurus": "a long-snouted semi-aquatic dinosaur with a tall sail-like fin running down its back and powerful clawed forelimbs",
+  "Brachiosaurus": "a massive long-necked quadrupedal dinosaur with a tiny head high above its shoulders and thick pillar-like legs",
+  "Ankylosaurus": "a low, wide, heavily armored quadrupedal dinosaur covered in bony plates with a heavy club at the end of its tail",
+  "Pterodactyl": "a flying reptile with long leathery wings stretched between elongated finger bones, a crested head, and a sharp beak — no legs used for standing, shown airborne or perched",
+  "Woolly Mammoth": "a massive furry elephant-like creature with long curved tusks, small ears, and thick shaggy fur",
+  "Saber-Tooth Tiger": "a muscular big cat with an extremely long pair of curved saber fangs jutting from its upper jaw",
+  "Dodo Bird": "a plump flightless bird with a large curved beak, small stubby wings, and stout legs",
+  "Giant Sloth": "a huge shaggy-furred ground sloth with long curved claws and a hunched, lumbering posture",
+  "Cave Bear": "a massive prehistoric bear with a broad skull, thick fur, and powerful clawed paws",
+  "Irish Elk": "a large deer with enormous palmate antlers spanning wider than its entire body",
+  "Dire Wolf": "a large, muscular wolf with a broad skull, thick fur, and powerful jaws",
+  "Moa Bird": "a tall flightless bird with a long neck, small head, and powerful legs — no visible wings",
+  "Fire Dragon": "a serpentine reptilian dragon standing on four clawed legs, with large leathery bat-like wings, a long sinuous scaled body, horns on its head, and a long whip-like tail — never a bipedal dinosaur silhouette",
+  "Phoenix": "a majestic fire bird with vast blazing feathered wings, a long flowing tail of flame, and an elegant crested head",
+  "Griffin": "a creature with the front half of an eagle — including feathered wings, a hooked beak, and taloned front legs — and the hind half of a lion",
+  "Kraken": "a colossal sea monster with a bulbous head and many long, writhing tentacles instead of legs",
+  "Chimera": "a creature with a lion's muscular body, a goat's head emerging from its back, and a serpent's head at the end of its tail",
+  "Hydra": "a serpentine reptilian body with multiple long necks, each ending in its own snarling reptilian head",
+  "Basilisk": "a giant legless serpent with a crowned, crested head and hypnotic glowing eyes",
+  "Unicorn": "a graceful horse-like creature with a single long spiraled horn on its forehead and a flowing mane and tail",
+};
+
+// Pose/stance variety for generated creature art, picked at random per generation.
+export const CREATURE_STANCES = [
+  "in an aggressive roaring stance, baring its full power",
+  "crouched low in a hunting stance, ready to strike",
+  "standing tall in a majestic, commanding pose",
+  "captured mid-motion in a powerful charging pose",
+  "rearing up dramatically, showcasing its full form",
+  "in a fierce battle-ready pose with its weapons bared",
+  "coiled and poised to strike",
+  "leaping forward in a dynamic mid-air attack pose",
+];
+
 // "predator" creatures always get higher attack than defense, "prey" creatures always get higher defense than attack
 export const CREATURE_ROLES = {
   "Tyrannosaurus Rex": "predator",
