@@ -8,15 +8,9 @@ export default function BuyCoins() {
   const navigate = useNavigate();
   const [loadingId, setLoadingId] = useState(null);
 
-  const isMobileDevice = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
   const handleBuy = async (packId) => {
     if (window.self !== window.top) {
       alert("Checkout only works from the published app, not inside this preview.");
-      return;
-    }
-    if (isMobileDevice()) {
-      alert("App Store IAP will be used to complete this purchase.");
       return;
     }
     setLoadingId(packId);
