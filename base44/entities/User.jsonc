@@ -232,6 +232,11 @@
     "currentPvpStreak": {
       "type": "number",
       "default": 0
+    },
+    "lastDailyRewardClaimedAt": {
+      "type": "string",
+      "default": "",
+      "description": "EST calendar date (YYYY-MM-DD) the daily reward was last claimed."
     }
   }
 }
