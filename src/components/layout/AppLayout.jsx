@@ -1,11 +1,18 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import CoinsBadge from "@/components/layout/CoinsBadge";
 import BottomNav from "@/components/layout/BottomNav";
+import { recordTabPath, recordVisit } from "@/lib/tabNavigation";
 
 export default function AppLayout() {
   const location = useLocation();
+
+  useEffect(() => {
+    recordTabPath(location.pathname);
+    recordVisit();
+  }, [location.pathname]);
+
   return (
     <div className="relative">
       <CoinsBadge />

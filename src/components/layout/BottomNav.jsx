@@ -4,6 +4,7 @@ import { Swords, Layers, Sparkles, User, ArrowLeftRight, Coins } from "lucide-re
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
 import useClaimableMilestones from "@/hooks/useClaimableMilestones";
 import { useAuth } from "@/lib/AuthContext";
+import { getActiveTabPath, getLastTabPath } from "@/lib/tabNavigation";
 
 const TABS = [
   { path: "/", label: "Play", icon: Swords },
@@ -12,26 +13,6 @@ const TABS = [
   { path: "/trades", label: "Trades", icon: ArrowLeftRight },
   { path: "/profile", label: "Profile", icon: User },
 ];
-
-const SUB_ROUTE_MAP = {
-  "/lobby": "/",
-  "/create-lobby": "/",
-  "/join-lobby": "/",
-  "/leaderboards": "/",
-  "/power-ups": "/",
-  "/card-upgrade": "/deck",
-  "/history": "/profile",
-  "/how-to-play": "/profile",
-  "/milestones": "/profile",
-};
-
-function getActiveTabPath(pathname) {
-  if (pathname === "/") return "/";
-  for (const prefix of Object.keys(SUB_ROUTE_MAP)) {
-    if (pathname.startsWith(prefix)) return SUB_ROUTE_MAP[prefix];
-  }
-  return pathname;
-}
 
 export default function BottomNav() {
   const location = useLocation();
@@ -52,7 +33,7 @@ export default function BottomNav() {
         return (
           <button
             key={tab.path}
-            onClick={() => navigate(tab.path)}
+            onClick={() => navigate(getLastTabPath(tab.path))}
             className="relative flex-1 flex flex-col items-center gap-1 py-2.5 active:scale-95 transition-transform"
           >
             <div className="relative">
