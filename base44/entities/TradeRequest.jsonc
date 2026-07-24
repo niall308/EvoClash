@@ -86,7 +86,8 @@
         "pending",
         "completed",
         "declined",
-        "cancelled"
+        "cancelled",
+        "expired"
       ],
       "default": "pending"
     },

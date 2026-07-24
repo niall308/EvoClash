@@ -9,6 +9,7 @@ const STATUS_LABEL = {
   transferred: { text: "Transferred", color: "text-sky-400" },
   declined: { text: "Declined", color: "text-red-400" },
   cancelled: { text: "Cancelled", color: "text-white/40" },
+  expired: { text: "Expired", color: "text-white/40" },
 };
 
 export default function TradeRequestCard({ trade, direction, onAccept, onDecline, onCancel, onClaim, onCounter, busy }) {
@@ -131,6 +132,10 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
             </button>
           </div>
         </div>
+      )}
+
+      {trade.status === "expired" && (
+        <p className="text-center text-white/40 text-[11px]">This trade request expired.</p>
       )}
 
       {isPending && direction === "outgoing" && (
