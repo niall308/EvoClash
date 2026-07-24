@@ -1,0 +1,48 @@
+{
+  "name": "CoinTransaction",
+  "type": "object",
+  "properties": {
+    "packId": {
+      "type": "string"
+    },
+    "priceUsd": {
+      "type": "number"
+    },
+    "coinsAdded": {
+      "type": "number"
+    },
+    "oldCoinTotal": {
+      "type": "number"
+    },
+    "newCoinTotal": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "packId",
+    "priceUsd",
+    "coinsAdded",
+    "oldCoinTotal",
+    "newCoinTotal"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

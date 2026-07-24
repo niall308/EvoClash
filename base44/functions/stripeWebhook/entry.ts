@@ -20,9 +20,21 @@ Deno.serve(async (req) => {
       const session = event.data.object;
       const userId = session.metadata?.user_id;
       const coins = parseInt(session.metadata?.coins || '0', 10);
+      const priceUsd = parseFloat(session.metadata?.priceUsd || '0');
+      const packId = session.metadata?.packId || '';
       if (userId && coins > 0) {
         const targetUser = await base44.asServiceRole.entities.User.get(userId);
-        await base44.asServiceRole.entities.User.update(userId, { coins: (targetUser.coins || 0) + coins });
+        const oldCoinTotal = targetUser.coins || 0;
+        const newCoinTotal = oldCoinTotal + coins;
+        await base44.asServiceRole.entities.User.update(userId, { coins: newCoinTotal });
+        await base44.asServiceRole.entities.CoinTransaction.create({
+          created_by_id: userId,
+          packId,
+          priceUsd,
+          coinsAdded: coins,
+          oldCoinTotal,
+          newCoinTotal,
+        });
       }
     }
 

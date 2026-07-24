@@ -33,6 +33,8 @@ Deno.serve(async (req) => {
         base44_app_id: Deno.env.get('BASE44_APP_ID'),
         user_id: user.id,
         coins: String(pack.coins),
+        packId: pack.id,
+        priceUsd: String(pack.priceUsd),
       },
     });
 

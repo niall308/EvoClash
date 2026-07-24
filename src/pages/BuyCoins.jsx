@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Coins, Loader2 } from "lucide-react";
+import { ArrowLeft, Coins, Loader2, History } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { COIN_PACKS } from "@/lib/gameConstants";
 
@@ -28,9 +28,14 @@ export default function BuyCoins() {
 
   return (
     <div className="min-h-screen text-white px-4 py-6" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-white/60 hover:text-white text-sm mb-6 py-2 px-1 -ml-1">
-        <ArrowLeft className="w-4 h-4" /> Back
-      </button>
+      <div className="flex items-center justify-between mb-6">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-white/60 hover:text-white text-sm py-2 px-1 -ml-1">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <button onClick={() => navigate("/coin-history")} className="flex items-center gap-1.5 bg-white/10 text-xs font-bold px-3 py-2 rounded-full active:scale-95 transition-transform">
+          <History className="w-4 h-4" /> History
+        </button>
+      </div>
       <h1 className="text-2xl font-bold mb-1">Buy Legend Coins</h1>
       <p className="text-white/60 text-sm mb-6">Get more LC to upgrade cards, unlock powers, and generate creatures.</p>
 

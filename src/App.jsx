@@ -28,6 +28,7 @@ import Leaderboards from '@/pages/Leaderboards';
 import PowerUps from '@/pages/PowerUps';
 import Milestones from '@/pages/Milestones';
 import BuyCoins from '@/pages/BuyCoins';
+import CoinHistory from '@/pages/CoinHistory';
 import Lobby from '@/pages/Lobby';
 import CreateLobby from '@/pages/CreateLobby';
 import JoinLobby from '@/pages/JoinLobby';
@@ -85,6 +86,7 @@ const AuthenticatedApp = () => {
           <Route path="/power-ups" element={<PowerUps />} />
           <Route path="/milestones" element={<Milestones />} />
           <Route path="/buy-coins" element={<BuyCoins />} />
+          <Route path="/coin-history" element={<CoinHistory />} />
           <Route path="/lobby" element={<Lobby />} />
           <Route path="/create-lobby" element={<CreateLobby />} />
           <Route path="/join-lobby/:code" element={<JoinLobby />} />
