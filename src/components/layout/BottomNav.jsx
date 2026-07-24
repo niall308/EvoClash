@@ -1,7 +1,9 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Swords, Layers, Sparkles, User, ArrowLeftRight } from "lucide-react";
+import { Swords, Layers, Sparkles, User, ArrowLeftRight, Coins } from "lucide-react";
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
+import useClaimableMilestones from "@/hooks/useClaimableMilestones";
+import { useAuth } from "@/lib/AuthContext";
 
 const TABS = [
   { path: "/", label: "Play", icon: Swords },
@@ -36,6 +38,8 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const activeTabPath = getActiveTabPath(location.pathname);
   const { requests } = useIncomingBattleRequests();
+  const { user } = useAuth();
+  const hasClaimableMilestones = useClaimableMilestones(user);
 
   return (
     <nav
@@ -56,6 +60,11 @@ export default function BottomNav() {
               {tab.path === "/" && requests.length > 0 && (
                 <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold">
                   {requests.length}
+                </span>
+              )}
+              {tab.path === "/profile" && hasClaimableMilestones && (
+                <span className="absolute -top-1.5 -right-2 w-4 h-4 flex items-center justify-center rounded-full bg-amber-400 border border-[#0D1B2A]">
+                  <Coins className="w-2.5 h-2.5 text-black" />
                 </span>
               )}
             </div>
