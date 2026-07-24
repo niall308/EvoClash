@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     // Verify the requested card really belongs to the target friend.
     const theirCardMatches = await base44.asServiceRole.entities.Card.filter({ id: toCardId });
     const toCard = theirCardMatches[0];
-    if (!toCard || toCard.created_by_id !== toUserId) {
+    if (!toCard || toCard.ownerId !== toUserId) {
       return Response.json({ error: 'That card no longer belongs to this player' }, { status: 400 });
     }
 

@@ -34,7 +34,7 @@ export default function Deck() {
     const { decks: userDecks, active } = await ensureActiveDeck(me.id);
     setDecks(userDecks);
     setActiveDeckId(active.id);
-    const data = await base44.entities.Card.filter({ created_by_id: me.id }, "-created_date");
+    const data = await base44.entities.Card.filter({ ownerId: me.id }, "-created_date");
     setCards(data);
   };
 

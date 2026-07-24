@@ -15,7 +15,7 @@ export default function Battle() {
     (async () => {
       const user = await base44.auth.me();
       const { active } = await ensureActiveDeck(user.id);
-      const myCards = await base44.entities.Card.filter({ created_by_id: user.id, deckId: active.id });
+      const myCards = await base44.entities.Card.filter({ ownerId: user.id, deckId: active.id });
       if (myCards.length < 15) {
         navigate("/play");
         return;

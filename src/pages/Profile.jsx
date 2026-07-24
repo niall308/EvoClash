@@ -33,12 +33,12 @@ export default function Profile() {
   useEffect(() => {
     if (!authUser) return;
     setUser(authUser);
-    base44.entities.Card.filter({ created_by_id: authUser.id }).then(setCards);
+    base44.entities.Card.filter({ ownerId: authUser.id }).then(setCards);
   }, [authUser?.id]);
 
   const handleDeleteAccount = async () => {
     await Promise.all([
-      base44.entities.Card.deleteMany({ created_by_id: user.id }),
+      base44.entities.Card.deleteMany({ ownerId: user.id }),
       base44.entities.Deck.deleteMany({ created_by_id: user.id }),
       base44.entities.Friend.deleteMany({ created_by_id: user.id }),
       base44.entities.BattleHistory.deleteMany({ created_by_id: user.id }),

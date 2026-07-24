@@ -44,11 +44,11 @@ Deno.serve(async (req) => {
 
       const cardMatches = await base44.asServiceRole.entities.Card.filter({ id: cardIdToClaim });
       const card = cardMatches[0];
-      if (!card || card.created_by_id !== originalOwnerId) {
+      if (!card || card.ownerId !== originalOwnerId) {
         return Response.json({ error: 'This card is no longer available' }, { status: 409 });
       }
 
-      const myCards = await base44.asServiceRole.entities.Card.filter({ created_by_id: user.id });
+      const myCards = await base44.asServiceRole.entities.Card.filter({ ownerId: user.id });
       if (myCards.length >= 50) {
         return Response.json({ error: 'Your deck is full' }, { status: 400 });
       }
@@ -71,8 +71,8 @@ Deno.serve(async (req) => {
       // been claimed by this side, closing any read-then-write race window
       // that could otherwise let a card be claimed twice or out of turn.
       const cardUpdateResult = await base44.asServiceRole.entities.Card.updateMany(
-        { id: card.id, created_by_id: originalOwnerId },
-        { $set: { created_by_id: user.id, deckId: myDeckId } }
+        { id: card.id, ownerId: originalOwnerId },
+        { $set: { ownerId: user.id, deckId: myDeckId } }
       );
       if (!cardUpdateResult || !cardUpdateResult.updated) {
         return Response.json({ error: 'This card is no longer available' }, { status: 409 });
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
     const fromCard = fromMatches[0];
     const toCard = toMatches[0];
 
-    if (!fromCard || fromCard.created_by_id !== proposerId || !toCard || toCard.created_by_id !== trade.toUserId) {
+    if (!fromCard || fromCard.ownerId !== proposerId || !toCard || toCard.ownerId !== trade.toUserId) {
       await base44.asServiceRole.entities.TradeRequest.update(tradeId, { status: 'declined' });
       return Response.json({ error: 'One of the cards is no longer available for this trade' }, { status: 409 });
     }

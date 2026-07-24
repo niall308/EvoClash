@@ -10,7 +10,7 @@ export async function ensureActiveDeck(userId) {
     const deck = await base44.entities.Deck.create({ name: "Deck 1", isActive: true });
     decks = [deck];
     active = deck;
-    const cards = await base44.entities.Card.filter({ created_by_id: userId });
+    const cards = await base44.entities.Card.filter({ ownerId: userId });
     const orphans = cards.filter((c) => !c.deckId);
     if (orphans.length) {
       await base44.entities.Card.bulkUpdate(orphans.map((c) => ({ id: c.id, deckId: deck.id })));

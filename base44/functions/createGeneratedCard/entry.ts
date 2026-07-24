@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: validationError.message }, { status: 400 });
     }
 
-    const card = await base44.entities.Card.create({ ...safeCardData, deckId });
+    const card = await base44.entities.Card.create({ ...safeCardData, deckId, ownerId: user.id });
     return Response.json({ card });
   } catch (error) {
     console.error('createGeneratedCard error', error);

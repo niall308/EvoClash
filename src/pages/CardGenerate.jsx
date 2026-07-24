@@ -26,7 +26,7 @@ export default function CardGenerate() {
     (async () => {
       const me = await base44.auth.me();
       setUser(me);
-      const cards = await base44.entities.Card.filter({ created_by_id: me.id });
+      const cards = await base44.entities.Card.filter({ ownerId: me.id });
       setCount(cards.length);
       const list = await base44.entities.Creature.list();
       setCreatures(list);

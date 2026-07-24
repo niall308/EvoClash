@@ -19,7 +19,7 @@ export default function Play() {
     if (!user) return;
     (async () => {
       const { active } = await ensureActiveDeck(user.id);
-      const cards = await base44.entities.Card.filter({ created_by_id: user.id, deckId: active.id });
+      const cards = await base44.entities.Card.filter({ ownerId: user.id, deckId: active.id });
       setCount(cards.length);
     })();
   }, [user?.id]);

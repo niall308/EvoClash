@@ -24,15 +24,15 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.Deck.filter({ created_by_id: opponentUser.id, isActive: true }),
     ]);
     const myDeckCards = myDecks[0]
-      ? await base44.asServiceRole.entities.Card.filter({ created_by_id: user.id, deckId: myDecks[0].id })
+      ? await base44.asServiceRole.entities.Card.filter({ ownerId: user.id, deckId: myDecks[0].id })
       : [];
     const oppDeckCards = oppDecks[0]
-      ? await base44.asServiceRole.entities.Card.filter({ created_by_id: opponentUser.id, deckId: oppDecks[0].id })
+      ? await base44.asServiceRole.entities.Card.filter({ ownerId: opponentUser.id, deckId: oppDecks[0].id })
       : [];
-    const myCards = myDeckCards.length ? myDeckCards : await base44.asServiceRole.entities.Card.filter({ created_by_id: user.id });
+    const myCards = myDeckCards.length ? myDeckCards : await base44.asServiceRole.entities.Card.filter({ ownerId: user.id });
     const oppCards = oppDeckCards.length
       ? oppDeckCards
-      : await base44.asServiceRole.entities.Card.filter({ created_by_id: opponentUser.id });
+      : await base44.asServiceRole.entities.Card.filter({ ownerId: opponentUser.id });
 
     if (myCards.length < 15 || oppCards.length < 15) {
       return Response.json({ error: 'Both players need at least 15 cards in their active deck' }, { status: 400 });
