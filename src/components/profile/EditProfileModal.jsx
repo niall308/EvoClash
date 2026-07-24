@@ -26,16 +26,17 @@ export default function EditProfileModal({ user, onClose, onSaved }) {
   const handleSave = async () => {
     setSaving(true);
     setError("");
-    const { data } = await base44.functions.invoke("updateProfile", {
-      username,
-      profilePictureUrl: imageUrl,
-    });
-    setSaving(false);
-    if (data?.error) {
-      setError(data.error);
-      return;
+    try {
+      await base44.functions.invoke("updateProfile", {
+        username,
+        profilePictureUrl: imageUrl,
+      });
+      onSaved();
+    } catch (err) {
+      setError(err?.response?.data?.error || "Something went wrong. Please try again.");
+    } finally {
+      setSaving(false);
     }
-    onSaved();
   };
 
   return (
