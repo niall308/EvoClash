@@ -114,9 +114,8 @@ Deno.serve(async (req) => {
 
     // action === 'accept': re-verify both cards still belong to the expected
     // owners right now (they may have been traded, deleted, or upgraded away
-    // since the proposal was made) before marking the trade completed. Cards
-    // are not swapped here — each player claims their new card separately
-    // (via the 'claimCard' action) once their deck has room for it.
+    // since the proposal was made), then swap ownership immediately so both
+    // players see the traded cards in their collection right away.
     const proposerId = trade.created_by_id;
     const [fromMatches, toMatches] = await Promise.all([
       base44.asServiceRole.entities.Card.filter({ id: trade.fromCardId }),
@@ -142,7 +141,45 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.User.update(trade.toUserId, { coins: (recipientUser.coins || 0) + trade.coins });
     }
 
-    await base44.asServiceRole.entities.TradeRequest.update(tradeId, { status: 'completed' });
+    const getOrCreateActiveDeckId = async (userId) => {
+      const activeDecks = await base44.asServiceRole.entities.Deck.filter({ created_by_id: userId, isActive: true });
+      if (activeDecks[0]) return activeDecks[0].id;
+      const allDecks = await base44.asServiceRole.entities.Deck.filter({ created_by_id: userId });
+      if (allDecks[0]) {
+        await base44.asServiceRole.entities.Deck.update(allDecks[0].id, { isActive: true });
+        return allDecks[0].id;
+      }
+      const newDeck = await base44.asServiceRole.entities.Deck.create({ name: 'Deck 1', isActive: true, created_by_id: userId });
+      return newDeck.id;
+    };
+
+    const [proposerDeckId, recipientDeckId] = await Promise.all([
+      getOrCreateActiveDeckId(proposerId),
+      getOrCreateActiveDeckId(trade.toUserId),
+    ]);
+
+    // Conditional (compare-and-swap) updates guard against the card having
+    // moved between the re-verification above and this write.
+    const [fromSwap, toSwap] = await Promise.all([
+      base44.asServiceRole.entities.Card.updateMany(
+        { id: fromCard.id, ownerId: proposerId },
+        { $set: { ownerId: trade.toUserId, deckId: recipientDeckId } }
+      ),
+      base44.asServiceRole.entities.Card.updateMany(
+        { id: toCard.id, ownerId: trade.toUserId },
+        { $set: { ownerId: proposerId, deckId: proposerDeckId } }
+      ),
+    ]);
+
+    if (!fromSwap?.updated || !toSwap?.updated) {
+      return Response.json({ error: 'One of the cards is no longer available for this trade' }, { status: 409 });
+    }
+
+    await base44.asServiceRole.entities.TradeRequest.update(tradeId, {
+      status: 'completed',
+      proposerClaimed: true,
+      recipientClaimed: true,
+    });
 
     return Response.json({ status: 'completed' });
   } catch (error) {

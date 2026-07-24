@@ -148,17 +148,7 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
         </button>
       )}
 
-      {isCompleted && !claimed && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onClaim(trade.id); }}
-          disabled={busy}
-          className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 text-white text-xs font-bold py-2 rounded-full disabled:opacity-50"
-        >
-          <Check className="w-3.5 h-3.5" /> Accept Card
-        </button>
-      )}
-
-      {isCompleted && claimed && (
+      {isCompleted && (
         <p className="text-center text-sky-400 text-[11px] font-semibold">Card added to your deck</p>
       )}
 
