@@ -66,6 +66,20 @@
     "toCardImageUrl": {
       "type": "string"
     },
+    "coins": {
+      "type": "number",
+      "default": 0,
+      "description": "LC coins the proposer includes in the deal, paid to the recipient on acceptance. Can be changed via counteroffers."
+    },
+    "lastOfferBy": {
+      "type": "string",
+      "enum": [
+        "proposer",
+        "recipient"
+      ],
+      "default": "proposer",
+      "description": "Who set the current coins value / whose offer is on the table awaiting a response."
+    },
     "status": {
       "type": "string",
       "enum": [

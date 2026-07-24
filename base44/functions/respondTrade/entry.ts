@@ -6,8 +6,8 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { tradeId, action } = await req.json();
-    if (!tradeId || !['accept', 'decline', 'cancel', 'claimCard'].includes(action)) {
+    const { tradeId, action, coins } = await req.json();
+    if (!tradeId || !['accept', 'decline', 'cancel', 'claimCard', 'counter'].includes(action)) {
       return Response.json({ error: 'Invalid request' }, { status: 400 });
     }
 
@@ -89,13 +89,27 @@ Deno.serve(async (req) => {
       return Response.json({ status: 'claimed' });
     }
 
-    // Only the recipient of the trade may accept or decline it.
-    if (user.id !== trade.toUserId) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    // Only the party who is NOT currently "on offer" may respond — i.e. the
+    // other side of whichever offer (initial or counteroffer) is on the table.
     if (trade.status !== 'pending') return Response.json({ error: 'Trade is no longer pending' }, { status: 400 });
+    const isProposer = user.id === trade.created_by_id;
+    const isRecipient = user.id === trade.toUserId;
+    if (!isProposer && !isRecipient) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const waitingOn = trade.lastOfferBy === 'recipient' ? 'proposer' : 'recipient';
+    const myRole = isProposer ? 'proposer' : 'recipient';
+    if (myRole !== waitingOn) {
+      return Response.json({ error: 'Waiting on the other player to respond' }, { status: 403 });
+    }
 
     if (action === 'decline') {
       await base44.asServiceRole.entities.TradeRequest.update(tradeId, { status: 'declined' });
       return Response.json({ status: 'declined' });
+    }
+
+    if (action === 'counter') {
+      const counterCoins = Number.isFinite(coins) ? Math.max(0, Math.floor(coins)) : 0;
+      await base44.asServiceRole.entities.TradeRequest.update(tradeId, { coins: counterCoins, lastOfferBy: myRole });
+      return Response.json({ status: 'countered' });
     }
 
     // action === 'accept': re-verify both cards still belong to the expected
@@ -114,6 +128,18 @@ Deno.serve(async (req) => {
     if (!fromCard || fromCard.created_by_id !== proposerId || !toCard || toCard.created_by_id !== trade.toUserId) {
       await base44.asServiceRole.entities.TradeRequest.update(tradeId, { status: 'declined' });
       return Response.json({ error: 'One of the cards is no longer available for this trade' }, { status: 409 });
+    }
+
+    // Coins always flow from the proposer to the recipient, whatever the
+    // final agreed amount ended up being through counteroffers.
+    if (trade.coins > 0) {
+      const payer = await base44.asServiceRole.entities.User.get(proposerId);
+      if ((payer.coins || 0) < trade.coins) {
+        return Response.json({ error: 'The proposer no longer has enough LC coins for this trade' }, { status: 400 });
+      }
+      const recipientUser = await base44.asServiceRole.entities.User.get(trade.toUserId);
+      await base44.asServiceRole.entities.User.update(proposerId, { coins: (payer.coins || 0) - trade.coins });
+      await base44.asServiceRole.entities.User.update(trade.toUserId, { coins: (recipientUser.coins || 0) + trade.coins });
     }
 
     await base44.asServiceRole.entities.TradeRequest.update(tradeId, { status: 'completed' });

@@ -1,5 +1,5 @@
 import React from "react";
-import { X, ArrowLeftRight } from "lucide-react";
+import { X, ArrowLeftRight, Coins } from "lucide-react";
 import GameCard from "@/components/cards/GameCard";
 
 export default function TradeDetailModal({ trade, fromCard, toCard, direction, onClose }) {
@@ -36,6 +36,12 @@ export default function TradeDetailModal({ trade, fromCard, toCard, direction, o
             </p>
           </div>
         </div>
+
+        {trade.coins > 0 && (
+          <p className="flex items-center justify-center gap-1 text-amber-300 text-xs font-bold mb-2">
+            <Coins className="w-3.5 h-3.5" /> +{trade.coins.toLocaleString()} LC included
+          </p>
+        )}
 
         <p className="text-center text-white/40 text-[11px]">Traded on {tradeDate}</p>
       </div>

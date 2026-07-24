@@ -6,11 +6,16 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { toUserId, toUserName, fromCardId, toCardId } = await req.json();
+    const { toUserId, toUserName, fromCardId, toCardId, coins } = await req.json();
     if (!toUserId || !fromCardId || !toCardId) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
     if (toUserId === user.id) return Response.json({ error: 'You cannot trade with yourself' }, { status: 400 });
+
+    const offeredCoins = Number.isFinite(coins) ? Math.max(0, Math.floor(coins)) : 0;
+    if (offeredCoins > (user.coins || 0)) {
+      return Response.json({ error: 'You do not have enough LC coins to offer that amount' }, { status: 400 });
+    }
 
     const friendship = await base44.entities.Friend.filter({ created_by_id: user.id, friendUserId: toUserId });
     if (friendship.length === 0) return Response.json({ error: 'Not friends with this player' }, { status: 403 });
@@ -48,6 +53,8 @@ Deno.serve(async (req) => {
       toCardBonusDamage: toCard.bonusDamage || 0,
       toCardIsHybrid: !!toCard.isHybrid,
       toCardImageUrl: toCard.imageUrl,
+      coins: offeredCoins,
+      lastOfferBy: 'proposer',
       status: 'pending',
     });
 

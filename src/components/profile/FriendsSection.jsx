@@ -118,6 +118,7 @@ export default function FriendsSection({ user, onUserUpdate }) {
         <ProposeTradeModal
           friend={tradeFriend}
           myCards={myCards}
+          maxCoins={user.coins || 0}
           onClose={() => setTradeFriend(null)}
           onProposed={() => {
             setTradeFriend(null);

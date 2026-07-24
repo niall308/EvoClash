@@ -3,10 +3,11 @@ import { ArrowLeftRight, Loader2, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import GameCard from "@/components/cards/GameCard";
 
-export default function ProposeTradeModal({ friend, myCards, onClose, onProposed }) {
+export default function ProposeTradeModal({ friend, myCards, maxCoins = 0, onClose, onProposed }) {
   const [friendCards, setFriendCards] = useState(null);
   const [myCardId, setMyCardId] = useState(null);
   const [friendCardId, setFriendCardId] = useState(null);
+  const [coins, setCoins] = useState(0);
   const [step, setStep] = useState(1); // 1: pick cards, 2: confirm
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -29,6 +30,7 @@ export default function ProposeTradeModal({ friend, myCards, onClose, onProposed
       toUserName: friend.friendName,
       fromCardId: myCardId,
       toCardId: friendCardId,
+      coins,
     });
     setSubmitting(false);
     if (data?.error) {
@@ -106,6 +108,23 @@ export default function ProposeTradeModal({ friend, myCards, onClose, onProposed
                 <GameCard card={friendCard} size="sm" />
                 <p className="text-[10px] text-white/50 mt-1">You receive</p>
               </div>
+            </div>
+
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-white/50 text-xs">Add LC coins to your offer (optional)</label>
+                <span className="text-amber-300 text-xs font-bold">{coins.toLocaleString()} LC</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={maxCoins}
+                step={Math.max(1, Math.floor(maxCoins / 100) || 1)}
+                value={Math.min(coins, maxCoins)}
+                onChange={(e) => setCoins(Number(e.target.value))}
+                className="w-full"
+              />
+              <p className="text-white/30 text-[10px] mt-1">You have {maxCoins.toLocaleString()} LC available</p>
             </div>
 
             {error && <p className="text-red-400 text-xs mb-3 text-center">{error}</p>}

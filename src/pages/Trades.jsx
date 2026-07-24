@@ -47,6 +47,14 @@ export default function Trades() {
     setBusyId(null);
   };
 
+  const handleCounter = async (tradeId, coins) => {
+    setBusyId(tradeId);
+    const { data } = await base44.functions.invoke("respondTrade", { tradeId, action: "counter", coins });
+    if (data?.error) window.alert(data.error);
+    await load();
+    setBusyId(null);
+  };
+
   return (
     <PullToRefresh onRefresh={load}>
     <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-6 pb-24">
@@ -77,6 +85,7 @@ export default function Trades() {
                   onAccept={handleAccept}
                   onDecline={handleDecline}
                   onClaim={handleClaim}
+                  onCounter={handleCounter}
                   busy={busyId === t.id}
                 />
               ))}
@@ -89,7 +98,17 @@ export default function Trades() {
           ) : (
             <div>
               {trades.outgoing.map((t) => (
-                <TradeRequestCard key={t.id} trade={t} direction="outgoing" onCancel={handleCancel} onClaim={handleClaim} busy={busyId === t.id} />
+                <TradeRequestCard
+                  key={t.id}
+                  trade={t}
+                  direction="outgoing"
+                  onAccept={handleAccept}
+                  onDecline={handleDecline}
+                  onCancel={handleCancel}
+                  onClaim={handleClaim}
+                  onCounter={handleCounter}
+                  busy={busyId === t.id}
+                />
               ))}
             </div>
           )}
