@@ -1,0 +1,64 @@
+{
+  "name": "BattleRequest",
+  "type": "object",
+  "properties": {
+    "toUserId": {
+      "type": "string"
+    },
+    "toUserName": {
+      "type": "string",
+      "default": ""
+    },
+    "fromUserName": {
+      "type": "string",
+      "default": ""
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "matchCode": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "required": [
+    "toUserId",
+    "toUserName",
+    "fromUserName"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.toUserId": "{{user.id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.toUserId": "{{user.id}}"
+        }
+      ]
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

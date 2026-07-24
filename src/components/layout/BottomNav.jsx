@@ -1,6 +1,7 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Swords, Layers, Sparkles, User, ArrowLeftRight } from "lucide-react";
+import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
 
 const TABS = [
   { path: "/", label: "Play", icon: Swords },
@@ -34,6 +35,7 @@ export default function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const activeTabPath = getActiveTabPath(location.pathname);
+  const { requests } = useIncomingBattleRequests();
 
   return (
     <nav
@@ -47,9 +49,16 @@ export default function BottomNav() {
           <button
             key={tab.path}
             onClick={() => navigate(tab.path)}
-            className="flex-1 flex flex-col items-center gap-1 py-2.5 active:scale-95 transition-transform"
+            className="relative flex-1 flex flex-col items-center gap-1 py-2.5 active:scale-95 transition-transform"
           >
-            <Icon className={`w-5 h-5 ${active ? "text-amber-400" : "text-white/40"}`} />
+            <div className="relative">
+              <Icon className={`w-5 h-5 ${active ? "text-amber-400" : "text-white/40"}`} />
+              {tab.path === "/" && requests.length > 0 && (
+                <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold">
+                  {requests.length}
+                </span>
+              )}
+            </div>
             <span className={`text-[10px] font-bold ${active ? "text-amber-400" : "text-white/40"}`}>{tab.label}</span>
           </button>
         );

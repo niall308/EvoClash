@@ -1,14 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Trophy, PlusCircle, Search, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Trophy, PlusCircle, Search, X, Loader2, Swords, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Lobby() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [players, setPlayers] = useState(null);
   const [searching, setSearching] = useState(false);
+  const [sentRequestIds, setSentRequestIds] = useState([]);
+  const [respondingId, setRespondingId] = useState(null);
   const pollRef = useRef(null);
   const searchingRef = useRef(false);
+  const { requests: incomingRequests, refresh: refreshIncoming } = useIncomingBattleRequests();
 
   useEffect(() => {
     base44.functions.invoke("getLobbyPlayers", {}).then(({ data }) => setPlayers(data?.players || []));
@@ -17,6 +23,27 @@ export default function Lobby() {
       if (searchingRef.current) base44.functions.invoke("findMatch", { action: "cancel" });
     };
   }, []);
+
+  const requestBattle = async (player) => {
+    if (!user) return;
+    setSentRequestIds((ids) => [...ids, player.id]);
+    await base44.entities.BattleRequest.create({
+      toUserId: player.id,
+      toUserName: player.full_name,
+      fromUserName: user.username || user.full_name,
+    });
+  };
+
+  const respondToRequest = async (request, action) => {
+    setRespondingId(request.id);
+    const { data } = await base44.functions.invoke("respondBattleRequest", { requestId: request.id, action });
+    setRespondingId(null);
+    if (action === "accept" && data?.matchCode) {
+      navigate(`/pvp-battle/${data.matchCode}`);
+    } else {
+      refreshIncoming();
+    }
+  };
 
   const poll = async () => {
     const { data } = await base44.functions.invoke("findMatch", { action: "search" });
@@ -75,24 +102,72 @@ export default function Lobby() {
         </button>
       )}
 
+      {incomingRequests.length > 0 && (
+        <div className="mb-6 space-y-2">
+          <p className="text-white/50 text-xs font-semibold">Battle Requests</p>
+          {incomingRequests.map((req) => (
+            <div key={req.id} className="flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-3">
+              <div>
+                <p className="font-bold text-sm">{req.fromUserName}</p>
+                <p className="text-white/40 text-xs">wants to battle you</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => respondToRequest(req, "decline")}
+                  disabled={respondingId === req.id}
+                  className="p-2 rounded-full bg-white/10 text-white/60 disabled:opacity-40"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => respondToRequest(req, "accept")}
+                  disabled={respondingId === req.id}
+                  className="flex items-center gap-1.5 bg-emerald-500 text-black text-xs font-bold px-3 py-2 rounded-full disabled:opacity-40"
+                >
+                  {respondingId === req.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  Accept
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {players === null && <p className="text-white/50 text-sm">Loading players...</p>}
       {players?.length === 0 && <p className="text-white/50 text-sm">No other players yet.</p>}
 
       <div className="space-y-2">
-        {players?.map((p) => (
-          <div key={p.id} className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3">
-            <div className="flex items-center gap-3">
-              <span className={`w-2.5 h-2.5 rounded-full ${p.online ? "bg-emerald-400" : "bg-white/20"}`} />
-              <div>
-                <p className="font-bold text-sm">{p.full_name}</p>
-                <p className="text-white/40 text-xs">{p.online ? "Online" : "Offline"}</p>
+        {players?.map((p) => {
+          const requested = sentRequestIds.includes(p.id);
+          return (
+            <div key={p.id} className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3">
+              <div className="flex items-center gap-3">
+                <span className={`w-2.5 h-2.5 rounded-full ${p.online ? "bg-emerald-400" : "bg-white/20"}`} />
+                <div>
+                  <p className="font-bold text-sm">{p.full_name}</p>
+                  <p className="text-white/40 text-xs">{p.online ? "Online" : "Offline"}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 text-amber-300 text-xs font-bold">
+                  <Trophy className="w-3.5 h-3.5" /> Rank #{p.rank}
+                </div>
+                {p.online && (
+                  <button
+                    onClick={() => requestBattle(p)}
+                    disabled={requested}
+                    className={`flex items-center gap-1 text-xs font-bold px-3 py-2 rounded-full active:scale-95 transition-transform disabled:opacity-50 ${
+                      requested ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500 text-black"
+                    }`}
+                  >
+                    {requested ? <Check className="w-3.5 h-3.5" /> : <Swords className="w-3.5 h-3.5" />}
+                    {requested ? "Requested" : "Battle"}
+                  </button>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-1.5 text-amber-300 text-xs font-bold">
-              <Trophy className="w-3.5 h-3.5" /> Rank #{p.rank}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
