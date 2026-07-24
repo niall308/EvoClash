@@ -101,6 +101,10 @@
     },
     "deckId": {
       "type": "string"
+    },
+    "ownerId": {
+      "type": "string",
+      "description": "Current owner's user id. Mutable (unlike the built-in created_by_id) so cards can change hands via trades."
     }
   },
   "required": [
@@ -114,16 +118,16 @@
   ],
   "rls": {
     "create": {
-      "created_by_id": "{{user.id}}"
+      "data.ownerId": "{{user.id}}"
     },
     "read": {
-      "created_by_id": "{{user.id}}"
+      "data.ownerId": "{{user.id}}"
     },
     "update": {
-      "created_by_id": "{{user.id}}"
+      "data.ownerId": "{{user.id}}"
     },
     "delete": {
-      "created_by_id": "{{user.id}}"
+      "data.ownerId": "{{user.id}}"
     }
   }
 }
