@@ -1,15 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import { ArrowLeftRight, Check, X, Clock } from "lucide-react";
 import GameCard from "@/components/cards/GameCard";
+import TradeDetailModal from "@/components/trades/TradeDetailModal";
 
 const STATUS_LABEL = {
   pending: { text: "Pending", color: "text-amber-400" },
   completed: { text: "Completed", color: "text-emerald-400" },
+  transferred: { text: "Transferred", color: "text-sky-400" },
   declined: { text: "Declined", color: "text-red-400" },
   cancelled: { text: "Cancelled", color: "text-white/40" },
 };
 
 export default function TradeRequestCard({ trade, direction, onAccept, onDecline, onCancel, onClaim, busy }) {
+  const [showDetail, setShowDetail] = useState(false);
   const claimed = direction === "incoming" ? trade.recipientClaimed : trade.proposerClaimed;
   const fromCard = {
     name: trade.fromCardName,
@@ -31,10 +34,15 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
     isHybrid: trade.toCardIsHybrid,
     imageUrl: trade.toCardImageUrl,
   };
-  const status = STATUS_LABEL[trade.status] || STATUS_LABEL.pending;
+  const isCompleted = trade.status === "completed";
+  const statusKey = isCompleted && claimed ? "transferred" : trade.status;
+  const status = STATUS_LABEL[statusKey] || STATUS_LABEL.pending;
 
   return (
-    <div className="bg-white/5 rounded-xl p-3 mb-3">
+    <div
+      className={`bg-white/5 rounded-xl p-3 mb-3 ${isCompleted ? "cursor-pointer" : ""}`}
+      onClick={() => isCompleted && setShowDetail(true)}
+    >
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-semibold text-white/70">
           {direction === "incoming" ? `From ${trade.fromUserName || "a friend"}` : `To ${trade.toUserName}`}
@@ -59,14 +67,14 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
       {trade.status === "pending" && direction === "incoming" && (
         <div className="flex gap-2">
           <button
-            onClick={() => onAccept(trade.id)}
+            onClick={(e) => { e.stopPropagation(); onAccept(trade.id); }}
             disabled={busy}
             className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 text-white text-xs font-bold py-2 rounded-full disabled:opacity-50"
           >
             <Check className="w-3.5 h-3.5" /> Accept
           </button>
           <button
-            onClick={() => onDecline(trade.id)}
+            onClick={(e) => { e.stopPropagation(); onDecline(trade.id); }}
             disabled={busy}
             className="flex-1 flex items-center justify-center gap-1.5 bg-red-600 text-white text-xs font-bold py-2 rounded-full disabled:opacity-50"
           >
@@ -77,7 +85,7 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
 
       {trade.status === "pending" && direction === "outgoing" && (
         <button
-          onClick={() => onCancel(trade.id)}
+          onClick={(e) => { e.stopPropagation(); onCancel(trade.id); }}
           disabled={busy}
           className="w-full flex items-center justify-center gap-1.5 bg-white/10 text-white text-xs font-bold py-2 rounded-full disabled:opacity-50"
         >
@@ -85,9 +93,9 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
         </button>
       )}
 
-      {trade.status === "completed" && !claimed && (
+      {isCompleted && !claimed && (
         <button
-          onClick={() => onClaim(trade.id)}
+          onClick={(e) => { e.stopPropagation(); onClaim(trade.id); }}
           disabled={busy}
           className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 text-white text-xs font-bold py-2 rounded-full disabled:opacity-50"
         >
@@ -95,8 +103,18 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
         </button>
       )}
 
-      {trade.status === "completed" && claimed && (
-        <p className="text-center text-emerald-400 text-[11px] font-semibold">Card added to your deck</p>
+      {isCompleted && claimed && (
+        <p className="text-center text-sky-400 text-[11px] font-semibold">Card added to your deck</p>
+      )}
+
+      {showDetail && (
+        <TradeDetailModal
+          trade={trade}
+          fromCard={fromCard}
+          toCard={toCard}
+          direction={direction}
+          onClose={() => setShowDetail(false)}
+        />
       )}
     </div>
   );
