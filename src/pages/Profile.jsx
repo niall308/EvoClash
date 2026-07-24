@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Trophy, Swords, Gamepad2, History, HelpCircle, Target, Flame, Snowflake, ShieldCheck, Trash2, ArrowLeftRight } from "lucide-react";
+import { Trophy, Swords, Gamepad2, History, HelpCircle, Target, Flame, Snowflake, ShieldCheck, Trash2, ArrowLeftRight, Pencil } from "lucide-react";
 import { UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
 import { getRankByRP } from "@/lib/rankSystem";
 import { useAuth } from "@/lib/AuthContext";
@@ -10,6 +10,8 @@ import CardFilterBar from "@/components/cards/CardFilterBar";
 import ActiveMilestonesSummary from "@/components/profile/ActiveMilestonesSummary";
 import FriendsSection from "@/components/profile/FriendsSection";
 import DeleteAccountModal from "@/components/profile/DeleteAccountModal";
+import EditProfileModal from "@/components/profile/EditProfileModal";
+import { Image } from "@/components/ui/image";
 
 function Stat({ icon: Icon, label, value }) {
   return (
@@ -29,6 +31,7 @@ export default function Profile() {
   const [filterTier, setFilterTier] = useState("all");
   const [hybridOnly, setHybridOnly] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     if (!authUser) return;
@@ -72,8 +75,20 @@ export default function Profile() {
         </Link>
       )}
 
+      <div className="flex items-center gap-3 mb-1">
+        {user.profilePictureUrl && (
+          <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 shrink-0">
+            <Image src={user.profilePictureUrl} className="w-full h-full" />
+          </div>
+        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-2xl font-black">{user.username || user.full_name}</h1>
+          <button onClick={() => setShowEditModal(true)} className="p-1.5 rounded-full bg-white/10 text-white/60">
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
       <div className="flex items-center gap-2 mb-1 flex-wrap">
-        <h1 className="text-2xl font-black">{user.username || user.full_name}</h1>
         <RankEmblem rp={user.rankPoints} size="sm" />
         <span className="text-sm font-bold" style={{ color: rank.color }}>
           {rank.name} · #{rank.number}
@@ -153,6 +168,18 @@ export default function Profile() {
 
       {showDeleteModal && (
         <DeleteAccountModal onConfirm={handleDeleteAccount} onCancel={() => setShowDeleteModal(false)} />
+      )}
+
+      {showEditModal && (
+        <EditProfileModal
+          user={user}
+          onClose={() => setShowEditModal(false)}
+          onSaved={async () => {
+            setShowEditModal(false);
+            const freshUser = await base44.auth.me();
+            setUser(freshUser);
+          }}
+        />
       )}
     </div>
   );

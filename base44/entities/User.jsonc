@@ -5,6 +5,10 @@
     "username": {
       "type": "string"
     },
+    "profilePictureUrl": {
+      "type": "string",
+      "default": ""
+    },
     "friendCode": {
       "type": "string",
       "default": ""
