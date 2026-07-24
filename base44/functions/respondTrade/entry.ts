@@ -53,8 +53,18 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Your deck is full' }, { status: 400 });
       }
 
-      const myDecks = await base44.asServiceRole.entities.Deck.filter({ created_by_id: user.id, isActive: true });
-      const myDeckId = myDecks[0]?.id || null;
+      let myDecks = await base44.asServiceRole.entities.Deck.filter({ created_by_id: user.id, isActive: true });
+      let myDeckId = myDecks[0]?.id;
+      if (!myDeckId) {
+        const allMyDecks = await base44.asServiceRole.entities.Deck.filter({ created_by_id: user.id });
+        if (allMyDecks.length > 0) {
+          myDeckId = allMyDecks[0].id;
+          await base44.asServiceRole.entities.Deck.update(myDeckId, { isActive: true });
+        } else {
+          const newDeck = await base44.asServiceRole.entities.Deck.create({ name: "Deck 1", isActive: true, created_by_id: user.id });
+          myDeckId = newDeck.id;
+        }
+      }
 
       await base44.asServiceRole.entities.Card.update(card.id, { created_by_id: user.id, deckId: myDeckId });
       await base44.asServiceRole.entities.TradeRequest.update(tradeId, { [claimedField]: true });
