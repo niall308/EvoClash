@@ -59,7 +59,7 @@ export const CREATURE_ANATOMY = {
   "Fire Dragon": "a serpentine reptilian dragon standing on four clawed legs, with large leathery bat-like wings, a long sinuous scaled body, horns on its head, and a long whip-like tail — never a bipedal dinosaur silhouette",
   "Phoenix": "a majestic fire bird with vast blazing feathered wings, a long flowing tail of flame, and an elegant crested head",
   "Griffin": "a creature with the front half of an eagle — including feathered wings, a hooked beak, and taloned front legs — and the hind half of a lion",
-  "Kraken": "a colossal sea monster with a bulbous head and many long, writhing tentacles instead of legs",
+  "Kraken": "a colossal octopus/squid-like sea monster with a large soft bulbous head, big round eyes, a small beak-like mouth with NO teeth and NO reptilian jaw, and many long writhing rubbery tentacles covered in suckers instead of legs or arms — never a toothy reptilian face",
   "Chimera": "a creature with a lion's muscular body, a goat's head emerging from its back, and a serpent's head at the end of its tail",
   "Hydra": "a serpentine reptilian body with multiple long necks, each ending in its own snarling reptilian head",
   "Basilisk": "a giant legless serpent with a crowned, crested head and hypnotic glowing eyes",
