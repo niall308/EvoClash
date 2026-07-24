@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
         { id: card.id, created_by_id: originalOwnerId },
         { $set: { created_by_id: user.id, deckId: myDeckId } }
       );
-      if (!cardUpdateResult || cardUpdateResult.matched_count === 0) {
+      if (!cardUpdateResult || !cardUpdateResult.updated) {
         return Response.json({ error: 'This card is no longer available' }, { status: 409 });
       }
 
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
         { id: tradeId, [claimedField]: false },
         { $set: { [claimedField]: true } }
       );
-      if (!tradeUpdateResult || tradeUpdateResult.matched_count === 0) {
+      if (!tradeUpdateResult || !tradeUpdateResult.updated) {
         return Response.json({ error: 'Already claimed' }, { status: 400 });
       }
 
