@@ -87,6 +87,11 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const summonCountRef = useRef(0);
   const finalWinHPRef = useRef(null);
 
+  // Extra tactical power-up state (all the powers beyond the original 9), grouped in one object
+  // so battle logic can read/consume any of them without a state variable per power.
+  const [pfx, setPfx] = useState({});
+  const patchPfx = useCallback((patch) => setPfx((p) => (typeof patch === "function" ? patch(p) : { ...p, ...patch })), []);
+
   useEffect(() => {
     (async () => {
       const me = await base44.auth.me();
@@ -221,6 +226,10 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         if (aiCard.tier > playerCard.tier) matchHigherTierDefeatRef.current = true;
         if (roundMinHpRatioRef.current <= 0.5) matchComebackRef.current = true;
         finalWinHPRef.current = carryHP;
+        if (pfx.restoreOnDefeatActive) {
+          const healed = Math.round(maxHealth(playerCard) * 0.2);
+          carryHP = Math.min(maxHealth(playerCard) + (pfx.maxHPBonus || 0), carryHP + healed);
+        }
       }
       roundMinHpRatioRef.current = 1;
       const newScore = { ...score, [winnerSide]: score[winnerSide] + 1 };
@@ -248,7 +257,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       setPhase("draw");
       setLog("Choose a card to play!");
     },
-    [playerCard, aiCard, score, round, applyProgression]
+    [playerCard, aiCard, score, round, applyProgression, pfx.restoreOnDefeatActive, pfx.maxHPBonus]
   );
 
   const attack = useCallback(
@@ -257,25 +266,58 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       busyRef.current = true;
       if (attackerSide === "player") consecutiveTimeoutsRef.current = 0;
       let attacker = attackerSide === "player" ? playerCard : aiCard;
-      const defender = attackerSide === "player" ? aiCard : playerCard;
+      let defender = attackerSide === "player" ? aiCard : playerCard;
       const usingDoubleAttack = attackerSide === "player" && doubleAttackActive;
       const usingTripleDefense = attackerSide === "ai" && tripleDefenseActive;
       const usingTierBoost = attackerSide === "player" && !!tempTierBoost;
       const usingHalfAttack = attackerSide === "ai" && halfAttackTurnsLeft > 0 && halfAttackCardRef.current === aiCard;
       const usingBlock = attackerSide === "ai" && blockActive;
 
+      // player-outgoing one-shot buffs
+      const usingIgnoreDefense = attackerSide === "player" && !!pfx.ignoreDefensePercent;
+      const usingTrueDamage = attackerSide === "player" && !!pfx.trueDamage;
+      const usingGuaranteedCrit = attackerSide === "player" && !!pfx.guaranteedCrit;
+      const usingDoubleBonusDamage = attackerSide === "player" && !!pfx.doubleBonusDamage;
+      const usingMaximizeAttack = attackerSide === "player" && !!pfx.maximizeAttackReady;
+
+      // player-defending (ai attacking) buffs
+      const usingDoubleDefenseTurns = attackerSide === "ai" && (pfx.doubleDefenseTurns || 0) > 0;
+      const usingMaximizeDefense = attackerSide === "ai" && !!pfx.maximizeDefenseReady;
+      const usingNegate = attackerSide === "ai" && !!pfx.negateNextAttack;
+      const usingReduceDamage = attackerSide === "ai" && (pfx.reduceDamageTurns || 0) > 0;
+      const usingReflect = attackerSide === "ai" && !!pfx.reflectNextAttack;
+      const usingDivineProtection = attackerSide === "ai" && (pfx.divineProtectionTurns || 0) > 0;
+
       if (usingTierBoost) attacker = { ...attacker, ...tempTierBoost };
       if (usingHalfAttack) attacker = { ...attacker, attack: Math.round(attacker.attack * 0.5) };
+      if (usingMaximizeAttack) attacker = { ...attacker, attack: TIER_RANGES[attacker.tier || 1].statMax };
+      if (usingDoubleBonusDamage) attacker = { ...attacker, bonusDamage: (attacker.bonusDamage || 0) * 2 };
+      if (usingMaximizeDefense) defender = { ...defender, defense: TIER_RANGES[defender.tier || 1].statMax };
 
-      const result = usingBlock
+      let defenseMultiplier = usingTripleDefense ? 3 : 1;
+      if (usingDoubleDefenseTurns) defenseMultiplier *= 2;
+
+      const result = usingBlock || usingNegate || usingDivineProtection
         ? { tie: false, recoil: false, damage: 0, isCrit: false }
-        : computeDamage(attacker, defender, usingDoubleAttack ? 2 : 1, usingTripleDefense ? 3 : 1);
+        : computeDamage(attacker, defender, usingDoubleAttack ? 2 : 1, defenseMultiplier, {
+            ignoreDefensePercent: usingIgnoreDefense ? pfx.ignoreDefensePercent : 0,
+            trueDamage: usingTrueDamage,
+            forceCrit: usingGuaranteedCrit,
+          });
 
       if (usingDoubleAttack) setDoubleAttackActive(false);
       if (usingTripleDefense) setTripleDefenseActive(false);
       if (usingTierBoost) setTempTierBoost(null);
       if (usingHalfAttack) setHalfAttackTurnsLeft((n) => n - 1);
       if (usingBlock) setBlockActive(false);
+      if (usingIgnoreDefense || usingTrueDamage || usingGuaranteedCrit || usingDoubleBonusDamage || usingMaximizeAttack) {
+        patchPfx({ ignoreDefensePercent: 0, trueDamage: false, guaranteedCrit: false, doubleBonusDamage: false, maximizeAttackReady: false });
+      }
+      if (usingDoubleDefenseTurns) patchPfx((p) => ({ ...p, doubleDefenseTurns: Math.max(0, (p.doubleDefenseTurns || 0) - 1) }));
+      if (usingMaximizeDefense) patchPfx({ maximizeDefenseReady: false });
+      if (usingNegate) patchPfx({ negateNextAttack: false });
+      if (usingReduceDamage) patchPfx((p) => ({ ...p, reduceDamageTurns: Math.max(0, (p.reduceDamageTurns || 0) - 1) }));
+      if (usingDivineProtection) patchPfx((p) => ({ ...p, divineProtectionTurns: Math.max(0, (p.divineProtectionTurns || 0) - 1) }));
 
       if (result.isCrit && !result.tie && !result.recoil) {
         const newDefense = Math.max(0, Math.round(defender.defense * 0.8));
@@ -303,21 +345,64 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       }
 
       const targetSide = result.recoil ? attackerSide : attackerSide === "player" ? "ai" : "player";
+      let damage = result.damage;
+      // apply incoming-damage-reduction buffs when the player is the one taking the hit
+      if (targetSide === "player" && damage > 0) {
+        if (usingReduceDamage) damage = Math.round(damage * 0.5);
+      }
       const targetHP = targetSide === "player" ? playerHP : aiHP;
-      setEffect({ side: attackerSide, value: result.damage, blocked: usingBlock, recoil: result.recoil, crit: result.isCrit, key: Date.now() });
-      if (result.damage > 0) {
+      let shieldAbsorbed = 0;
+      if (targetSide === "player" && damage > 0 && (pfx.shield || 0) > 0) {
+        shieldAbsorbed = Math.min(pfx.shield, damage);
+        damage -= shieldAbsorbed;
+        patchPfx((p) => ({ ...p, shield: Math.max(0, (p.shield || 0) - shieldAbsorbed) }));
+      }
+      setEffect({ side: attackerSide, value: damage, blocked: usingBlock || usingNegate || usingDivineProtection, recoil: result.recoil, crit: result.isCrit, key: Date.now() });
+      if (damage > 0) {
         const setTargetEffects = targetSide === "player" ? setPlayerEffects : setAiEffects;
         setTargetEffects((e) => (e.includes(attacker.type) ? e : [...e, attacker.type]));
       }
+      if (usingReflect && damage > 0) {
+        patchPfx({ reflectNextAttack: false });
+        const reflected = Math.round(damage * 0.25);
+        setAiHP((h) => Math.max(0, h - reflected));
+      }
       await sleep(600);
-      const newTargetHP = Math.max(0, targetHP - result.damage);
+      let newTargetHP = Math.max(0, targetHP - damage);
+      if (targetSide === "player" && newTargetHP <= 0 && pfx.surviveWith1HP) {
+        newTargetHP = 1;
+        patchPfx({ surviveWith1HP: false });
+        setLog("Last Breath saved you — you survive with 1 HP!");
+      }
+      if (targetSide === "player" && newTargetHP <= 0 && pfx.phoenixRebirthAvailable) {
+        newTargetHP = Math.round(maxHealth(playerCard) * 0.75) + (pfx.maxHPBonus || 0);
+        patchPfx({ phoenixRebirthAvailable: false });
+        setLog("Phoenix Rebirth! Your card revives with 75% HP!");
+      }
+      if (targetSide === "player" && newTargetHP <= 0 && pfx.lastStandActive && attacker) {
+        patchPfx({ lastStandActive: false });
+        const finalHit = computeDamage(playerCard, attacker);
+        if (!finalHit.tie && !finalHit.recoil && finalHit.damage > 0) setAiHP((h) => Math.max(0, h - finalHit.damage));
+        setLog("Last Stand! Your card strikes one final time before falling!");
+        await sleep(800);
+      }
       if (targetSide === "player") {
         setPlayerHP(newTargetHP);
-        const ratio = maxHealth(playerCard) > 0 ? newTargetHP / maxHealth(playerCard) : 0;
+        const ratio = maxHealth(playerCard) > 0 ? newTargetHP / (maxHealth(playerCard) + (pfx.maxHPBonus || 0)) : 0;
         if (ratio < roundMinHpRatioRef.current) roundMinHpRatioRef.current = ratio;
       } else setAiHP(newTargetHP);
-      if (attackerSide === "player" && !result.recoil && result.damage > 0) matchDamageRef.current += result.damage;
-      if (usingBlock && result.damage === 0) matchBlocksRef.current += 1;
+      if (attackerSide === "player" && !result.recoil && damage > 0) {
+        matchDamageRef.current += damage;
+        if ((pfx.healOnDamageTurns || 0) > 0) {
+          const healed = Math.round(maxHealth(playerCard) * 0.1);
+          setPlayerHP((hp) => Math.min(maxHealth(playerCard) + (pfx.maxHPBonus || 0), hp + healed));
+          patchPfx((p) => ({ ...p, healOnDamageTurns: Math.max(0, (p.healOnDamageTurns || 0) - 1) }));
+        }
+      }
+      if (attackerSide === "player" && pfx.berserkerRageActive) {
+        setPlayerCard((c) => (c ? { ...c, attack: Math.round(c.attack * 1.1), defense: Math.round(c.defense * 0.95) } : c));
+      }
+      if ((usingBlock || usingNegate || usingDivineProtection) && damage === 0) matchBlocksRef.current += 1;
       await sleep(3000);
       setEffect(null);
       if (newTargetHP <= 0) {
@@ -328,11 +413,25 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         busyRef.current = false;
         return;
       }
+      // Double Strike: attack again immediately this same turn
+      if (attackerSide === "player" && pfx.attackTwiceReady) {
+        patchPfx({ attackTwiceReady: false });
+        busyRef.current = false;
+        attack("player");
+        return;
+      }
+      if (attackerSide === "player" && pfx.timeFreezeQueued) {
+        patchPfx({ timeFreezeQueued: false });
+        setLog("Time Freeze! The opponent skips their turn — attack again!");
+        setTurn("player");
+        busyRef.current = false;
+        return;
+      }
       setTurn(attackerSide === "player" ? "ai" : "player");
       setLog(attackerSide === "player" ? "AI's turn..." : "Your turn — attack!");
       busyRef.current = false;
     },
-    [phase, playerCard, aiCard, playerHP, aiHP, finishRound, doubleAttackActive, tripleDefenseActive, blockActive, halfAttackTurnsLeft, tempTierBoost]
+    [phase, playerCard, aiCard, playerHP, aiHP, finishRound, doubleAttackActive, tripleDefenseActive, blockActive, halfAttackTurnsLeft, tempTierBoost, pfx, patchPfx]
   );
 
   // Only one power-up may be activated per player turn — reset the moment it becomes the player's turn.
@@ -372,6 +471,17 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       const newUses = reset ? 1 : (user[usesField] || 0) + 1;
       const newResetAt = reset ? new Date().toISOString() : user[resetField];
       const updatedUser = await base44.auth.updateMe({ [usesField]: newUses, [resetField]: newResetAt });
+      setUser(updatedUser);
+      setPowerUsedThisTurn(true);
+      effectFn();
+    },
+    [user, powerUsedThisTurn]
+  );
+
+  const activatePremiumPower = useCallback(
+    async (field, effectFn) => {
+      if (powerUsedThisTurn || !user || !user[field]) return;
+      const updatedUser = await base44.auth.updateMe({ [field]: false });
       setUser(updatedUser);
       setPowerUsedThisTurn(true);
       effectFn();
@@ -470,6 +580,305 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const t2UpgradePower = useCallback(() => tierUpgradePower(2, "t2UpgradePowerUsedAt"), [tierUpgradePower]);
   const t3UpgradePower = useCallback(() => tierUpgradePower(3, "t3UpgradePowerUsedAt"), [tierUpgradePower]);
   const t4UpgradePower = useCallback(() => tierUpgradePower(4, "t4UpgradePowerUsedAt"), [tierUpgradePower]);
+
+  // ---- Attack category additions ----
+  const ignoreDefensePower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePower("ignoreDefensePowerUsedAt", () => {
+      patchPfx({ ignoreDefensePercent: 0.5 });
+      setLog("Ignore Defense ready — your next attack ignores 50% of the opponent's defense!");
+    });
+  }, [activatePower, phase, turn, patchPfx]);
+
+  const trueDamagePower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePower("trueDamagePowerUsedAt", () => {
+      patchPfx({ trueDamage: true });
+      setLog("True Damage ready — your next attack ignores all defense!");
+    });
+  }, [activatePower, phase, turn, patchPfx]);
+
+  const critHitPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePower("critHitPowerUsedAt", () => {
+      patchPfx({ guaranteedCrit: true });
+      setLog("Guaranteed Crit ready — your next attack will critically hit!");
+    });
+  }, [activatePower, phase, turn, patchPfx]);
+
+  const doubleBonusDamagePower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activateDailyMultiPower("doubleBonusDamagePowerUsesToday", "doubleBonusDamagePowerResetAt", 5, () => {
+      patchPfx({ doubleBonusDamage: true });
+      setLog("Double Bonus Damage ready — your next attack's bonus damage is doubled!");
+    });
+  }, [activateDailyMultiPower, phase, turn, patchPfx]);
+
+  const attackTwicePower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activateWeeklyPower("attackTwicePowerUsedAt", () => {
+      patchPfx({ attackTwiceReady: true });
+      setLog("Double Strike ready — you'll attack twice this turn!");
+    });
+  }, [activateWeeklyPower, phase, turn, patchPfx]);
+
+  // ---- Defense category additions ----
+  const tripleDefense1TurnPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePower("tripleDefense1TurnPowerUsedAt", () => {
+      setTripleDefenseActive(true);
+      setLog("3x Defense ready — your card will block the next hit with triple defense!");
+    });
+  }, [activatePower, phase, turn]);
+
+  const doubleDefense2TurnsPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePower("doubleDefense2TurnsPowerUsedAt", () => {
+      patchPfx({ doubleDefenseTurns: 2 });
+      setLog("2x Defense active for your next 2 defenses!");
+    });
+  }, [activatePower, phase, turn, patchPfx]);
+
+  const shield25Power = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return;
+    activatePower("shield25PowerUsedAt", () => {
+      const amount = Math.round(maxHealth(playerCard) * 0.25);
+      patchPfx((p) => ({ ...p, shield: (p.shield || 0) + amount }));
+      setLog("Shield up! You'll absorb the next hits.");
+    });
+  }, [activatePower, phase, turn, playerCard, patchPfx]);
+
+  const negateNextAttackPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePower("negateNextAttackPowerUsedAt", () => {
+      patchPfx({ negateNextAttack: true });
+      setLog("Negate Attack ready — the opponent's next attack will deal zero damage!");
+    });
+  }, [activatePower, phase, turn, patchPfx]);
+
+  const reduceDamage50Power = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePower("reduceDamage50PowerUsedAt", () => {
+      patchPfx({ reduceDamageTurns: 2 });
+      setLog("Damage Reduction active — incoming damage halved for 2 turns!");
+    });
+  }, [activatePower, phase, turn, patchPfx]);
+
+  const reflectDamage25Power = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePower("reflectDamagePowerUsedAt", () => {
+      patchPfx({ reflectNextAttack: true });
+      setLog("Reflect Damage ready — 25% of the opponent's next attack will bounce back!");
+    });
+  }, [activatePower, phase, turn, patchPfx]);
+
+  const regenPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePower("regenPowerUsedAt", () => {
+      patchPfx({ regenTurns: 3 });
+      setLog("Regeneration active — heal 10% max HP for your next 3 turns!");
+    });
+  }, [activatePower, phase, turn, patchPfx]);
+
+  const surviveWith1HPPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activateWeeklyPower("surviveWith1HPPowerUsedAt", () => {
+      patchPfx({ surviveWith1HP: true });
+      setLog("Last Breath ready — you'll survive a lethal hit with 1 HP!");
+    });
+  }, [activateWeeklyPower, phase, turn, patchPfx]);
+
+  // Regeneration heals the player at the start of each of their own turns.
+  useEffect(() => {
+    if (turn === "player" && phase === "battle" && playerCard && (pfx.regenTurns || 0) > 0) {
+      const healed = Math.round(maxHealth(playerCard) * 0.1);
+      setPlayerHP((hp) => Math.min(maxHealth(playerCard) + (pfx.maxHPBonus || 0), hp + healed));
+      patchPfx((p) => ({ ...p, regenTurns: Math.max(0, (p.regenTurns || 0) - 1) }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turn]);
+
+  // ---- Health category additions ----
+  const heal20Power = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return;
+    activatePower("heal20PowerUsedAt", () => {
+      const max = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
+      setPlayerHP((hp) => Math.min(max, hp + Math.round(max * 0.2)));
+      setLog("Healed 20% of your max HP!");
+    });
+  }, [activatePower, phase, turn, playerCard, pfx.maxHPBonus]);
+
+  const heal50Power = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return;
+    activatePower("heal50PowerUsedAt", () => {
+      const max = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
+      setPlayerHP((hp) => Math.min(max, hp + Math.round(max * 0.5)));
+      setLog("Healed 50% of your max HP!");
+    });
+  }, [activatePower, phase, turn, playerCard, pfx.maxHPBonus]);
+
+  const fullRestorePower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return;
+    activateWeeklyPower("fullRestorePowerUsedAt", () => {
+      setPlayerHP(maxHealth(playerCard) + (pfx.maxHPBonus || 0));
+      setLog("Fully restored your card's HP!");
+    });
+  }, [activateWeeklyPower, phase, turn, playerCard, pfx.maxHPBonus]);
+
+  const maxHPBoost25Power = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return;
+    activatePower("maxHPBoostPowerUsedAt", () => {
+      const extra = Math.round(maxHealth(playerCard) * 0.25);
+      patchPfx((p) => ({ ...p, maxHPBonus: (p.maxHPBonus || 0) + extra }));
+      setPlayerHP((hp) => hp + extra);
+      setLog("Max HP increased by 25% for this battle!");
+    });
+  }, [activatePower, phase, turn, playerCard, patchPfx]);
+
+  const restoreOnDefeatPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePower("restoreOnDefeatPowerUsedAt", () => {
+      patchPfx({ restoreOnDefeatActive: true });
+      setLog("You'll now heal whenever you defeat an opponent's card!");
+    });
+  }, [activatePower, phase, turn, patchPfx]);
+
+  const healOnDamagePower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activateWeeklyPower("healOnDamagePowerUsedAt", () => {
+      patchPfx({ healOnDamageTurns: 3 });
+      setLog("Vampiric Strikes active — heal 10% max HP for your next 3 hits!");
+    });
+  }, [activateWeeklyPower, phase, turn, patchPfx]);
+
+  // ---- Control category additions ----
+  const swapCardPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return;
+    const nextCard = playerPool[0] || playerHand[0];
+    if (!nextCard) return;
+    activatePower("swapCardPowerUsedAt", () => {
+      if (playerPool[0]) setPlayerPool((p) => [...p.slice(1), playerCard]);
+      else setPlayerHand((h) => [...h.slice(1), playerCard]);
+      setPlayerCard(nextCard);
+      setPlayerHP(Math.round(maxHealth(nextCard) * 0.5));
+      setPlayerEffects([]);
+      setLog("Swapped your active card — the new card enters at 50% HP!");
+    });
+  }, [activatePower, phase, turn, playerCard, playerPool, playerHand]);
+
+  const returnOpponentCardPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !aiCard) return;
+    activatePower("returnOpponentCardPowerUsedAt", () => {
+      const nextCard = aiPool[0];
+      setAiPool((p) => (nextCard ? [...p.slice(1), aiCard] : p));
+      setAiCard(nextCard || null);
+      setAiHP(nextCard ? maxHealth(nextCard) : 0);
+      setAiEffects([]);
+      setLog("You returned the opponent's card to their deck!");
+    });
+  }, [activatePower, phase, turn, aiCard, aiPool]);
+
+  const duplicateCardPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return;
+    activateWeeklyPower("duplicateCardPowerUsedAt", () => {
+      setPlayerPool((p) => [...p, { ...playerCard, id: `${playerCard.id}-dup-${Date.now()}` }]);
+      setLog("Your card was duplicated into your deck!");
+    });
+  }, [activateWeeklyPower, phase, turn, playerCard]);
+
+  // ---- Upgrade category additions ----
+  const upgradeTierOneBattlePower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return;
+    activatePower("upgradeTierPowerUsedAt", () => {
+      const newTier = Math.min(4, (playerCard.tier || 1) + 1);
+      const stats = randomTierStats(newTier);
+      setPlayerCard((c) => ({ ...c, tier: newTier, ...stats }));
+      setLog(`Your card was upgraded to Tier ${newTier} for this battle!`);
+    });
+  }, [activatePower, phase, turn, playerCard]);
+
+  const maximizeAttackPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return;
+    activateWeeklyPower("maximizeAttackPowerUsedAt", () => {
+      patchPfx({ maximizeAttackReady: true });
+      setLog("Max Attack ready — your next attack uses maximum attack for its tier!");
+    });
+  }, [activateWeeklyPower, phase, turn, playerCard, patchPfx]);
+
+  const maximizeDefensePower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return;
+    activateWeeklyPower("maximizeDefensePowerUsedAt", () => {
+      patchPfx({ maximizeDefenseReady: true });
+      setLog("Max Defense ready — your defense is maximized for the opponent's next attack!");
+    });
+  }, [activateWeeklyPower, phase, turn, playerCard, patchPfx]);
+
+  const increaseAllStats20Power = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return;
+    activatePremiumPower("increaseAllStatsOwned", () => {
+      setPlayerCard((c) => (c ? { ...c, attack: Math.round(c.attack * 1.2), defense: Math.round(c.defense * 1.2) } : c));
+      setLog("All stats increased by 20% for this battle!");
+    });
+  }, [activatePremiumPower, phase, turn, playerCard]);
+
+  const increaseBonusDamage100Power = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return;
+    activateDailyMultiPower("bonusDamage100PowerUsesToday", "bonusDamage100PowerResetAt", 5, () => {
+      setPlayerCard((c) => (c ? { ...c, bonusDamage: (c.bonusDamage || 0) + 100 } : c));
+      setLog("Bonus damage increased by 100!");
+    });
+  }, [activateDailyMultiPower, phase, turn, playerCard]);
+
+  // ---- Legendary category additions ----
+  const timeFreezePower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePremiumPower("timeFreezeOwned", () => {
+      patchPfx({ timeFreezeQueued: true });
+      setLog("Time Freeze activated — the opponent will skip their next turn!");
+    });
+  }, [activatePremiumPower, phase, turn, patchPfx]);
+
+  const lastStandPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePremiumPower("lastStandOwned", () => {
+      patchPfx({ lastStandActive: true });
+      setLog("Last Stand ready — if your card falls, it will strike one final time!");
+    });
+  }, [activatePremiumPower, phase, turn, patchPfx]);
+
+  const berserkerRagePower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePremiumPower("berserkerRageOwned", () => {
+      patchPfx({ berserkerRageActive: true });
+      setLog("Berserker Rage activated — gain attack and lose defense each turn!");
+    });
+  }, [activatePremiumPower, phase, turn, patchPfx]);
+
+  const divineProtectionPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePremiumPower("divineProtectionOwned", () => {
+      patchPfx({ divineProtectionTurns: 2 });
+      setLog("Divine Protection active — immune to damage for 2 turns!");
+    });
+  }, [activatePremiumPower, phase, turn, patchPfx]);
+
+  const phoenixRebirthPower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePremiumPower("phoenixRebirthOwned", () => {
+      patchPfx({ phoenixRebirthAvailable: true });
+      setLog("Phoenix Rebirth ready — you will revive with 75% HP if defeated!");
+    });
+  }, [activatePremiumPower, phase, turn, patchPfx]);
+
+  const deckSurgePower = useCallback(() => {
+    if (phase !== "battle" || turn !== "player") return;
+    activatePremiumPower("deckSurgeOwned", () => {
+      const boost = (c) => ({ ...c, attack: Math.round(c.attack * 1.1), defense: Math.round(c.defense * 1.1) });
+      setPlayerPool((p) => p.map(boost));
+      setPlayerHand((h) => h.map(boost));
+      setLog("Deck Surge activated — all remaining cards gain +10% stats!");
+    });
+  }, [activatePremiumPower, phase, turn]);
 
   useEffect(() => {
     if (phase === "battle" && turn === "ai" && !busyRef.current) {
@@ -626,6 +1035,8 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     [phase]
   );
 
+  const noReq = !powerUsedThisTurn && phase === "battle" && turn === "player";
+
   return {
     round,
     score,
@@ -666,20 +1077,52 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     powerUsedThisTurn,
     playerEffects,
     aiEffects,
-    playerHpRatio: playerCard ? Math.max(0, playerHP / maxHealth(playerCard)) : 1,
+    playerMaxHP: playerCard ? maxHealth(playerCard) + (pfx.maxHPBonus || 0) : 0,
+    playerHpRatio: playerCard ? Math.max(0, playerHP / (maxHealth(playerCard) + (pfx.maxHPBonus || 0))) : 1,
     aiHpRatio: aiCard ? Math.max(0, aiHP / maxHealth(aiCard)) : 1,
     canUseMap: {
-      burn: !powerUsedThisTurn && phase === "battle" && turn === "player" && !!aiCard && aiPool.length > 0,
-      reshuffle:
-        !powerUsedThisTurn &&
-        ((!playerCard && playerHand.length > 0) || (phase === "battle" && turn === "player" && !!aiCard && aiPool.length > 0)),
-      doubleAttack: !powerUsedThisTurn && phase === "battle" && turn === "player",
-      defense: !powerUsedThisTurn && phase === "battle" && turn === "player",
-      block: !powerUsedThisTurn && phase === "battle" && turn === "player",
-      halfAttack: !powerUsedThisTurn && phase === "battle" && turn === "player" && !!aiCard,
-      t2Upgrade: !powerUsedThisTurn && phase === "battle" && turn === "player" && !!playerCard,
-      t3Upgrade: !powerUsedThisTurn && phase === "battle" && turn === "player" && !!playerCard,
-      t4Upgrade: !powerUsedThisTurn && phase === "battle" && turn === "player" && !!playerCard,
+      burn: noReq && !!aiCard && aiPool.length > 0,
+      reshuffle: !powerUsedThisTurn && ((!playerCard && playerHand.length > 0) || (phase === "battle" && turn === "player" && !!aiCard && aiPool.length > 0)),
+      doubleAttack: noReq,
+      defense: noReq,
+      block: noReq,
+      halfAttack: noReq && !!aiCard,
+      t2Upgrade: noReq && !!playerCard,
+      t3Upgrade: noReq && !!playerCard,
+      t4Upgrade: noReq && !!playerCard,
+      ignoreDefense: noReq,
+      trueDamage: noReq,
+      critHit: noReq,
+      doubleBonusDamage: noReq,
+      attackTwice: noReq,
+      tripleDefense1Turn: noReq,
+      doubleDefense2Turns: noReq,
+      shield25: noReq && !!playerCard,
+      negateNextAttack: noReq,
+      reduceDamage50: noReq,
+      reflectDamage25: noReq,
+      regen10Percent3Turns: noReq,
+      surviveWith1HP: noReq,
+      heal20: noReq && !!playerCard,
+      heal50: noReq && !!playerCard,
+      fullRestore: noReq && !!playerCard,
+      maxHPBoost25: noReq && !!playerCard,
+      restoreOnDefeat: noReq,
+      healOnDamage10_3Turns: noReq,
+      swapActiveCard50HP: noReq && !!playerCard && (playerPool.length > 0 || playerHand.length > 0),
+      returnOpponentCard: noReq && !!aiCard,
+      duplicateCard: noReq && !!playerCard,
+      upgradeTierOneBattle: noReq && !!playerCard,
+      maximizeAttackTurn: noReq && !!playerCard,
+      maximizeDefenseTurn: noReq && !!playerCard,
+      increaseAllStats20: noReq && !!playerCard,
+      increaseBonusDamage100: noReq && !!playerCard,
+      timeFreeze: noReq,
+      lastStand: noReq,
+      berserkerRage: noReq,
+      divineProtection: noReq,
+      phoenixRebirth: noReq,
+      deckSurge: noReq,
     },
     handlers: {
       burn: burnPower,
@@ -691,6 +1134,39 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       t2Upgrade: t2UpgradePower,
       t3Upgrade: t3UpgradePower,
       t4Upgrade: t4UpgradePower,
+      ignoreDefense: ignoreDefensePower,
+      trueDamage: trueDamagePower,
+      critHit: critHitPower,
+      doubleBonusDamage: doubleBonusDamagePower,
+      attackTwice: attackTwicePower,
+      tripleDefense1Turn: tripleDefense1TurnPower,
+      doubleDefense2Turns: doubleDefense2TurnsPower,
+      shield25: shield25Power,
+      negateNextAttack: negateNextAttackPower,
+      reduceDamage50: reduceDamage50Power,
+      reflectDamage25: reflectDamage25Power,
+      regen10Percent3Turns: regenPower,
+      surviveWith1HP: surviveWith1HPPower,
+      heal20: heal20Power,
+      heal50: heal50Power,
+      fullRestore: fullRestorePower,
+      maxHPBoost25: maxHPBoost25Power,
+      restoreOnDefeat: restoreOnDefeatPower,
+      healOnDamage10_3Turns: healOnDamagePower,
+      swapActiveCard50HP: swapCardPower,
+      returnOpponentCard: returnOpponentCardPower,
+      duplicateCard: duplicateCardPower,
+      upgradeTierOneBattle: upgradeTierOneBattlePower,
+      maximizeAttackTurn: maximizeAttackPower,
+      maximizeDefenseTurn: maximizeDefensePower,
+      increaseAllStats20: increaseAllStats20Power,
+      increaseBonusDamage100: increaseBonusDamage100Power,
+      timeFreeze: timeFreezePower,
+      lastStand: lastStandPower,
+      berserkerRage: berserkerRagePower,
+      divineProtection: divineProtectionPower,
+      phoenixRebirth: phoenixRebirthPower,
+      deckSurge: deckSurgePower,
     },
     canRedrawHand: !playerCard && playerHand.length > 0,
     canForceOpponentRedraw: phase === "battle" && turn === "player" && !!aiCard && aiPool.length > 0,

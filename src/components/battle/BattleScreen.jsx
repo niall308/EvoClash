@@ -52,6 +52,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
     tempTierBoost,
     playerEffects,
     aiEffects,
+    playerMaxHP,
     playerHpRatio,
     aiHpRatio,
     canUseMap,
@@ -179,7 +180,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
           <LivesIndicator lives={playerLives} />
           {playerCard && (
             <div className="w-40">
-              <HealthBar current={playerHP} max={maxHealth(playerCard)} label="You" />
+              <HealthBar current={playerHP} max={playerMaxHP} label="You" />
             </div>
           )}
           <AnimatePresence mode="wait">
