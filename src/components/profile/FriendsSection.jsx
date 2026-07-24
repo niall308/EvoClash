@@ -19,7 +19,7 @@ export default function FriendsSection({ user, onUserUpdate }) {
 
   useEffect(() => {
     base44.entities.Friend.filter({ created_by_id: user.id }, "-created_date").then(setFriends);
-    base44.entities.Card.filter({ created_by_id: user.id }).then(setMyCards);
+    base44.entities.Card.filter({ ownerId: user.id }).then(setMyCards);
   }, [user.id]);
 
   useEffect(() => {
