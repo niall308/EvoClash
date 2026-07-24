@@ -12,10 +12,11 @@ Deno.serve(async (req) => {
     const pack = COIN_PACKS.find((p) => p.id === packId);
     if (!pack) return Response.json({ error: 'Invalid pack' }, { status: 400 });
 
-    // Only allow relative in-app paths for redirect URLs to prevent open redirects
-    // to attacker-controlled domains after checkout.
-    const origin = req.headers.get('origin') || req.headers.get('referer') || '';
-    const originBase = origin ? new URL(origin).origin : '';
+    // Only allow relative in-app paths for redirect URLs, resolved against the app's
+    // own deployed origin - never a client-controlled Origin/Referer header - to
+    // prevent open redirects to attacker-controlled domains after checkout.
+    const appId = Deno.env.get('BASE44_APP_ID');
+    const originBase = appId ? `https://${appId}.base44.app` : '';
     const safePath = (url, fallback) => {
       if (typeof url === 'string' && url.startsWith('/') && !url.startsWith('//')) return `${originBase}${url}`;
       return `${originBase}${fallback}`;

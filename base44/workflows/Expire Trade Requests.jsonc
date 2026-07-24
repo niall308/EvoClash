@@ -1,6 +1,4 @@
 {
-  "name": "Expire Trade Requests",
-  "description": "Marks pending trade requests older than 1 week as expired, and deletes expired trades after 30 days.",
   "definition": {
     "document": {
       "dsl": "1.0.0",
@@ -13,7 +11,10 @@
         "expire_trades": {
           "call": "invoke_backend_function",
           "with": {
-            "function_name": "expireTrades"
+            "function_name": "expireTrades",
+            "args": {
+              "cronToken": "ec_cron_7f3a1d9c4b2e8f56a0d3c7b1e9f2a4d6"
+            }
           },
           "then": "end",
           "x-base44": {
@@ -24,6 +25,7 @@
       }
     ]
   },
+  "name": "Expire Trade Requests",
   "trigger": {
     "condition": null,
     "config": {
@@ -40,5 +42,6 @@
       "ends_on_date": null,
       "ends_after_count": null
     }
-  }
+  },
+  "description": "Marks pending trade requests older than 1 week as expired, and deletes expired trades after 30 days."
 }
