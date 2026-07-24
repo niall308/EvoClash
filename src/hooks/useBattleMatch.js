@@ -252,7 +252,9 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         setPlayerEffects([]);
         setAiHP(carryHP);
       }
-      setTurn(winnerSide);
+      // The loser of the round goes first next round (unless an extra-turn power like
+      // Double Strike or Time Freeze grants another attack within the same round).
+      setTurn(winnerSide === "player" ? "ai" : "player");
       setRound((r) => r + 1);
       setPhase("draw");
       setLog("Choose a card to play!");

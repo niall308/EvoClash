@@ -215,13 +215,15 @@ export default function usePvpMatch(matchCode) {
         return;
       }
 
+      // The loser of the round goes first next round (unless an extra-turn power grants another attack within the round).
+      const roundLoser = roundWinner === "player1" ? "player2" : "player1";
       await base44.entities.PvpMatch.update(match.id, {
         scoreP1: newScoreP1,
         scoreP2: newScoreP2,
         [`${targetRole}Card`]: {},
         [`${targetRole}Hp`]: 0,
         round: match.round + 1,
-        turn: roundWinner,
+        turn: roundLoser,
         phase: "draw",
         log: `${winnerName} wins round ${match.round}!`,
         ...buffUpdates,
