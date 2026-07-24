@@ -66,8 +66,25 @@ Deno.serve(async (req) => {
         }
       }
 
-      await base44.asServiceRole.entities.Card.update(card.id, { created_by_id: user.id, deckId: myDeckId });
-      await base44.asServiceRole.entities.TradeRequest.update(tradeId, { [claimedField]: true });
+      // Conditional (compare-and-swap) updates: only apply if the card still
+      // belongs to the expected original owner and the trade hasn't already
+      // been claimed by this side, closing any read-then-write race window
+      // that could otherwise let a card be claimed twice or out of turn.
+      const cardUpdateResult = await base44.asServiceRole.entities.Card.updateMany(
+        { id: card.id, created_by_id: originalOwnerId },
+        { $set: { created_by_id: user.id, deckId: myDeckId } }
+      );
+      if (!cardUpdateResult || cardUpdateResult.matched_count === 0) {
+        return Response.json({ error: 'This card is no longer available' }, { status: 409 });
+      }
+
+      const tradeUpdateResult = await base44.asServiceRole.entities.TradeRequest.updateMany(
+        { id: tradeId, [claimedField]: false },
+        { $set: { [claimedField]: true } }
+      );
+      if (!tradeUpdateResult || tradeUpdateResult.matched_count === 0) {
+        return Response.json({ error: 'Already claimed' }, { status: 400 });
+      }
 
       return Response.json({ status: 'claimed' });
     }

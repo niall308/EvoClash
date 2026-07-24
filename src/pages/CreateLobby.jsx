@@ -63,11 +63,7 @@ export default function CreateLobby() {
 
   const invite = async (player) => {
     setSendingId(player.id);
-    await base44.integrations.Core.SendEmail({
-      to: player.id,
-      subject: "You've been invited to a lobby!",
-      body: `You've been invited to join a lobby. Enter this code in the app to join: ${lobby.code}`,
-    });
+    await base44.functions.invoke("inviteToLobby", { lobbyId: lobby.id, toUserId: player.id });
     setInvitedIds((ids) => [...ids, player.id]);
     setSendingId(null);
   };
