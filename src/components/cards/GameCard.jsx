@@ -82,7 +82,8 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
       </div>
       <div className="px-1.5 pb-1.5 text-center">
         <p className="text-white font-bold text-[11px] leading-tight truncate">{card.name}</p>
-        <div className="flex justify-center gap-1 mt-1 text-[9px] font-semibold">
+        <div className="flex items-center justify-center gap-1 mt-1 text-[9px] font-semibold">
+          <Icon className="w-2.5 h-2.5" style={{ color }} />
           <span className={boost?.attack ? "text-yellow-300 animate-pulse" : "text-orange-300"}>A{boost?.attack || card.attack}</span>
           <span className={boost?.defense ? "text-yellow-300 animate-pulse" : "text-blue-300"}>D{boost?.defense || card.defense}</span>
         </div>

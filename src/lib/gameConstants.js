@@ -127,10 +127,10 @@ export const AI_OPPONENT_NAMES = [
 ];
 
 export const NAME_PARTS = {
-  1: { prefixes: ["Feral", "Ancient", "Savage", "Wild", "Primal", "Rampant"] },
-  2: { prefixes: ["Ironclad", "Knight", "Steel", "Armored", "Iron", "Guardian"] },
-  3: { prefixes: ["Cyber", "Mecha", "Nano", "Techno", "Quantum"], suffixes: ["X", "Bot", "Unit", "Core"] },
-  4: { prefixes: ["Omega", "Titan", "Apex", "Prime", "X-99"], suffixes: ["Prime", "Core", "Overlord", "Ultra"] },
+  1: { prefixes: ["Feral", "Ancient", "Savage", "Wild", "Primal", "Rampant", "Untamed", "Rogue", "Vicious", "Cunning", "Restless", "Fierce"] },
+  2: { prefixes: ["Ironclad", "Knight", "Steel", "Armored", "Iron", "Guardian", "Warlord", "Vanguard", "Bulwark", "Sentinel", "Crested", "Battle-Forged"] },
+  3: { prefixes: ["Cyber", "Mecha", "Nano", "Techno", "Quantum", "Hyper", "Volt", "Circuit", "Plasma", "Neon"], suffixes: ["X", "Bot", "Unit", "Core", "Drive", "Node", "Matrix", "Cipher"] },
+  4: { prefixes: ["Omega", "Titan", "Apex", "Prime", "X-99", "Eternal", "Celestial", "Doom", "Infinity", "Genesis"], suffixes: ["Prime", "Core", "Overlord", "Ultra", "Zenith", "Ascendant", "Sovereign", "Infinity"] },
 };
 
 // Prefix pool used when a card evolves into Tier 4
