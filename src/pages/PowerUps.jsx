@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Coins, Loader2 } from "lucide-react";
 import PowerUpRow from "@/components/powerups/PowerUpRow";
-import { POWER_DEFINITIONS, MAX_ACTIVE_POWERUPS, DEFAULT_ACTIVE_POWERUPS } from "@/lib/gameConstants";
+import { POWER_DEFINITIONS, POWER_CATEGORIES, MAX_ACTIVE_POWERUPS, DEFAULT_ACTIVE_POWERUPS } from "@/lib/gameConstants";
 import { isPowerAvailable } from "@/lib/powerUps";
 
 export default function PowerUps() {
   const [user, setUser] = useState(null);
   const [busyKey, setBusyKey] = useState(null);
+  const [category, setCategory] = useState("all");
 
   useEffect(() => {
     (async () => {
@@ -48,6 +49,8 @@ export default function PowerUps() {
     const fields = { coins: (user.coins || 0) - def.replenishCost };
     if (def.cooldownType === "dailyMulti") {
       fields[def.usesField] = Math.max(0, (user[def.usesField] || 0) - 1);
+    } else if (def.cooldownType === "premium") {
+      fields[def.usedAtField] = true;
     } else {
       fields[def.usedAtField] = null;
     }
@@ -83,8 +86,32 @@ export default function PowerUps() {
         })}
       </div>
 
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1">
+        <button
+          onClick={() => setCategory("all")}
+          className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap ${
+            category === "all" ? "bg-amber-400 text-[#0D1B2A]" : "bg-white/10 text-white/70"
+          }`}
+        >
+          All
+        </button>
+        {POWER_CATEGORIES.map((c) => (
+          <button
+            key={c.key}
+            onClick={() => setCategory(c.key)}
+            className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap ${
+              category === c.key ? "bg-amber-400 text-[#0D1B2A]" : "bg-white/10 text-white/70"
+            }`}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-3">
-        {[...POWER_DEFINITIONS].sort((a, b) => active.includes(b.key) - active.includes(a.key)).map((def) => (
+        {POWER_DEFINITIONS.filter((def) => category === "all" || def.category === category)
+          .sort((a, b) => active.includes(b.key) - active.includes(a.key))
+          .map((def) => (
           <PowerUpRow
             key={def.key}
             def={def}
@@ -98,6 +125,9 @@ export default function PowerUps() {
           />
         ))}
       </div>
+      {POWER_DEFINITIONS.filter((def) => category === "all" || def.category === category).length === 0 && (
+        <p className="text-center text-white/40 text-sm py-8">No power-ups in this category.</p>
+      )}
     </div>
   );
 }

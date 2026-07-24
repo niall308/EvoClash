@@ -16,5 +16,7 @@ export function isPowerAvailable(user, def) {
   if (def.cooldownType === "daily") return isTimestampReady(user[def.usedAtField], DAY_MS);
   if (def.cooldownType === "weekly") return isTimestampReady(user[def.usedAtField], WEEK_MS);
   if (def.cooldownType === "dailyMulti") return dailyMultiRemaining(user, def.usesField, def.resetField, def.maxPerDay) > 0;
+  // "premium": never free — only ready once bought (usedAtField holds an owned flag, not a timestamp).
+  if (def.cooldownType === "premium") return !!user[def.usedAtField];
   return false;
 }

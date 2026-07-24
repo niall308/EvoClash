@@ -173,18 +173,73 @@ export const TYPE_EFFECT_GROUP = {
 // Cost to instantly replenish an already-used tactical power
 export const POWER_REPLENISH_COST = 10000;
 
+// Power-up categories shown as filters on the Power Ups screen.
+export const POWER_CATEGORIES = [
+  { key: "attack", label: "Attack" },
+  { key: "defense", label: "Defense" },
+  { key: "health", label: "Health" },
+  { key: "control", label: "Deck & Card Control" },
+  { key: "upgrade", label: "Card Upgrades" },
+  { key: "legendary", label: "Legendary" },
+];
+
 // Full catalog of tactical power-ups. cooldownType: "daily" (1 use/24h, usedAtField),
-// "dailyMulti" (N uses/24h, usesField + resetField), "weekly" (1 use/7 days, usedAtField).
+// "dailyMulti" (N uses/24h, usesField + resetField), "weekly" (1 use/7 days, usedAtField),
+// "premium" (no free reset — must be bought before each use, usedAtField acts as an owned flag).
 export const POWER_DEFINITIONS = [
-  { key: "burn", label: "Burn", description: "Destroys the opponent's active card and forces them to draw a new one — no life lost.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "burnPowerUsedAt", replenishCost: 10000 },
-  { key: "reshuffle", label: "Redraw", description: "Redraw your own hand, or force the opponent to redraw their active card.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "reshufflePowerUsedAt", replenishCost: 10000 },
-  { key: "doubleAttack", label: "2x Attack", description: "Your card's next attack deals double damage.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "doubleAttackPowerUsedAt", replenishCost: 10000 },
-  { key: "defense", label: "3x Defense", description: "Triples your card's defense against the opponent's next attack.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "defensePowerUsedAt", replenishCost: 10000 },
-  { key: "block", label: "Block", description: "Completely blocks the opponent's next attack, taking zero damage.", replenishTime: "5 uses per day", cooldownType: "dailyMulti", usesField: "blockPowerUsesToday", resetField: "blockPowerResetAt", maxPerDay: 5, replenishCost: 5000 },
-  { key: "halfAttack", label: "Half Attack", description: "Halves the opponent's attack for their next 2 attacks.", replenishTime: "2 uses per day", cooldownType: "dailyMulti", usesField: "halfAttackPowerUsesToday", resetField: "halfAttackPowerResetAt", maxPerDay: 2, replenishCost: 10000 },
-  { key: "t2Upgrade", label: "T2 Upgrade", description: "Temporarily boosts your card to randomized Tier 2 stats for its next attack.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "t2UpgradePowerUsedAt", replenishCost: 50000 },
-  { key: "t3Upgrade", label: "T3 Upgrade", description: "Temporarily boosts your card to randomized Tier 3 stats for its next attack.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "t3UpgradePowerUsedAt", replenishCost: 75000 },
-  { key: "t4Upgrade", label: "T4 Upgrade", description: "Temporarily boosts your card to randomized Tier 4 stats for its next attack.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "t4UpgradePowerUsedAt", replenishCost: 100000 },
+  // Attack
+  { key: "burn", label: "Burn", category: "attack", description: "Destroys the opponent's active card and forces them to draw a new one — no life lost.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "burnPowerUsedAt", replenishCost: 10000 },
+  { key: "doubleAttack", label: "2x Attack", category: "attack", description: "Your card's next attack deals double damage.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "doubleAttackPowerUsedAt", replenishCost: 10000 },
+  { key: "ignoreDefense", label: "Ignore Defense", category: "attack", description: "Ignore 50% of the opponent's defense on your next attack.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "ignoreDefensePowerUsedAt", replenishCost: 10000 },
+  { key: "trueDamage", label: "True Damage", category: "attack", description: "Your next attack deals true damage, ignoring all of the opponent's defense.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "trueDamagePowerUsedAt", replenishCost: 10000 },
+  { key: "critHit", label: "Guaranteed Crit", category: "attack", description: "Guarantees a critical hit on your next attack.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "critHitPowerUsedAt", replenishCost: 10000 },
+  { key: "doubleBonusDamage", label: "Double Bonus Damage", category: "attack", description: "Doubles your card's bonus damage on your next attack.", replenishTime: "5 uses per day", cooldownType: "dailyMulti", usesField: "doubleBonusDamagePowerUsesToday", resetField: "doubleBonusDamagePowerResetAt", maxPerDay: 5, replenishCost: 10000 },
+  { key: "attackTwice", label: "Double Strike", category: "attack", description: "Attack twice in the same turn.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "attackTwicePowerUsedAt", replenishCost: 100000 },
+
+  // Defense
+  { key: "defense", label: "3x Defense", category: "defense", description: "Triples your card's defense against the opponent's next attack.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "defensePowerUsedAt", replenishCost: 10000 },
+  { key: "block", label: "Block", category: "defense", description: "Completely blocks the opponent's next attack, taking zero damage.", replenishTime: "5 uses per day", cooldownType: "dailyMulti", usesField: "blockPowerUsesToday", resetField: "blockPowerResetAt", maxPerDay: 5, replenishCost: 5000 },
+  { key: "halfAttack", label: "Half Attack", category: "defense", description: "Halves the opponent's attack for their next 2 attacks.", replenishTime: "2 uses per day", cooldownType: "dailyMulti", usesField: "halfAttackPowerUsesToday", resetField: "halfAttackPowerResetAt", maxPerDay: 2, replenishCost: 10000 },
+  { key: "doubleDefense2Turns", label: "2x Defense (2 Turns)", category: "defense", description: "Doubles your card's defense for the next 2 turns.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "doubleDefense2TurnsPowerUsedAt", replenishCost: 10000 },
+  { key: "tripleDefense1Turn", label: "3x Defense (1 Turn)", category: "defense", description: "Triples your card's defense for 1 turn.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "tripleDefense1TurnPowerUsedAt", replenishCost: 10000 },
+  { key: "shield25", label: "Shield", category: "defense", description: "Gain a temporary shield equal to 25% of your max HP.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "shield25PowerUsedAt", replenishCost: 10000 },
+  { key: "negateNextAttack", label: "Negate Attack", category: "defense", description: "Negates all damage from the opponent's next attack.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "negateNextAttackPowerUsedAt", replenishCost: 10000 },
+  { key: "reduceDamage50", label: "Damage Reduction", category: "defense", description: "Reduces incoming damage by 50% for 2 turns.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "reduceDamage50PowerUsedAt", replenishCost: 10000 },
+  { key: "reflectDamage25", label: "Reflect Damage", category: "defense", description: "Reflects 25% of incoming damage back to the attacker.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "reflectDamagePowerUsedAt", replenishCost: 10000 },
+  { key: "regen10Percent3Turns", label: "Regeneration", category: "defense", description: "Regenerate 10% of max HP each turn for 3 turns.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "regenPowerUsedAt", replenishCost: 10000 },
+  { key: "surviveWith1HP", label: "Last Breath", category: "defense", description: "Survive with 1 HP if a hit would defeat you.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "surviveWith1HPPowerUsedAt", replenishCost: 50000 },
+
+  // Health
+  { key: "heal20", label: "Heal 20%", category: "health", description: "Instantly heal 20% of your max HP.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "heal20PowerUsedAt", replenishCost: 10000 },
+  { key: "heal50", label: "Heal 50%", category: "health", description: "Instantly heal 50% of your max HP.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "heal50PowerUsedAt", replenishCost: 30000 },
+  { key: "fullRestore", label: "Full Restore", category: "health", description: "Fully restores your card's HP.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "fullRestorePowerUsedAt", replenishCost: 100000 },
+  { key: "maxHPBoost25", label: "Max HP Boost", category: "health", description: "Increases your max HP by 25% for this battle.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "maxHPBoostPowerUsedAt", replenishCost: 10000 },
+  { key: "restoreOnDefeat", label: "Restore On Defeat", category: "health", description: "Restores health whenever you defeat an opponent's card.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "restoreOnDefeatPowerUsedAt", replenishCost: 10000 },
+  { key: "healOnDamage10_3Turns", label: "Vampiric Strikes", category: "health", description: "Heal 10% of max HP whenever you deal damage, for 3 turns.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "healOnDamagePowerUsedAt", replenishCost: 50000 },
+
+  // Deck & Card Control
+  { key: "reshuffle", label: "Redraw", category: "control", description: "Redraw your own hand, or force the opponent to redraw their active card.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "reshufflePowerUsedAt", replenishCost: 10000 },
+  { key: "swapActiveCard50HP", label: "Swap Card", category: "control", description: "Swap your active card with another from your deck, entering at 50% health.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "swapCardPowerUsedAt", replenishCost: 10000 },
+  { key: "returnOpponentCard", label: "Return Opponent Card", category: "control", description: "Returns the opponent's current card to their deck.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "returnOpponentCardPowerUsedAt", replenishCost: 10000 },
+  { key: "duplicateCard", label: "Duplicate Card", category: "control", description: "Duplicate your current card for the rest of this match.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "duplicateCardPowerUsedAt", replenishCost: 50000 },
+
+  // Card Upgrades
+  { key: "t2Upgrade", label: "T2 Upgrade", category: "upgrade", description: "Temporarily boosts your card to randomized Tier 2 stats for its next attack.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "t2UpgradePowerUsedAt", replenishCost: 50000 },
+  { key: "t3Upgrade", label: "T3 Upgrade", category: "upgrade", description: "Temporarily boosts your card to randomized Tier 3 stats for its next attack.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "t3UpgradePowerUsedAt", replenishCost: 75000 },
+  { key: "t4Upgrade", label: "T4 Upgrade", category: "upgrade", description: "Temporarily boosts your card to randomized Tier 4 stats for its next attack.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "t4UpgradePowerUsedAt", replenishCost: 100000 },
+  { key: "upgradeTierOneBattle", label: "Battle Tier Up", category: "upgrade", description: "Upgrades your current card by one tier for this battle only.", replenishTime: "Resets every 24 hours", cooldownType: "daily", usedAtField: "upgradeTierPowerUsedAt", replenishCost: 10000 },
+  { key: "maximizeAttackTurn", label: "Max Attack", category: "upgrade", description: "Maximizes your current card's attack for one turn.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "maximizeAttackPowerUsedAt", replenishCost: 10000 },
+  { key: "maximizeDefenseTurn", label: "Max Defense", category: "upgrade", description: "Maximizes your current card's defense for one turn.", replenishTime: "Resets every 7 days", cooldownType: "weekly", usedAtField: "maximizeDefensePowerUsedAt", replenishCost: 10000 },
+  { key: "increaseAllStats20", label: "All Stats +20%", category: "upgrade", description: "Increases all of your card's stats by 20% for this battle.", replenishTime: "Buy 1 at a time", cooldownType: "premium", usedAtField: "increaseAllStatsOwned", replenishCost: 50000 },
+  { key: "increaseBonusDamage100", label: "Bonus Damage +100", category: "upgrade", description: "Increases your card's bonus damage by 100.", replenishTime: "5 uses per day", cooldownType: "dailyMulti", usesField: "bonusDamage100PowerUsesToday", resetField: "bonusDamage100PowerResetAt", maxPerDay: 5, replenishCost: 5000 },
+
+  // Legendary (very rare, purchase-only)
+  { key: "timeFreeze", label: "Time Freeze", category: "legendary", description: "Opponent skips their next turn.", replenishTime: "Buy 1 at a time", cooldownType: "premium", usedAtField: "timeFreezeOwned", replenishCost: 50000 },
+  { key: "lastStand", label: "Last Stand", category: "legendary", description: "If your card is defeated, immediately attack one final time.", replenishTime: "Buy 1 at a time", cooldownType: "premium", usedAtField: "lastStandOwned", replenishCost: 50000 },
+  { key: "berserkerRage", label: "Berserker Rage", category: "legendary", description: "Gain 10% attack every turn while losing 5% defense.", replenishTime: "Buy 1 at a time", cooldownType: "premium", usedAtField: "berserkerRageOwned", replenishCost: 50000 },
+  { key: "divineProtection", label: "Divine Protection", category: "legendary", description: "Become immune to damage for two turns.", replenishTime: "Buy 1 at a time", cooldownType: "premium", usedAtField: "divineProtectionOwned", replenishCost: 50000 },
+  { key: "phoenixRebirth", label: "Phoenix Rebirth", category: "legendary", description: "When defeated, revive once with 75% HP.", replenishTime: "Buy 1 at a time", cooldownType: "premium", usedAtField: "phoenixRebirthOwned", replenishCost: 50000 },
+  { key: "deckSurge", label: "Deck Surge", category: "legendary", description: "Every remaining card in your deck gains +10% to all stats for the current match.", replenishTime: "Buy 1 at a time", cooldownType: "premium", usedAtField: "deckSurgeOwned", replenishCost: 50000 },
 ];
 
 export const MAX_ACTIVE_POWERUPS = 4;
