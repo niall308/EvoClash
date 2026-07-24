@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { validateCardData } from '../../shared/cardValidation.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -18,7 +19,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const card = await base44.entities.Card.create({ ...cardData, deckId });
+    // Never trust raw client-supplied stats/tier/isHybrid — validate against
+    // legitimate server-side ranges and rebuild a clean object before saving.
+    const hybridCreatures = await base44.entities.Creature.filter({ category: 'Hybrid' });
+    const hybridBaseNames = hybridCreatures.map((c) => c.baseName);
+    let safeCardData;
+    try {
+      safeCardData = validateCardData(cardData, hybridBaseNames);
+    } catch (validationError) {
+      return Response.json({ error: validationError.message }, { status: 400 });
+    }
+
+    const card = await base44.entities.Card.create({ ...safeCardData, deckId });
     return Response.json({ card });
   } catch (error) {
     console.error('createGeneratedCard error', error);
