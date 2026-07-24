@@ -83,7 +83,11 @@ export default function Lobby() {
           <PlusCircle className="w-4 h-4" /> Create Lobby
         </Link>
       </div>
-      <p className="text-white/60 mb-4 text-sm">Active players waiting for a match</p>
+      <p className="text-white/60 mb-1 text-sm">Active players waiting for a match</p>
+      <p className="flex items-center gap-1.5 text-emerald-400 text-xs font-semibold mb-4">
+        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+        {players?.filter((p) => p.online).length ?? 0} player{players?.filter((p) => p.online).length === 1 ? "" : "s"} online
+      </p>
 
       {searching ? (
         <button
