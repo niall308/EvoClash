@@ -71,6 +71,7 @@ export default function EditProfileModal({ user, onClose, onSaved }) {
           onChange={(e) => setUsername(e.target.value)}
           className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm outline-none mt-1 mb-1"
           placeholder="Choose a unique username"
+          maxLength={30}
         />
         {error && <p className="text-red-400 text-xs mb-2">{error}</p>}
 

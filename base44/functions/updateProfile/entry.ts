@@ -9,11 +9,11 @@ Deno.serve(async (req) => {
     const { username, profilePictureUrl } = await req.json();
     const trimmedUsername = typeof username === 'string' ? username.trim() : '';
     if (!trimmedUsername) return Response.json({ error: 'Username is required' }, { status: 400 });
-    if (trimmedUsername.length < 3 || trimmedUsername.length > 20) {
-      return Response.json({ error: 'Username must be between 3 and 20 characters' }, { status: 400 });
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 30) {
+      return Response.json({ error: 'Username must be between 3 and 30 characters' }, { status: 400 });
     }
-    if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername)) {
-      return Response.json({ error: 'Username can only contain letters, numbers, and underscores' }, { status: 400 });
+    if (!/^[a-zA-Z0-9_ ]+$/.test(trimmedUsername)) {
+      return Response.json({ error: 'Username can only contain letters, numbers, underscores, and spaces' }, { status: 400 });
     }
 
     const existing = await base44.asServiceRole.entities.User.filter({ username: trimmedUsername });

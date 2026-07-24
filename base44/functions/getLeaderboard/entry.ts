@@ -8,7 +8,7 @@ Deno.serve(async (req) => {
 
     const users = await base44.asServiceRole.entities.User.list('-wins', 50);
     const leaderboard = users.map((u) => ({
-      full_name: u.full_name || 'Anonymous',
+      full_name: u.username || u.full_name || 'Anonymous',
       wins: u.wins || 0,
       losses: u.losses || 0,
     }));
