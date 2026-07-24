@@ -7,7 +7,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { tradeId, action } = await req.json();
-    if (!tradeId || !['accept', 'decline'].includes(action)) {
+    if (!tradeId || !['accept', 'decline', 'cancel'].includes(action)) {
       return Response.json({ error: 'Invalid request' }, { status: 400 });
     }
 
@@ -19,6 +19,14 @@ Deno.serve(async (req) => {
       trade = null;
     }
     if (!trade) return Response.json({ error: 'Trade not found' }, { status: 404 });
+
+    if (action === 'cancel') {
+      // Only the proposer of the trade may cancel it.
+      if (user.id !== trade.created_by_id) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      if (trade.status !== 'pending') return Response.json({ error: 'Trade is no longer pending' }, { status: 400 });
+      await base44.asServiceRole.entities.TradeRequest.update(tradeId, { status: 'cancelled' });
+      return Response.json({ status: 'cancelled' });
+    }
 
     // Only the recipient of the trade may accept or decline it.
     if (user.id !== trade.toUserId) return Response.json({ error: 'Forbidden' }, { status: 403 });

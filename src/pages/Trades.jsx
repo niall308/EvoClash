@@ -34,7 +34,7 @@ export default function Trades() {
 
   const handleCancel = async (tradeId) => {
     setBusyId(tradeId);
-    await base44.entities.TradeRequest.update(tradeId, { status: "cancelled" });
+    await base44.functions.invoke("respondTrade", { tradeId, action: "cancel" });
     await load();
     setBusyId(null);
   };

@@ -17,6 +17,7 @@ export default function CardGenerate() {
   const [creatures, setCreatures] = useState([]);
   const [selectedCreature, setSelectedCreature] = useState(null);
   const [previewCard, setPreviewCard] = useState(null);
+  const [previewForced, setPreviewForced] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeDeckId, setActiveDeckId] = useState(null);
@@ -61,6 +62,7 @@ export default function CardGenerate() {
       });
       cardData.imageUrl = url;
       setPreviewCard(cardData);
+      setPreviewForced(!!forced);
     } catch (err) {
       toast({ title: "Generation failed", description: "Couldn't generate the card image. Please try again.", variant: "destructive" });
     } finally {
@@ -82,12 +84,13 @@ export default function CardGenerate() {
     }
     try {
       const [, updatedUser] = await Promise.all([
-        base44.entities.Card.create({ ...previewCard, deckId: activeDeckId }),
+        base44.functions.invoke("createGeneratedCard", { cardData: previewCard, deckId: activeDeckId, forced: previewForced }),
         Object.keys(userUpdate).length ? base44.auth.updateMe(userUpdate) : Promise.resolve(user),
       ]);
       setUser(updatedUser);
       setCount((c) => c + 1);
       setPreviewCard(null);
+      setPreviewForced(false);
     } catch (err) {
       toast({ title: "Couldn't add card", description: "Something went wrong saving this card. Please try again.", variant: "destructive" });
     } finally {
