@@ -13,10 +13,9 @@ Deno.serve(async (req) => {
     if (!pack) return Response.json({ error: 'Invalid pack' }, { status: 400 });
 
     // Only allow relative in-app paths for redirect URLs, resolved against the app's
-    // own deployed origin - never a client-controlled Origin/Referer header - to
+    // own configured base URL - never a client-controlled Origin/Referer header - to
     // prevent open redirects to attacker-controlled domains after checkout.
-    const appId = Deno.env.get('BASE44_APP_ID');
-    const originBase = appId ? `https://${appId}.base44.app` : '';
+    const originBase = (Deno.env.get('APP_BASE_URL') || '').replace(/\/$/, '');
     const safePath = (url, fallback) => {
       if (typeof url === 'string' && url.startsWith('/') && !url.startsWith('//')) return `${originBase}${url}`;
       return `${originBase}${fallback}`;
