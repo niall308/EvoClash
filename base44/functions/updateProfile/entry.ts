@@ -25,6 +25,23 @@ Deno.serve(async (req) => {
 
     await base44.asServiceRole.entities.User.update(user.id, updateData);
 
+    // Keep the username in sync everywhere it's been copied: friends' friend lists
+    // and any active PvP match this user is currently in.
+    if (updateData.username) {
+      await base44.asServiceRole.entities.Friend.updateMany(
+        { friendUserId: user.id },
+        { $set: { friendName: updateData.username } }
+      );
+      await base44.asServiceRole.entities.PvpMatch.updateMany(
+        { player1Id: user.id, status: 'active' },
+        { $set: { player1Name: updateData.username } }
+      );
+      await base44.asServiceRole.entities.PvpMatch.updateMany(
+        { player2Id: user.id, status: 'active' },
+        { $set: { player2Name: updateData.username } }
+      );
+    }
+
     return Response.json({ status: 'ok' });
   } catch (error) {
     console.error('updateProfile error', error);
