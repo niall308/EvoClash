@@ -102,4 +102,12 @@
     user-select: text;
     -webkit-touch-callout: default;
   }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }

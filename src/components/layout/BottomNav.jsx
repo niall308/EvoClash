@@ -33,7 +33,7 @@ export default function BottomNav() {
         return (
           <button
             key={tab.path}
-            onClick={() => navigate(getLastTabPath(tab.path))}
+            onClick={() => navigate(active ? tab.path : getLastTabPath(tab.path))}
             className="relative flex-1 flex flex-col items-center gap-1 py-2.5 active:scale-95 transition-transform"
           >
             <div className="relative">

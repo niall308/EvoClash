@@ -70,7 +70,7 @@ export default function CreateLobby() {
 
   return (
     <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-8">
-      <Link to="/lobby" className="inline-flex items-center gap-1 text-white/60 text-sm mb-8 py-2 px-1 -ml-1">
+      <Link to="/lobby" className="inline-flex items-center gap-1 text-white/60 text-sm mb-8 min-h-[44px] px-1 -ml-1">
         <ArrowLeft className="w-4 h-4" /> Back
       </Link>
       <h1 className="text-3xl font-black mb-2">Your Lobby</h1>

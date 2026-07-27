@@ -17,7 +17,7 @@ export default function CoinHistory() {
 
   return (
     <div className="min-h-screen text-white px-4 py-6" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-white/60 hover:text-white text-sm mb-6 py-2 px-1 -ml-1">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-white/60 hover:text-white text-sm mb-6 min-h-[44px] px-1 -ml-1">
         <ArrowLeft className="w-4 h-4" /> Back
       </button>
       <h1 className="text-2xl font-bold mb-1">Transaction History</h1>
