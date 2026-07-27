@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { buildDeckCards, DECK_COMPOSITIONS } from "@/lib/aiDeckGenerator";
-import { STYLE_REFERENCE_URL } from "@/lib/gameConstants";
+import { buildCardImagePrompt } from "@/lib/cardImagePrompt";
 import AiDeckCardsModal from "@/components/admin/AiDeckCardsModal";
 
 const DIFFICULTIES = Object.keys(DECK_COMPOSITIONS);
@@ -34,14 +34,21 @@ export default function AdminAiDecks() {
   const generateDeck = async (difficulty) => {
     setGenerating(difficulty);
     setProgress(0);
-    const creatureList = await base44.entities.Creature.list();
+    const [creatureList, typeBackgrounds] = await Promise.all([
+      base44.entities.Creature.list(),
+      base44.entities.TypeBackground.list(),
+    ]);
     const hybridCreatures = creatureList.filter((c) => c.role === "hyper_rare");
-    const cards = buildDeckCards(difficulty, hybridCreatures.length > 0 ? hybridCreatures : [{ baseName: "Chimera" }]);
+    const cards = buildDeckCards(difficulty, creatureList, hybridCreatures.length > 0 ? hybridCreatures : [{ baseName: "Chimera" }]);
     const finished = [];
     for (const card of cards) {
+      const creatureDescription = card.isHybrid
+        ? hybridCreatures.find((c) => c.baseName === card.baseName)?.description || ""
+        : "";
+      const { prompt, existingImageUrls } = buildCardImagePrompt(card, { typeBackgrounds, creatureDescription });
       const { url } = await base44.integrations.Core.GenerateImage({
-        prompt: `A ${card.type}-type ${card.baseName}, dynamic full-body creature illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`,
-        existing_image_urls: [STYLE_REFERENCE_URL],
+        prompt,
+        existing_image_urls: existingImageUrls,
       });
       finished.push({ ...card, imageUrl: url, difficulty });
       setProgress(finished.length);

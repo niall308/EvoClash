@@ -18,7 +18,7 @@ export const DECK_COMPOSITIONS = {
   ],
 };
 
-export function buildDeckCards(difficulty, hybridCreatures) {
+export function buildDeckCards(difficulty, creatures, hybridCreatures) {
   const composition = DECK_COMPOSITIONS[difficulty];
   const cards = [];
   for (const part of composition) {
@@ -27,7 +27,7 @@ export function buildDeckCards(difficulty, hybridCreatures) {
         const creature = hybridCreatures[Math.floor(Math.random() * hybridCreatures.length)];
         cards.push(generateHybridCard(creature));
       } else {
-        cards.push(generateRandomCard(part.tier));
+        cards.push(generateRandomCard(part.tier, { creatures }));
       }
     }
   }
