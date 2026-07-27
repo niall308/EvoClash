@@ -1,8 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Users, UserPlus } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
+import PlayerLobbySection from "@/components/humanbattle/PlayerLobbySection";
+import FriendsSection from "@/components/profile/FriendsSection";
+
+const TABS = [
+  { key: "lobby", label: "Player Lobby", icon: Users },
+  { key: "friends", label: "Friends", icon: UserPlus },
+];
 
 export default function HumanBattle() {
+  const { user, updateUser } = useAuth();
+  const [tab, setTab] = useState("lobby");
+
+  if (!user) return null;
+
   return (
     <div className="text-white px-6 py-8">
       <Link to="/play" className="inline-flex items-center gap-1 text-white/60 text-sm mb-4 min-h-[44px] px-1">
@@ -10,14 +23,21 @@ export default function HumanBattle() {
       </Link>
       <h1 className="text-3xl font-black mb-6">Battle vs Human</h1>
 
-      <div className="space-y-4">
-        <Link to="/lobby" className="w-full flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-500 p-5 rounded-2xl font-bold text-left">
-          <Users className="w-8 h-8" /> Player Lobby
-        </Link>
-        <Link to="/friends" className="w-full flex items-center gap-4 bg-gradient-to-r from-amber-500 to-yellow-600 p-5 rounded-2xl font-bold text-left">
-          <UserPlus className="w-8 h-8" /> Friends
-        </Link>
+      <div className="grid grid-cols-2 gap-2 mb-6 bg-white/5 rounded-2xl p-1">
+        {TABS.map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`flex items-center justify-center gap-1.5 py-3 rounded-xl text-sm font-bold transition-colors ${
+              tab === key ? "bg-gradient-to-r from-blue-600 to-cyan-500" : "text-white/50"
+            }`}
+          >
+            <Icon className="w-4 h-4" /> {label}
+          </button>
+        ))}
       </div>
+
+      {tab === "lobby" ? <PlayerLobbySection /> : <FriendsSection user={user} onUserUpdate={updateUser} />}
     </div>
   );
 }
