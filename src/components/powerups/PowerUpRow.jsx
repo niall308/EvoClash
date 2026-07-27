@@ -11,7 +11,7 @@ const CATEGORY_ICONS = {
   legendary: Sparkles,
 };
 
-const CATEGORY_COLORS = {
+export const CATEGORY_COLORS = {
   attack: "from-red-600 to-orange-500",
   defense: "from-emerald-600 to-teal-500",
   health: "from-pink-600 to-rose-500",

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Coins, Loader2 } from "lucide-react";
-import PowerUpRow from "@/components/powerups/PowerUpRow";
+import PowerUpRow, { CATEGORY_COLORS } from "@/components/powerups/PowerUpRow";
 import ReplacePowerUpModal from "@/components/powerups/ReplacePowerUpModal";
 import { POWER_DEFINITIONS, POWER_CATEGORIES, MAX_ACTIVE_POWERUPS, DEFAULT_ACTIVE_POWERUPS } from "@/lib/gameConstants";
 import { isPowerAvailable } from "@/lib/powerUps";
@@ -93,7 +93,12 @@ export default function PowerUps() {
           const key = active[i];
           const def = POWER_DEFINITIONS.find((d) => d.key === key);
           return (
-            <div key={i} className="flex-1 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-center px-1">
+            <div
+              key={i}
+              className={`flex-1 h-14 rounded-xl border border-white/10 flex items-center justify-center text-[10px] font-bold text-center px-1 ${
+                def ? `bg-gradient-to-br ${CATEGORY_COLORS[def.category]} text-white` : "bg-white/5 text-white/80"
+              }`}
+            >
               {def ? def.label : "Empty"}
             </div>
           );
