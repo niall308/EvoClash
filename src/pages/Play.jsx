@@ -66,9 +66,13 @@ export default function Play() {
         >
           <Bot className="w-8 h-8" /> Battle vs AI
         </button>
-        <Link to="/human-battle" className="w-full flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-500 p-5 rounded-2xl font-bold text-left">
+        <button
+          onClick={() => ready && navigate("/human-battle")}
+          disabled={!ready}
+          className="w-full flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-500 p-5 rounded-2xl font-bold text-left disabled:opacity-40"
+        >
           <Users className="w-8 h-8" /> Battle vs Human
-        </Link>
+        </button>
         <Link to="/leaderboards" className="w-full flex items-center gap-4 bg-gradient-to-r from-amber-500 to-yellow-600 p-5 rounded-2xl font-bold text-left">
           <Trophy className="w-8 h-8" /> Leaderboards
         </Link>
