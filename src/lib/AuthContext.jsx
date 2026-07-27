@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import { ADMIN_UNLIMITED_COINS } from '@/lib/gameConstants';
 
 const AuthContext = createContext();
 
@@ -93,7 +94,10 @@ export const AuthProvider = ({ children }) => {
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
+      let currentUser = await base44.auth.me();
+      if (currentUser.role === 'admin' && (currentUser.coins || 0) < ADMIN_UNLIMITED_COINS) {
+        currentUser = await base44.auth.updateMe({ coins: ADMIN_UNLIMITED_COINS });
+      }
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);

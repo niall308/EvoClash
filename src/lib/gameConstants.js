@@ -169,6 +169,9 @@ export const COINS_LOSS_HUMAN = 150;
 // Bonus LC added on top of COINS_WIN_AI, based on the AI difficulty beaten
 export const AI_DIFFICULTY_WIN_BONUS = { Easy: 25, Normal: 50, Hard: 75, Extreme: 125 };
 
+// Admin accounts are auto-topped-up to this coin balance on login so they never run out.
+export const ADMIN_UNLIMITED_COINS = 100000000;
+
 // Real-money LC purchase packs (Buy Coins screen)
 export const COIN_PACKS = [
   { id: "pack_small", coins: 25000, priceUsd: 2 },
