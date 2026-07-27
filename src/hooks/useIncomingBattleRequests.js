@@ -9,7 +9,8 @@ export default function useIncomingBattleRequests() {
   const refresh = useCallback(async () => {
     if (!user) return;
     const pending = await base44.entities.BattleRequest.filter({ toUserId: user.id, status: "pending" }, "-created_date");
-    setRequests(pending);
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    setRequests(pending.filter((r) => new Date(r.created_date).getTime() > cutoff));
   }, [user?.id]);
 
   useEffect(() => {

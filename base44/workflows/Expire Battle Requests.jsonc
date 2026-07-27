@@ -1,0 +1,47 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "expire_battle_requests",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "expire_battle_requests": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "expireBattleRequests",
+            "args": {
+              "cronToken": "ec_cron_9d4f2a7b1c8e6f30a5d9c2b4e7f1a8c3"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Expire old battle requests",
+            "description": "Expire pending rematch/battle requests older than 24h"
+          }
+        }
+      }
+    ]
+  },
+  "name": "Expire Battle Requests",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 * * * *",
+      "one_time_date": null,
+      "timezone": "America/Toronto",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "description": "Marks pending battle/rematch requests older than 24 hours as expired."
+}

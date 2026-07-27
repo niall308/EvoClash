@@ -20,6 +20,12 @@ Deno.serve(async (req) => {
     if (battleRequest.toUserId !== user.id) return Response.json({ error: 'Not your request' }, { status: 403 });
     if (battleRequest.status !== 'pending') return Response.json({ error: 'Request already resolved' }, { status: 400 });
 
+    const ageMs = Date.now() - new Date(battleRequest.created_date).getTime();
+    if (ageMs > 24 * 60 * 60 * 1000) {
+      await base44.asServiceRole.entities.BattleRequest.update(battleRequest.id, { status: 'expired' });
+      return Response.json({ error: 'Request expired' }, { status: 400 });
+    }
+
     if (action === 'decline') {
       await base44.entities.BattleRequest.update(battleRequest.id, { status: 'declined' });
       return Response.json({ status: 'declined' });

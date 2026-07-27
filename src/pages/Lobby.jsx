@@ -9,6 +9,7 @@ export default function Lobby() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [players, setPlayers] = useState(null);
+  const [recentOpponents, setRecentOpponents] = useState(null);
   const [searching, setSearching] = useState(false);
   const [sentRequestIds, setSentRequestIds] = useState([]);
   const [respondingId, setRespondingId] = useState(null);
@@ -18,6 +19,7 @@ export default function Lobby() {
 
   useEffect(() => {
     base44.functions.invoke("getLobbyPlayers", {}).then(({ data }) => setPlayers(data?.players || []));
+    base44.functions.invoke("getRecentOpponents", {}).then(({ data }) => setRecentOpponents(data?.opponents || []));
     return () => {
       clearInterval(pollRef.current);
       if (searchingRef.current) base44.functions.invoke("findMatch", { action: "cancel" });
@@ -134,6 +136,38 @@ export default function Lobby() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {recentOpponents?.length > 0 && (
+        <div className="mb-6">
+          <p className="text-white/50 text-xs font-semibold mb-2">Recent Opponents</p>
+          <div className="space-y-2">
+            {recentOpponents.map((p) => {
+              const requested = sentRequestIds.includes(p.id);
+              return (
+                <div key={p.id} className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3">
+                  <button
+                    onClick={() => requestBattle(p)}
+                    disabled={requested}
+                    className="font-bold text-sm text-left disabled:opacity-50"
+                  >
+                    {p.full_name}
+                  </button>
+                  <button
+                    onClick={() => requestBattle(p)}
+                    disabled={requested}
+                    className={`flex items-center gap-1 text-xs font-bold px-3 py-2 rounded-full active:scale-95 transition-transform disabled:opacity-50 ${
+                      requested ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500 text-black"
+                    }`}
+                  >
+                    {requested ? <Check className="w-3.5 h-3.5" /> : <Swords className="w-3.5 h-3.5" />}
+                    {requested ? "Requested" : "Rematch"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
