@@ -7,9 +7,12 @@ import { getCreationStatus, buildCreationUpdate, EXTRA_CREATURE_COST } from "@/l
 import { ensureActiveDeck } from "@/lib/decks";
 import GameCard from "@/components/cards/GameCard";
 import CreaturePicker from "@/components/generate/CreaturePicker";
+import AutoBuildOfferModal from "@/components/generate/AutoBuildOfferModal";
 import { Sparkles, Loader2, PlusCircle, RefreshCw, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
+
+const AUTO_BUILD_COUNT = 15;
 
 export default function CardGenerate() {
   const { toast } = useToast();
@@ -23,6 +26,9 @@ export default function CardGenerate() {
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeDeckId, setActiveDeckId] = useState(null);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [autoBuilding, setAutoBuilding] = useState(false);
+  const [autoBuildProgress, setAutoBuildProgress] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -35,8 +41,44 @@ export default function CardGenerate() {
       setTypeBackgrounds(await base44.entities.TypeBackground.list());
       const { active } = await ensureActiveDeck(me.id);
       setActiveDeckId(active.id);
+      if (cards.length === 0 && !me.autoBuildOffered) setShowOfferModal(true);
     })();
   }, []);
+
+  const handleDeclineOffer = async () => {
+    setShowOfferModal(false);
+    const updated = await base44.auth.updateMe({ autoBuildOffered: true });
+    setUser(updated);
+  };
+
+  const handleAutoBuild = async () => {
+    setShowOfferModal(false);
+    setAutoBuilding(true);
+    setAutoBuildProgress(0);
+    const ownedTypes = new Set(user.ownedElementTypesList || []);
+    for (let i = 0; i < AUTO_BUILD_COUNT; i++) {
+      const cardData = generateRandomCard(1, { creatures });
+      const { prompt, existingImageUrls } = buildCardImagePrompt(cardData, { typeBackgrounds });
+      try {
+        const { url } = await base44.integrations.Core.GenerateImage({ prompt, existing_image_urls: existingImageUrls });
+        cardData.imageUrl = url;
+        await base44.functions.invoke("createGeneratedCard", { cardData, deckId: activeDeckId, forced: false });
+        ownedTypes.add(cardData.type);
+        setAutoBuildProgress(i + 1);
+      } catch (err) {
+        // Skip this card on failure and continue building the rest.
+      }
+    }
+    const updated = await base44.auth.updateMe({
+      autoBuildOffered: true,
+      totalCardsCreated: AUTO_BUILD_COUNT,
+      ownedElementTypesList: Array.from(ownedTypes),
+      distinctTypesOwnedCount: ownedTypes.size,
+    });
+    setUser(updated);
+    setCount(AUTO_BUILD_COUNT);
+    setAutoBuilding(false);
+  };
 
   const handleGenerate = async () => {
     if (count >= 50 || generating) return;
@@ -107,6 +149,22 @@ export default function CardGenerate() {
 
   return (
     <div className="text-white px-6 py-6 flex flex-col items-center">
+      {showOfferModal && <AutoBuildOfferModal onChooseAuto={handleAutoBuild} onChooseManual={handleDeclineOffer} />}
+      {autoBuilding && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center px-6">
+          <div className="bg-[#0D1B2A] border border-white/10 rounded-2xl p-6 max-w-sm w-full text-white text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-400" />
+            <p className="font-bold mb-2">Building your first {AUTO_BUILD_COUNT} cards...</p>
+            <p className="text-white/50 text-sm mb-4">{autoBuildProgress}/{AUTO_BUILD_COUNT} created</p>
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-purple-600 to-fuchsia-500 transition-all"
+                style={{ width: `${(autoBuildProgress / AUTO_BUILD_COUNT) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       <h1 className="text-2xl font-black mb-1 mt-2">AI Generate</h1>
       <p className="text-white/50 text-xs mb-1">{count === null ? "Loading..." : `${count}/50 cards owned`}</p>
       <p className="text-[11px] mb-8 h-4">

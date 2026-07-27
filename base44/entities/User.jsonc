@@ -254,6 +254,11 @@
     "notifyTradeRequests": {
       "type": "boolean",
       "default": true
+    },
+    "autoBuildOffered": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the user has already been shown the one-time offer to auto-build their first 15 cards."
     }
   }
 }
