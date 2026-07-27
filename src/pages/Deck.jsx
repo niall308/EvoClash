@@ -139,7 +139,7 @@ export default function Deck() {
 
   return (
     <PullToRefresh onRefresh={() => authUser && load(authUser)}>
-    <div className="min-h-screen bg-[#0D1B2A] text-white pb-24">
+    <div className="text-white pb-24">
       <div className="px-6 py-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black">Your Deck</h1>

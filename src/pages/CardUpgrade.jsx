@@ -36,7 +36,7 @@ export default function CardUpgrade() {
 
   if (!card || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0D1B2A]">
+      <div className="flex items-center justify-center py-24">
         <Loader2 className="w-8 h-8 text-white animate-spin" />
       </div>
     );
@@ -140,7 +140,7 @@ export default function CardUpgrade() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-6">
+    <div className="text-white px-6 py-6">
       <Link to="/deck" className="inline-flex items-center gap-1 text-white/60 text-sm mb-6 min-h-[44px] px-1 -ml-1">
         <ArrowLeft className="w-4 h-4" /> Back
       </Link>

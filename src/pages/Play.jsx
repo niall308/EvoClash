@@ -27,7 +27,7 @@ export default function Play() {
   const ready = count !== null && count >= 15;
 
   return (
-    <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-8">
+    <div className="text-white px-6 py-8">
       <Link to="/" className="inline-flex items-center gap-1 text-white/60 text-sm mb-4 min-h-[44px] px-1">
         <ArrowLeft className="w-4 h-4" /> Back
       </Link>

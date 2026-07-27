@@ -106,7 +106,7 @@ export default function CardGenerate() {
   const isAdmin = user?.role === "admin";
 
   return (
-    <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-6 flex flex-col items-center">
+    <div className="text-white px-6 py-6 flex flex-col items-center">
       <h1 className="text-2xl font-black mb-1 mt-2">AI Generate</h1>
       <p className="text-white/50 text-xs mb-1">{count === null ? "Loading..." : `${count}/50 cards owned`}</p>
       <p className="text-[11px] mb-8 h-4">

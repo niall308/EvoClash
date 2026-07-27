@@ -49,7 +49,7 @@ export default function Profile() {
   const streak = user.currentPvpStreak || 0;
 
   return (
-    <div className="min-h-screen bg-[#0D1B2A] text-white px-6 py-6">
+    <div className="text-white px-6 py-6">
       {user.role === "admin" && (
         <Link
           to="/admin"

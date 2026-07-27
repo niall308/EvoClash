@@ -27,7 +27,7 @@ export default function BuyCoins() {
   };
 
   return (
-    <div className="min-h-screen text-white px-4 py-6" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
+    <div className="text-white px-4 py-6">
       <div className="flex items-center justify-between mb-6">
         <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-white/60 hover:text-white text-sm min-h-[44px] px-1 -ml-1">
           <ArrowLeft className="w-4 h-4" /> Back

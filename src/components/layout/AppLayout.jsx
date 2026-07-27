@@ -16,7 +16,7 @@ export default function AppLayout() {
   }, [location.pathname]);
 
   return (
-    <div className="relative">
+    <div className="relative min-h-screen" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
       <CoinsBadge />
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
