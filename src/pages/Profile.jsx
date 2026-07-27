@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Trophy, Swords, Gamepad2, History, HelpCircle, Target, Flame, Snowflake, ShieldCheck, Trash2, ArrowLeftRight, Pencil } from "lucide-react";
-import { UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
+import { Trophy, Swords, Gamepad2, History, HelpCircle, Flame, Snowflake, ShieldCheck, Trash2, ArrowLeftRight, Pencil } from "lucide-react";
 import { getRankByRP } from "@/lib/rankSystem";
 import { useAuth } from "@/lib/AuthContext";
 import RankEmblem from "@/components/rank/RankEmblem";
-import CardFilterBar from "@/components/cards/CardFilterBar";
 import ActiveMilestonesSummary from "@/components/profile/ActiveMilestonesSummary";
 import FriendsSection from "@/components/profile/FriendsSection";
 import DeleteAccountModal from "@/components/profile/DeleteAccountModal";
@@ -26,17 +24,12 @@ function Stat({ icon: Icon, label, value }) {
 export default function Profile() {
   const { user: authUser, logout } = useAuth();
   const [user, setUser] = useState(authUser);
-  const [cards, setCards] = useState([]);
-  const [filterType, setFilterType] = useState("all");
-  const [filterTier, setFilterTier] = useState("all");
-  const [hybridOnly, setHybridOnly] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     if (!authUser) return;
     setUser(authUser);
-    base44.entities.Card.filter({ ownerId: authUser.id }).then(setCards);
   }, [authUser?.id]);
 
   const handleDeleteAccount = async () => {
@@ -53,14 +46,6 @@ export default function Profile() {
 
   if (!user) return null;
 
-  const inProgress = cards
-    .filter((c) => c.tier < 4)
-    .filter(
-      (c) =>
-        (filterType === "all" || c.type === filterType) &&
-        (filterTier === "all" || String(c.tier) === filterTier) &&
-        (!hybridOnly || c.isHybrid)
-    );
   const rank = getRankByRP(user.rankPoints);
   const streak = user.currentPvpStreak || 0;
 
@@ -133,31 +118,6 @@ export default function Profile() {
         </span>
         <span className="text-white/40 text-xs">View →</span>
       </Link>
-
-      <h2 className="text-lg font-bold mb-3">Upgrade Progress</h2>
-      <div className="-mx-6 mb-1">
-        <CardFilterBar
-          type={filterType}
-          onTypeChange={setFilterType}
-          tier={filterTier}
-          onTierChange={setFilterTier}
-          hybridOnly={hybridOnly}
-          onHybridToggle={setHybridOnly}
-        />
-      </div>
-      <div className="space-y-3">
-        {inProgress.map((c) => (
-          <div key={c.id} className="bg-white/5 rounded-xl p-3">
-            <p className="font-semibold text-sm">
-              {c.name} <span className="text-white/40 text-xs">Tier {c.tier}</span>
-            </p>
-            <p className="text-[10px] text-white/50 mt-1">
-              Destroyed {c.totalWins || 0}/{UPGRADE_REQUIREMENT.cardsDestroyed} · Games {c.totalGames || 0}/{UPGRADE_REQUIREMENT.gamesPlayed} · Match wins {c.matchWins || 0}/{UPGRADE_REQUIREMENT.matchWins}
-            </p>
-          </div>
-        ))}
-        {inProgress.length === 0 && <p className="text-white/40 text-sm">No cards in progress.</p>}
-      </div>
 
       <button
         onClick={() => setShowDeleteModal(true)}
