@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { CREATURES, CATEGORIES } from "@/lib/gameConstants";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, X } from "lucide-react";
 import DrawerPicker from "@/components/common/DrawerPicker";
+import { Image } from "@/components/ui/image";
 
 const ALL_CREATURES = CATEGORIES.flatMap((cat) => CREATURES[cat].map((name) => ({ name, category: cat })));
 const TIERS = [1, 2, 3, 4];
@@ -36,6 +37,13 @@ export default function CreatureAnimationManager() {
     setUploadingTier(null);
   };
 
+  const handleDelete = async (tier) => {
+    const existing = getTemplate(selected);
+    if (!existing) return;
+    await base44.entities.CardTemplate.update(existing.id, { [`tier${tier}Animation`]: "" });
+    await load();
+  };
+
   const current = getTemplate(selected);
 
   return (
@@ -53,12 +61,26 @@ export default function CreatureAnimationManager() {
           const field = `tier${tier}Animation`;
           const url = current?.[field];
           return (
-            <label key={tier} className="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer">
+            <div key={tier} className="relative bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col items-center gap-2">
+              {url && (
+                <button
+                  onClick={() => handleDelete(tier)}
+                  className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-red-400 hover:text-red-300"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
               <span className="text-xs font-bold">Tier {tier}</span>
-              {url ? <span className="text-[10px] text-emerald-400 truncate w-full text-center">Uploaded ✓</span> : <span className="text-[10px] text-white/40">No file</span>}
-              {uploadingTier === tier ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-white/60" />}
-              <input type="file" accept="image/*,.json,.gif" className="hidden" onChange={(e) => handleUpload(tier, e)} />
-            </label>
+              {url ? (
+                <Image src={url} className="w-16 h-16 rounded-lg" />
+              ) : (
+                <span className="text-[10px] text-white/40">No file (uses default)</span>
+              )}
+              <label className="flex flex-col items-center gap-1 cursor-pointer">
+                {uploadingTier === tier ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-white/60" />}
+                <input type="file" accept="image/*,.json,.gif" className="hidden" onChange={(e) => handleUpload(tier, e)} />
+              </label>
+            </div>
           );
         })}
       </div>
