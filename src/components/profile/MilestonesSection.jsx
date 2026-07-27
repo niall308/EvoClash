@@ -152,11 +152,11 @@ export default function MilestonesSection({ user, onUserUpdate }) {
 
       {!milestones ? (
         <p className="text-white/40 text-sm">Loading...</p>
-      ) : milestones.length === 0 ? (
+      ) : milestones.filter((m) => m.repeatable || ((user.milestoneClaimCounts || {})[m.id] || 0) < 1).length === 0 ? (
         <p className="text-white/40 text-sm">No milestones yet.</p>
       ) : (
         <div className="space-y-2">
-          {milestones.map((m) => {
+          {milestones.filter((m) => m.repeatable || ((user.milestoneClaimCounts || {})[m.id] || 0) < 1).map((m) => {
             const value = user[m.metric] || 0;
             const claimedCount = (user.milestoneClaimCounts || {})[m.id] || 0;
             const earned = timesEarned(m, user);
