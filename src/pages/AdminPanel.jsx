@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Loader2, PawPrint, Sparkles, Layers } from "lucide-react";
+import { ArrowLeft, Loader2, PawPrint, Sparkles, Layers, Target } from "lucide-react";
 import CardBackManager from "@/components/admin/CardBackManager";
 import CreatureAnimationManager from "@/components/admin/CreatureAnimationManager";
 
@@ -41,6 +41,9 @@ export default function AdminPanel() {
         </Link>
         <Link to="/admin/ai-decks" className="flex items-center gap-2 bg-white/5 rounded-xl p-4 font-bold text-sm">
           <Layers className="w-4 h-4 text-amber-400" /> AI Deck Manager
+        </Link>
+        <Link to="/admin/milestones" className="flex items-center gap-2 bg-white/5 rounded-xl p-4 font-bold text-sm">
+          <Target className="w-4 h-4 text-amber-400" /> Milestones
         </Link>
       </div>
 
