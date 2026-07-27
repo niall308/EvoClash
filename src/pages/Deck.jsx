@@ -204,7 +204,10 @@ export default function Deck() {
       {statsCard && <CardStatsModal card={statsCard} onClose={() => setStatsCard(null)} />}
 
       {bulkMode && selectedIds.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0D1B2A]/95 border-t border-white/10">
+        <div
+          className="fixed left-0 right-0 z-50 p-4 bg-[#0D1B2A]/95 border-t border-white/10"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 4rem)" }}
+        >
           <button
             onClick={handleBulkDelete}
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 py-3 rounded-full font-bold"
