@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { generateRandomCard, generateHybridCard } from "@/lib/cardGenerator";
-import { STYLE_REFERENCE_URL, HYBRID_CHANCE, CREATURE_ANATOMY, CREATURE_STANCES } from "@/lib/gameConstants";
+import { STYLE_REFERENCE_URL, HYBRID_CHANCE, CREATURE_ANATOMY, CREATURE_STANCES, CREATURE_COLOR_PALETTES } from "@/lib/gameConstants";
 import { getCreationStatus, buildCreationUpdate, EXTRA_CREATURE_COST } from "@/lib/cardCreationLimits";
 import { ensureActiveDeck } from "@/lib/decks";
 import GameCard from "@/components/cards/GameCard";
@@ -50,11 +50,12 @@ export default function CardGenerate() {
       : generateRandomCard(1, { creatures, forcedCreature: forced });
 
     const stance = CREATURE_STANCES[Math.floor(Math.random() * CREATURE_STANCES.length)];
+    const palette = CREATURE_COLOR_PALETTES[Math.floor(Math.random() * CREATURE_COLOR_PALETTES.length)];
     const prompt = useHybrid
       ? `A hybrid creature combining two creatures into one, robot-style, design guide: ${cardData.baseName} — ${
           (forcedHybrid ? forced : hybridCreatures.find((c) => c.baseName === cardData.baseName))?.description || ""
-        }. Pose: ${stance}. Dynamic full-body illustration true to this exact hybrid description and anatomy. CRITICAL: Match ONLY the art style, color palette, lighting, and mystical trading-card aesthetic of the reference image — its actual creature, face, head shape, and pose must be completely ignored and NOT copied. Centered on a plain background, no text, no border, no frame`
-      : `A ${cardData.type}-type ${cardData.baseName}. Its head, face, and full body must look EXACTLY like this: ${CREATURE_ANATOMY[cardData.baseName] || `a creature true to a real ${cardData.baseName}`}. Pose: ${stance}. Dynamic full-body creature illustration, anatomically true to this exact creature. CRITICAL: Do NOT give it a Tyrannosaurus Rex or generic dinosaur face/head unless it is actually a Tyrannosaurus Rex — the head shape above must be followed precisely. Use the reference image ONLY for its art style, color palette, lighting, and mystical trading-card aesthetic — its actual creature, face, head shape, and pose must be completely ignored and NOT copied. Centered on a plain background, no text, no border, no frame`;
+        }. Pose: ${stance}. Give the creature its own distinct color scheme of ${palette}. Dynamic full-body illustration true to this exact hybrid description and anatomy. CRITICAL: Match ONLY the art style, lighting, and mystical trading-card aesthetic of the reference image — its actual creature, colors, face, head shape, and pose must be completely ignored and NOT copied. Centered on a plain background, no text, no border, no frame`
+      : `A ${cardData.type}-type ${cardData.baseName}. Its head, face, and full body must look EXACTLY like this: ${CREATURE_ANATOMY[cardData.baseName] || `a creature true to a real ${cardData.baseName}`}. Pose: ${stance}. Give the creature its own distinct color scheme of ${palette}. Dynamic full-body creature illustration, anatomically true to this exact creature. CRITICAL: Do NOT give it a Tyrannosaurus Rex or generic dinosaur face/head unless it is actually a Tyrannosaurus Rex — the head shape above must be followed precisely. Use the reference image ONLY for its art style, lighting, and mystical trading-card aesthetic — its actual creature, colors, face, head shape, and pose must be completely ignored and NOT copied. Centered on a plain background, no text, no border, no frame`;
 
     try {
       const { url } = await base44.integrations.Core.GenerateImage({

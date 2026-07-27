@@ -66,6 +66,22 @@ export const CREATURE_ANATOMY = {
   "Unicorn": "a graceful horse-like creature with a single long spiraled horn on its forehead and a flowing mane and tail",
 };
 
+// Color variety for generated creature art, picked at random per generation.
+export const CREATURE_COLOR_PALETTES = [
+  "deep crimson and gold",
+  "emerald green and bronze",
+  "royal purple and silver",
+  "midnight blue and electric cyan",
+  "burnt orange and charcoal black",
+  "jade green and copper",
+  "ruby red and obsidian black",
+  "sapphire blue and pale gold",
+  "amethyst purple and jet black",
+  "sunset orange and deep magenta",
+  "steel gray and neon teal",
+  "forest green and burnt sienna",
+];
+
 // Pose/stance variety for generated creature art, picked at random per generation.
 export const CREATURE_STANCES = [
   "in an aggressive roaring stance, baring its full power",
