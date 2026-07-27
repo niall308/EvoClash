@@ -102,9 +102,13 @@ export default function CardUpgrade() {
     const higherIsAttack = card.attack >= card.defense;
     const higherValue = randomInt(newRange.statMin, newRange.statMax);
     const lowerValue = Math.round((higherIsAttack ? card.defense : card.attack) * pct);
+    const templates = await base44.entities.CardTemplate.filter({ baseName: card.baseName });
+    const tierAnimation = templates[0]?.[`tier${newTier}Animation`];
+    const referenceImages = [card.imageUrl, STYLE_REFERENCE_URL];
+    if (tierAnimation) referenceImages.push(tierAnimation);
     const { url } = await base44.integrations.Core.GenerateImage({
       prompt: EVOLVE_ARMOR_PROMPTS[newTier],
-      existing_image_urls: [card.imageUrl, STYLE_REFERENCE_URL],
+      existing_image_urls: referenceImages,
     });
     const updated = {
       tier: newTier,
