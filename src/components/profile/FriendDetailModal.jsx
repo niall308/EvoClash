@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Trophy, Swords, Loader2, UserMinus, X } from "lucide-react";
+import { Trophy, Swords, Loader2, UserMinus, X, Users } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { getRankByRP } from "@/lib/rankSystem";
 import RankEmblem from "@/components/rank/RankEmblem";
@@ -57,6 +57,27 @@ export default function FriendDetailModal({ friend, onClose, onRemove }) {
                 <span className="font-black text-lg text-white">{stats.losses}</span>
                 <span className="text-[10px] text-white/50">Losses</span>
               </div>
+            </div>
+
+            <div className="w-full">
+              <p className="text-white/40 text-[10px] flex items-center gap-1 mb-2">
+                <Users className="w-3 h-3" /> Head to Head
+              </p>
+              {stats.headToHead.totalGames === 0 ? (
+                <p className="text-white/40 text-xs">You haven't played this friend yet.</p>
+              ) : (
+                <div className="flex items-center justify-center gap-3 bg-white/5 rounded-xl p-3">
+                  <div className="flex flex-col items-center">
+                    <span className="font-black text-lg text-emerald-400">{stats.headToHead.myWins}</span>
+                    <span className="text-[10px] text-white/50">You</span>
+                  </div>
+                  <span className="text-white/30 text-xs font-bold">vs</span>
+                  <div className="flex flex-col items-center">
+                    <span className="font-black text-lg text-red-400">{stats.headToHead.friendWins}</span>
+                    <span className="text-[10px] text-white/50">{friend.friendName}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
