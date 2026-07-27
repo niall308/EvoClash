@@ -19,13 +19,28 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Winner is never trusted from the client. Derive it from the match's own
-    // server-stored score, falling back to "caller forfeited" (winner = the
-    // other participant) when neither side has reached the winning score.
+    // Winner is never trusted from the client outright. Both players can write
+    // scoreP1/scoreP2 directly (needed for the real-time synced match state),
+    // so a reached-3 score alone isn't proof of a legitimately played match —
+    // sanity-check it against other match progression signals before trusting it:
+    // the number of rounds won can't exceed the number of rounds played, and
+    // reaching that many round wins must have taken a plausible minimum amount
+    // of time. A score that fails these checks is treated as untrusted, and we
+    // fall back to "caller forfeited" (winner = the other participant), the
+    // same safe default used when neither side has reached the winning score.
+    const totalRoundsWon = (match.scoreP1 || 0) + (match.scoreP2 || 0);
+    const roundsConsistent = totalRoundsWon <= (match.round || 1);
+    const MIN_MS_PER_ROUND = 5000;
+    const matchAgeMs = Date.now() - new Date(match.created_date).getTime();
+    const timingPlausible = matchAgeMs >= totalRoundsWon * MIN_MS_PER_ROUND;
+    const p1ReachedWin = match.scoreP1 >= 3;
+    const p2ReachedWin = match.scoreP2 >= 3;
+    const scoreTrusted = roundsConsistent && timingPlausible && !(p1ReachedWin && p2ReachedWin);
+
     let winnerId;
-    if (match.scoreP1 >= 3) {
+    if (scoreTrusted && p1ReachedWin) {
       winnerId = match.player1Id;
-    } else if (match.scoreP2 >= 3) {
+    } else if (scoreTrusted && p2ReachedWin) {
       winnerId = match.player2Id;
     } else {
       winnerId = user.id === match.player1Id ? match.player2Id : match.player1Id;
