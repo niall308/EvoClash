@@ -1,36 +1,29 @@
 // Shared daily-reward config used by claimDailyReward.
-// 20 possible coin rewards, weighted so smaller amounts are more common than the jackpot.
-export const REWARD_TABLE = [
-  { amount: 50, weight: 18 },
-  { amount: 75, weight: 16 },
-  { amount: 100, weight: 14 },
-  { amount: 150, weight: 12 },
-  { amount: 200, weight: 10 },
-  { amount: 250, weight: 9 },
-  { amount: 300, weight: 8 },
-  { amount: 400, weight: 7 },
-  { amount: 500, weight: 6 },
-  { amount: 600, weight: 5 },
-  { amount: 750, weight: 4 },
-  { amount: 900, weight: 3.5 },
-  { amount: 1000, weight: 3 },
-  { amount: 1250, weight: 2.5 },
-  { amount: 1500, weight: 2 },
-  { amount: 1750, weight: 1.5 },
-  { amount: 2000, weight: 1 },
-  { amount: 2250, weight: 0.75 },
-  { amount: 2400, weight: 0.5 },
-  { amount: 2500, weight: 0.25 },
+// Reward is a 4-digit number formed from independent slot digits:
+// digit 1 (thousands): 0-2, weighted so 0 is common and 2 is rare (jackpot range).
+// digits 2-4 (hundreds/tens/ones): 0-9, uniform.
+const DIGIT_1_WEIGHTS = [
+  { value: 0, weight: 70 },
+  { value: 1, weight: 25 },
+  { value: 2, weight: 5 },
 ];
 
-export function pickReward() {
-  const totalWeight = REWARD_TABLE.reduce((sum, r) => sum + r.weight, 0);
+function pickDigit1() {
+  const totalWeight = DIGIT_1_WEIGHTS.reduce((sum, r) => sum + r.weight, 0);
   let roll = Math.random() * totalWeight;
-  for (const reward of REWARD_TABLE) {
-    roll -= reward.weight;
-    if (roll <= 0) return reward.amount;
+  for (const entry of DIGIT_1_WEIGHTS) {
+    roll -= entry.weight;
+    if (roll <= 0) return entry.value;
   }
-  return REWARD_TABLE[0].amount;
+  return DIGIT_1_WEIGHTS[0].value;
+}
+
+export function pickReward() {
+  const d1 = pickDigit1();
+  const d2 = Math.floor(Math.random() * 10);
+  const d3 = Math.floor(Math.random() * 10);
+  const d4 = Math.floor(Math.random() * 10);
+  return d1 * 1000 + d2 * 100 + d3 * 10 + d4;
 }
 
 // Returns today's calendar date string (YYYY-MM-DD) in the America/New_York (EST/EDT) timezone.

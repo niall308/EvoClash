@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Gift } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
-import { canClaimDailyReward } from "@/lib/dailyRewardsClient";
+import { canClaimDailyReward, getEstDateString } from "@/lib/dailyRewardsClient";
 import SlotMachineModal from "@/components/layout/SlotMachineModal";
 
 export default function DailyRewardsButton() {
-  const { user, checkUserAuth } = useAuth();
+  const { user, updateUser } = useAuth();
   const [open, setOpen] = useState(false);
   const eligible = canClaimDailyReward(user);
 
@@ -27,7 +27,9 @@ export default function DailyRewardsButton() {
       {open && (
         <SlotMachineModal
           onClose={() => setOpen(false)}
-          onClaimed={() => checkUserAuth()}
+          onClaimed={(newTotal) =>
+            updateUser({ ...user, coins: newTotal, lastDailyRewardClaimedAt: getEstDateString() })
+          }
         />
       )}
     </>
