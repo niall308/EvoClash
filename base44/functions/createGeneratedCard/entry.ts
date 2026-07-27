@@ -21,11 +21,15 @@ Deno.serve(async (req) => {
 
     // Never trust raw client-supplied stats/tier/isHybrid — validate against
     // legitimate server-side ranges and rebuild a clean object before saving.
-    const hybridCreatures = await base44.entities.Creature.filter({ category: 'Hybrid' });
-    const hybridBaseNames = hybridCreatures.map((c) => c.baseName);
+    const allCreatures = await base44.entities.Creature.list();
+    const hybridBaseNames = allCreatures.filter((c) => c.category === 'Hybrid').map((c) => c.baseName);
+    const creaturesByCategory = allCreatures.reduce((acc, c) => {
+      (acc[c.category] ||= []).push(c.baseName);
+      return acc;
+    }, {});
     let safeCardData;
     try {
-      safeCardData = validateCardData(cardData, hybridBaseNames);
+      safeCardData = validateCardData(cardData, hybridBaseNames, creaturesByCategory);
     } catch (validationError) {
       return Response.json({ error: validationError.message }, { status: 400 });
     }

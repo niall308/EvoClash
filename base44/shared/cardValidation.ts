@@ -9,12 +9,6 @@ export const HYBRID_MIN_ATTACK = 7300;
 export const HYBRID_MIN_DEFENSE = 5000;
 export const HYBRID_BONUS_DAMAGE = 1000;
 
-export const CREATURES = {
-  Dinosaur: ["Tyrannosaurus Rex", "Velociraptor", "Triceratops", "Stegosaurus", "Spinosaurus", "Brachiosaurus", "Ankylosaurus", "Pterodactyl"],
-  "Extinct Animal": ["Woolly Mammoth", "Saber-Tooth Tiger", "Dodo Bird", "Giant Sloth", "Cave Bear", "Irish Elk", "Dire Wolf", "Moa Bird"],
-  "Mythical Creature": ["Fire Dragon", "Phoenix", "Griffin", "Kraken", "Chimera", "Hydra", "Basilisk", "Unicorn"],
-};
-
 export const TIER_RANGES = {
   1: { statMin: 1, statMax: 2500, bonusMin: 0, bonusMax: 125 },
   2: { statMin: 2501, statMax: 5000, bonusMin: 126, bonusMax: 200 },
@@ -25,7 +19,10 @@ export const TIER_RANGES = {
 // Validates untrusted client-supplied card data and rebuilds a clean,
 // whitelisted object — never trusts the raw payload directly. Throws with a
 // descriptive message on any invalid/out-of-range/spoofed value.
-export function validateCardData(cardData, hybridBaseNames) {
+// `creaturesByCategory` is the live list of admin-defined creatures per
+// category, fetched from the Creature entity (not a hardcoded list), so any
+// creature added via the admin panel is immediately valid.
+export function validateCardData(cardData, hybridBaseNames, creaturesByCategory) {
   if (!cardData || typeof cardData !== "object") throw new Error("Invalid card data");
 
   const { name, baseName, category, type, tier, attack, defense, bonusDamage, isHybrid, imageUrl } = cardData;
@@ -47,7 +44,7 @@ export function validateCardData(cardData, hybridBaseNames) {
     if (!CATEGORIES.includes(category)) throw new Error("Invalid category");
     if (!TYPES.includes(type)) throw new Error("Invalid type");
     if (tier !== 1) throw new Error("Invalid tier");
-    if (!CREATURES[category]?.includes(baseName)) throw new Error("Unknown creature");
+    if (!creaturesByCategory?.[category]?.includes(baseName)) throw new Error("Unknown creature");
 
     const { statMin, statMax, bonusMin, bonusMax } = TIER_RANGES[1];
     if (!Number.isFinite(attack) || attack < statMin || attack > statMax) throw new Error("Invalid attack");
