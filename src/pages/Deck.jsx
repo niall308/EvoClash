@@ -9,7 +9,7 @@ import DeckTabs from "@/components/decks/DeckTabs";
 import NewDeckModal from "@/components/decks/NewDeckModal";
 import { ensureActiveDeck } from "@/lib/decks";
 import { DECK_COST, MAX_DECKS } from "@/lib/gameConstants";
-import { Sparkles, Loader2, ArrowUpCircle, ListChecks, PlusCircle, Trash2 } from "lucide-react";
+import { Sparkles, Loader2, ArrowUpCircle, ListChecks, PlusCircle, Trash2, Star } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import PullToRefresh from "@/components/common/PullToRefresh";
 
@@ -19,6 +19,7 @@ export default function Deck() {
   const [user, setUser] = useState(authUser);
   const [decks, setDecks] = useState(null);
   const [activeDeckId, setActiveDeckId] = useState(null);
+  const [viewingDeckId, setViewingDeckId] = useState(null);
   const [cards, setCards] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [filterType, setFilterType] = useState("all");
@@ -34,6 +35,7 @@ export default function Deck() {
     const { decks: userDecks, active } = await ensureActiveDeck(me.id);
     setDecks(userDecks);
     setActiveDeckId(active.id);
+    setViewingDeckId(active.id);
     const data = await base44.entities.Card.filter({ ownerId: me.id }, "-created_date");
     setCards(data);
   };
@@ -42,7 +44,7 @@ export default function Deck() {
     if (authUser) load(authUser);
   }, [authUser?.id]);
 
-  const deckCards = (cards || []).filter((c) => c.deckId === activeDeckId);
+  const deckCards = (cards || []).filter((c) => c.deckId === viewingDeckId);
   const filteredCards = deckCards.filter(
     (c) =>
       (filterType === "all" || c.type === filterType) &&
@@ -90,7 +92,14 @@ export default function Deck() {
     }
   };
 
-  const handleSwitchDeck = async (deckId) => {
+  const handleViewDeck = (deckId) => {
+    if (deckId === viewingDeckId) return;
+    setViewingDeckId(deckId);
+    setSelectedId(null);
+    setSelectedIds([]);
+  };
+
+  const handleSetActiveDeck = async (deckId) => {
     if (deckId === activeDeckId) return;
     await Promise.all([
       base44.entities.Deck.update(deckId, { isActive: true }),
@@ -98,8 +107,6 @@ export default function Deck() {
     ]);
     setDecks((prev) => prev.map((d) => ({ ...d, isActive: d.id === deckId })));
     setActiveDeckId(deckId);
-    setSelectedId(null);
-    setSelectedIds([]);
   };
 
   const handleCreateDeck = async (name) => {
@@ -110,6 +117,7 @@ export default function Deck() {
     setUser(updatedUser);
     setDecks((prev) => [...prev.map((d) => ({ ...d, isActive: false })), newDeck]);
     setActiveDeckId(newDeck.id);
+    setViewingDeckId(newDeck.id);
     setShowNewDeckModal(false);
   };
 
@@ -123,6 +131,7 @@ export default function Deck() {
     }
     await base44.entities.Deck.delete(deckId);
     setDecks((prev) => prev.filter((d) => d.id !== deckId));
+    if (viewingDeckId === deckId) setViewingDeckId(activeDeckId);
   };
 
   const loading = !cards || !decks;
@@ -157,7 +166,7 @@ export default function Deck() {
         </div>
       ) : (
         <>
-          <DeckTabs decks={decks} activeDeckId={activeDeckId} onSwitch={handleSwitchDeck} onDelete={handleDeleteDeck} />
+          <DeckTabs decks={decks} activeDeckId={activeDeckId} viewingDeckId={viewingDeckId} onView={handleViewDeck} onDelete={handleDeleteDeck} />
           <div className="flex items-center justify-between px-4 pb-2">
             <p className="text-white/40 text-[11px]">{decks.length}/{MAX_DECKS} decks</p>
             {decks.length < MAX_DECKS && (
@@ -169,6 +178,16 @@ export default function Deck() {
               </button>
             )}
           </div>
+          {viewingDeckId !== activeDeckId && (
+            <div className="px-4 pb-3">
+              <button
+                onClick={() => handleSetActiveDeck(viewingDeckId)}
+                className="w-full flex items-center justify-center gap-2 bg-amber-500 text-black py-2.5 rounded-full text-xs font-bold"
+              >
+                <Star className="w-4 h-4" /> Set as Active Deck
+              </button>
+            </div>
+          )}
           <CardFilterBar
             type={filterType}
             onTypeChange={setFilterType}
