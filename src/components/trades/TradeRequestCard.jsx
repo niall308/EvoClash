@@ -4,9 +4,9 @@ import GameCard from "@/components/cards/GameCard";
 import TradeDetailModal from "@/components/trades/TradeDetailModal";
 
 const STATUS_LABEL = {
-  pending: { text: "Pending", color: "text-amber-400" },
-  completed: { text: "Completed", color: "text-emerald-400" },
-  transferred: { text: "Transferred", color: "text-sky-400" },
+  pending: { text: "Waiting", color: "text-amber-400" },
+  completed: { text: "Accepted", color: "text-emerald-400" },
+  transferred: { text: "Accepted", color: "text-sky-400" },
   declined: { text: "Declined", color: "text-red-400" },
   cancelled: { text: "Cancelled", color: "text-white/40" },
   expired: { text: "Expired", color: "text-white/40" },
@@ -42,6 +42,7 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
   const isMyTurn = direction === "incoming" ? trade.lastOfferBy === "proposer" : trade.lastOfferBy === "recipient";
   const statusKey = isCompleted && claimed ? "transferred" : trade.status;
   const status = STATUS_LABEL[statusKey] || STATUS_LABEL.pending;
+  const statusText = isPending ? (isMyTurn ? "Action Needed" : "Waiting") : status.text;
 
   const submitCounter = () => {
     setCountering(false);
@@ -58,7 +59,7 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
           {direction === "incoming" ? `From ${trade.fromUserName || "a friend"}` : `To ${trade.toUserName}`}
         </p>
         <span className={`flex items-center gap-1 text-[10px] font-bold ${status.color}`}>
-          <Clock className="w-3 h-3" /> {status.text}
+          <Clock className="w-3 h-3" /> {statusText}
         </span>
       </div>
 
