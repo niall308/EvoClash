@@ -237,6 +237,23 @@
       "type": "string",
       "default": "",
       "description": "EST calendar date (YYYY-MM-DD) the daily reward was last claimed."
+    },
+    "lastDailyRewardNotifiedAt": {
+      "type": "string",
+      "default": "",
+      "description": "EST calendar date (YYYY-MM-DD) the user was last emailed that their daily reward is ready."
+    },
+    "notifyBattleInvites": {
+      "type": "boolean",
+      "default": true
+    },
+    "notifyDailyRewardReady": {
+      "type": "boolean",
+      "default": true
+    },
+    "notifyTradeRequests": {
+      "type": "boolean",
+      "default": true
     }
   }
 }

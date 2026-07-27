@@ -1,0 +1,47 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "notify_daily_reward_ready",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "notify_daily_reward": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "notifyDailyRewardReady",
+            "args": {
+              "cronToken": "ec_cron_3f8b6a1d9e4c7f20b5a8d1c6e3f9a2b7"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Notify daily reward ready",
+            "description": "Email users whose daily reward is ready"
+          }
+        }
+      }
+    ]
+  },
+  "name": "Notify Daily Reward Ready",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "5 0 * * *",
+      "one_time_date": null,
+      "timezone": "America/Toronto",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "description": "Sends a daily email reminder to users whose daily reward is ready to claim (once per day)."
+}

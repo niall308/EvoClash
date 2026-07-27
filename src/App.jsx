@@ -25,6 +25,7 @@ import AdminAiDecks from '@/pages/AdminAiDecks';
 import AdminMilestones from '@/pages/AdminMilestones';
 import AdminCardBackgrounds from '@/pages/AdminCardBackgrounds';
 import HowToPlay from '@/pages/HowToPlay';
+import NotificationSettings from '@/pages/NotificationSettings';
 import CardUpgrade from '@/pages/CardUpgrade';
 import Leaderboards from '@/pages/Leaderboards';
 import PowerUps from '@/pages/PowerUps';
@@ -78,6 +79,7 @@ const AuthenticatedApp = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/history" element={<BattleHistory />} />
           <Route path="/how-to-play" element={<HowToPlay />} />
+          <Route path="/notification-settings" element={<NotificationSettings />} />
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/creatures" element={<AdminCreatures />} />

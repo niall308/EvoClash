@@ -58,6 +58,15 @@ Deno.serve(async (req) => {
       status: 'pending',
     });
 
+    const toUser = await base44.asServiceRole.entities.User.get(toUserId).catch(() => null);
+    if (toUser?.email && toUser.notifyTradeRequests !== false) {
+      await base44.asServiceRole.integrations.Core.SendEmail({
+        to: toUser.email,
+        subject: `${user.username || user.full_name} sent you a trade request!`,
+        body: `Hi ${toUser.full_name || 'Champion'},\n\n${user.username || user.full_name} wants to trade cards with you in EvoClash. Open the app to review the offer.\n\n— The EvoClash Team`,
+      });
+    }
+
     return Response.json({ trade });
   } catch (error) {
     console.error('proposeTrade error', error);

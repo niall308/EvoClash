@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Trophy, Swords, Gamepad2, History, HelpCircle, Flame, Snowflake, ShieldCheck, Trash2, ArrowLeftRight, Pencil } from "lucide-react";
+import { Trophy, Swords, Gamepad2, History, HelpCircle, Flame, Snowflake, ShieldCheck, Trash2, ArrowLeftRight, Pencil, Bell } from "lucide-react";
 import { getRankByRP } from "@/lib/rankSystem";
 import { useAuth } from "@/lib/AuthContext";
 import RankEmblem from "@/components/rank/RankEmblem";
@@ -112,9 +112,16 @@ export default function Profile() {
 
       <FriendsSection user={user} onUserUpdate={setUser} />
 
-      <Link to="/how-to-play" className="flex items-center justify-between bg-white/5 rounded-xl p-4 mb-8">
+      <Link to="/how-to-play" className="flex items-center justify-between bg-white/5 rounded-xl p-4 mb-3">
         <span className="flex items-center gap-2 font-semibold text-sm">
           <HelpCircle className="w-4 h-4 text-amber-400" /> How To Play
+        </span>
+        <span className="text-white/40 text-xs">View →</span>
+      </Link>
+
+      <Link to="/notification-settings" className="flex items-center justify-between bg-white/5 rounded-xl p-4 mb-8">
+        <span className="flex items-center gap-2 font-semibold text-sm">
+          <Bell className="w-4 h-4 text-amber-400" /> Notifications
         </span>
         <span className="text-white/40 text-xs">View →</span>
       </Link>

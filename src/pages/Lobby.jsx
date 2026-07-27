@@ -29,10 +29,9 @@ export default function Lobby() {
   const requestBattle = async (player) => {
     if (!user) return;
     setSentRequestIds((ids) => [...ids, player.id]);
-    await base44.entities.BattleRequest.create({
+    await base44.functions.invoke("sendBattleInvite", {
       toUserId: player.id,
       toUserName: player.full_name,
-      fromUserName: user.username || user.full_name,
     });
   };
 
