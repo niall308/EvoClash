@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Coins, Loader2 } from "lucide-react";
 import PowerUpRow from "@/components/powerups/PowerUpRow";
+import ReplacePowerUpModal from "@/components/powerups/ReplacePowerUpModal";
 import { POWER_DEFINITIONS, POWER_CATEGORIES, MAX_ACTIVE_POWERUPS, DEFAULT_ACTIVE_POWERUPS } from "@/lib/gameConstants";
 import { isPowerAvailable } from "@/lib/powerUps";
 
@@ -10,6 +11,7 @@ export default function PowerUps() {
   const [user, setUser] = useState(null);
   const [busyKey, setBusyKey] = useState(null);
   const [category, setCategory] = useState("all");
+  const [pendingKey, setPendingKey] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -33,14 +35,26 @@ export default function PowerUps() {
     let next;
     if (active.includes(key)) {
       next = active.filter((k) => k !== key);
+    } else if (active.length >= MAX_ACTIVE_POWERUPS) {
+      setPendingKey(key);
+      return;
     } else {
-      if (active.length >= MAX_ACTIVE_POWERUPS) return;
       next = [...active, key];
     }
     setBusyKey(key);
     const updated = await base44.auth.updateMe({ activePowerUps: next });
     setUser(updated);
     setBusyKey(null);
+  };
+
+  const handleReplace = async (replaceKey) => {
+    if (!pendingKey || busyKey) return;
+    const next = active.map((k) => (k === replaceKey ? pendingKey : k));
+    setBusyKey(pendingKey);
+    const updated = await base44.auth.updateMe({ activePowerUps: next });
+    setUser(updated);
+    setBusyKey(null);
+    setPendingKey(null);
   };
 
   const handleReplenish = async (def) => {
@@ -118,7 +132,6 @@ export default function PowerUps() {
             user={user}
             isActive={active.includes(def.key)}
             isReady={isPowerAvailable(user, def)}
-            selectDisabled={!active.includes(def.key) && active.length >= MAX_ACTIVE_POWERUPS}
             busy={busyKey === def.key}
             onToggleActive={() => toggleActive(def.key)}
             onReplenish={() => handleReplenish(def)}
@@ -127,6 +140,15 @@ export default function PowerUps() {
       </div>
       {POWER_DEFINITIONS.filter((def) => category === "all" || def.category === category).length === 0 && (
         <p className="text-center text-white/40 text-sm py-8">No power-ups in this category.</p>
+      )}
+
+      {pendingKey && (
+        <ReplacePowerUpModal
+          newDef={POWER_DEFINITIONS.find((d) => d.key === pendingKey)}
+          activeDefs={active.map((k) => POWER_DEFINITIONS.find((d) => d.key === k)).filter(Boolean)}
+          onReplace={handleReplace}
+          onClose={() => setPendingKey(null)}
+        />
       )}
     </div>
   );

@@ -20,7 +20,7 @@ const CATEGORY_COLORS = {
   legendary: "from-purple-600 to-fuchsia-500",
 };
 
-export default function PowerUpRow({ def, user, isActive, isReady, selectDisabled, busy, onToggleActive, onReplenish }) {
+export default function PowerUpRow({ def, user, isActive, isReady, busy, onToggleActive, onReplenish }) {
   const Icon = CATEGORY_ICONS[def.category] || Sparkles;
   const affordable = (user.coins || 0) >= def.replenishCost;
   const isPremium = def.cooldownType === "premium";
@@ -65,7 +65,7 @@ export default function PowerUpRow({ def, user, isActive, isReady, selectDisable
         )}
         <button
           onClick={onToggleActive}
-          disabled={selectDisabled || busy}
+          disabled={busy}
           className={`text-xs font-bold px-3 py-2 rounded-xl whitespace-nowrap active:scale-95 transition-transform disabled:opacity-30 ${
             isActive ? "bg-red-500/80 text-white" : "bg-white/10 text-white"
           }`}
