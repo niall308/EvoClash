@@ -991,6 +991,21 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     }
   }, [phase, aiCard, aiPool]);
 
+  // If either side has no active card, no cards left in hand, and no cards left in the
+  // deck to draw, they have no way to continue and lose the match.
+  useEffect(() => {
+    if (phase !== "draw" || matchResult) return;
+    const playerOut = !playerCard && playerHand.length === 0 && playerPool.length === 0;
+    const aiOut = !aiCard && aiPool.length === 0;
+    if (playerOut) {
+      setLog("You ran out of cards — you lose the match!");
+      applyProgression("ai", score);
+    } else if (aiOut) {
+      setLog("The opponent ran out of cards — you win the match!");
+      applyProgression("player", score);
+    }
+  }, [phase, playerCard, playerHand, playerPool, aiCard, aiPool, matchResult, score, applyProgression]);
+
   useEffect(() => {
     if (phase === "draw" && playerCard && aiCard) {
       if (!rpsDone) {

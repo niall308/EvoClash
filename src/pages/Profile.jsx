@@ -32,14 +32,7 @@ export default function Profile() {
   }, [authUser?.id]);
 
   const handleDeleteAccount = async () => {
-    await Promise.all([
-      base44.entities.Card.deleteMany({ ownerId: user.id }),
-      base44.entities.Deck.deleteMany({ created_by_id: user.id }),
-      base44.entities.Friend.deleteMany({ created_by_id: user.id }),
-      base44.entities.BattleHistory.deleteMany({ created_by_id: user.id }),
-      base44.entities.MatchQueue.deleteMany({ created_by_id: user.id }),
-    ]);
-    await base44.entities.User.delete(user.id);
+    await base44.functions.invoke("deleteAccount", {});
     logout(false);
   };
 

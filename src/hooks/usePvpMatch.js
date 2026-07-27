@@ -89,6 +89,17 @@ export default function usePvpMatch(matchCode) {
     }
   }, [match, myRole]);
 
+  // If I have no active card, no cards left in hand, and no cards left in my deck to draw,
+  // I have no way to continue and forfeit — the safe finishPvpMatch fallback treats the
+  // caller as the forfeiter (loser) whenever the score hasn't legitimately reached 3.
+  useEffect(() => {
+    if (!match || !myRole || match.status !== "active" || match.phase !== "draw") return;
+    if (myCard?.id || pendingHybrid?.id || myHand.length > 0 || myPool.length > 0) return;
+    base44.entities.PvpMatch.update(match.id, { phase: "matchEnd", log: "Ran out of cards!" }).then(() => {
+      base44.functions.invoke("finishPvpMatch", { matchCode: match.code });
+    });
+  }, [match, myRole, myCard, myHand, myPool, pendingHybrid]);
+
   // Host resolves RPS once both players have picked.
   useEffect(() => {
     if (!match || myRole !== "player1" || match.phase !== "rps") return;
