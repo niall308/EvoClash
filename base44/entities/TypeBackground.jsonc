@@ -1,0 +1,45 @@
+{
+  "name": "TypeBackground",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "Fire",
+        "Lava",
+        "Water",
+        "Ice",
+        "Rock",
+        "Wind",
+        "Earth",
+        "Magic",
+        "Hyper Rare"
+      ]
+    },
+    "imageUrl": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "imageUrl"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

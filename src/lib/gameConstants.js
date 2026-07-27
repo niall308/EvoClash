@@ -154,9 +154,9 @@ export const TIER4_PREFIXES = ["Mega", "Prime", "Ultimate", "Dreaded", "Devastat
 
 // Armor/visual evolution prompts by the tier being evolved INTO
 export const EVOLVE_ARMOR_PROMPTS = {
-  2: "The same creature, now wearing bronze age armor plating, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame",
-  3: "The same creature, now wearing gleaming silver metal armor plating that fully replaces any previous bronze armor, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame",
-  4: "The same creature, with all previous armor removed, now fully transformed into a robotic being made of silver and gold metal plating, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame",
+  2: "The same creature, now wearing bronze age armor plating, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image. Keep the exact same background environment as shown in the reference image, unchanged — the creature must remain the clear, sharply rendered focal point standing out from it. No text, no border, no frame",
+  3: "The same creature, now wearing gleaming silver metal armor plating that fully replaces any previous bronze armor, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image. Keep the exact same background environment as shown in the reference image, unchanged — the creature must remain the clear, sharply rendered focal point standing out from it. No text, no border, no frame",
+  4: "The same creature, with all previous armor removed, now fully transformed into a robotic being made of silver and gold metal plating, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image. Keep the exact same background environment as shown in the reference image, unchanged — the creature must remain the clear, sharply rendered focal point standing out from it. No text, no border, no frame",
 };
 
 // Coin economy (LC)
