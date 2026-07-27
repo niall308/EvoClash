@@ -179,7 +179,7 @@ export const STAT_UPGRADES = [
 export const MAX_STAT_UPGRADES_PER_TIER = { 1: 2, 2: 1, 3: 1, 4: 1 };
 export const TIER_STAT_UPGRADE_COST = { 2: 20000, 3: 35000, 4: 50000 };
 
-export const TIER_UPGRADE_COST = 15000;
+export const TIER_UPGRADE_COST = 150000;
 
 export const TYPE_CHANGE_COST = 100000;
 
