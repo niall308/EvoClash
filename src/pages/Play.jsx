@@ -66,7 +66,7 @@ export default function Play() {
         >
           <Bot className="w-8 h-8" /> Battle vs AI
         </button>
-        <Link to="/lobby" className="w-full flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-500 p-5 rounded-2xl font-bold text-left">
+        <Link to="/human-battle" className="w-full flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-500 p-5 rounded-2xl font-bold text-left">
           <Users className="w-8 h-8" /> Battle vs Human
         </Link>
         <Link to="/leaderboards" className="w-full flex items-center gap-4 bg-gradient-to-r from-amber-500 to-yellow-600 p-5 rounded-2xl font-bold text-left">

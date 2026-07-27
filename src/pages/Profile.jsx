@@ -6,7 +6,6 @@ import { getRankByRP } from "@/lib/rankSystem";
 import { useAuth } from "@/lib/AuthContext";
 import RankEmblem from "@/components/rank/RankEmblem";
 import ActiveMilestonesSummary from "@/components/profile/ActiveMilestonesSummary";
-import FriendsSection from "@/components/profile/FriendsSection";
 import DeleteAccountModal from "@/components/profile/DeleteAccountModal";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 import { Image } from "@/components/ui/image";
@@ -109,8 +108,6 @@ export default function Profile() {
       </Link>
 
       <ActiveMilestonesSummary user={user} />
-
-      <FriendsSection user={user} onUserUpdate={setUser} />
 
       <Link to="/how-to-play" className="flex items-center justify-between bg-white/5 rounded-xl p-4 mb-3">
         <span className="flex items-center gap-2 font-semibold text-sm">

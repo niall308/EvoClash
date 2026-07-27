@@ -15,6 +15,8 @@ import Home from '@/pages/Home';
 import Deck from '@/pages/Deck';
 import CardGenerate from '@/pages/CardGenerate';
 import Play from '@/pages/Play';
+import HumanBattle from '@/pages/HumanBattle';
+import Friends from '@/pages/Friends';
 import Battle from '@/pages/Battle';
 import PvpBattle from '@/pages/PvpBattle';
 import Profile from '@/pages/Profile';
@@ -76,6 +78,8 @@ const AuthenticatedApp = () => {
           <Route path="/deck" element={<Deck />} />
           <Route path="/generate" element={<CardGenerate />} />
           <Route path="/play" element={<Play />} />
+          <Route path="/human-battle" element={<HumanBattle />} />
+          <Route path="/friends" element={<Friends />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/history" element={<BattleHistory />} />
           <Route path="/how-to-play" element={<HowToPlay />} />
