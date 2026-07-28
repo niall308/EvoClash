@@ -8,7 +8,20 @@ export default function BuyCoins() {
   const navigate = useNavigate();
   const [loadingId, setLoadingId] = useState(null);
 
+  const isNativeApp = () => !!(window.webkit?.messageHandlers?.iap || window.jsInterface);
+
   const handleBuy = async (packId) => {
+    if (isNativeApp()) {
+      setLoadingId(packId);
+      if (window.webkit?.messageHandlers?.iap) {
+        window.webkit.messageHandlers.iap.postMessage({ packId });
+      } else {
+        window.jsInterface.postMessage(JSON.stringify({ packId }));
+      }
+      setLoadingId(null);
+      return;
+    }
+
     if (window.self !== window.top) {
       alert("Checkout only works from the published app, not inside this preview.");
       return;

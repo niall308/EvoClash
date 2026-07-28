@@ -13,7 +13,7 @@ function FilterButton({ label, onClick }) {
 
 function OptionList({ options, value, onSelect }) {
   return (
-    <div className="px-4 pb-8 space-y-1 max-h-[60vh] overflow-y-auto">
+    <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] space-y-1 max-h-[60vh] overflow-y-auto">
       {options.map((o) => (
         <button
           key={o.value}
