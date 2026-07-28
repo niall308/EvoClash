@@ -6,6 +6,14 @@
       "type": "number",
       "default": 0
     },
+    "matchType": {
+      "type": "string",
+      "enum": [
+        "live",
+        "offline"
+      ],
+      "default": "live"
+    },
     "status": {
       "type": "string",
       "enum": [

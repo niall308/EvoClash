@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, X, Loader2, Clock, RotateCcw } from "lucide-react";
+import { Check, X, Loader2, Clock, RotateCcw, Search } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
 import { useAuth } from "@/lib/AuthContext";
@@ -15,8 +15,12 @@ export default function OfflineBattleSection() {
   const [activeMatches, setActiveMatches] = useState(null);
   const [sentRequestIds, setSentRequestIds] = useState([]);
   const [respondingId, setRespondingId] = useState(null);
+  const [searching, setSearching] = useState(false);
+  const pollRef = useRef(null);
+  const searchingRef = useRef(false);
   const { requests: allRequests, refresh: refreshIncoming } = useIncomingBattleRequests();
   const incomingRequests = allRequests.filter((r) => r.matchType === "offline");
+  const filteredPlayers = players?.filter((p) => !recentOpponents?.some((r) => r.id === p.id));
 
   useEffect(() => {
     if (!user) return;
@@ -26,9 +30,38 @@ export default function OfflineBattleSection() {
       base44.entities.PvpMatch.filter({ player1Id: user.id, matchType: "offline", status: "active" }),
       base44.entities.PvpMatch.filter({ player2Id: user.id, matchType: "offline", status: "active" }),
     ]).then(([asP1, asP2]) => setActiveMatches([...asP1, ...asP2]));
+    return () => {
+      clearInterval(pollRef.current);
+      if (searchingRef.current) base44.functions.invoke("findMatch", { action: "cancel", matchType: "offline" });
+    };
   }, [user?.id]);
 
   const atCap = (activeMatches?.length || 0) >= MAX_OFFLINE_MATCHES;
+
+  const poll = async () => {
+    const { data } = await base44.functions.invoke("findMatch", { action: "search", matchType: "offline" });
+    if (data?.status === "matched" && data.matchCode) {
+      clearInterval(pollRef.current);
+      setSearching(false);
+      searchingRef.current = false;
+      navigate(`/pvp-battle/${data.matchCode}`);
+    }
+  };
+
+  const startSearch = async () => {
+    if (atCap) return;
+    setSearching(true);
+    searchingRef.current = true;
+    await poll();
+    pollRef.current = setInterval(poll, 3000);
+  };
+
+  const cancelSearch = async () => {
+    clearInterval(pollRef.current);
+    setSearching(false);
+    searchingRef.current = false;
+    await base44.functions.invoke("findMatch", { action: "cancel", matchType: "offline" });
+  };
 
   const requestBattle = async (player) => {
     if (!user || atCap) return;
@@ -60,6 +93,24 @@ export default function OfflineBattleSection() {
           {activeMatches === null ? "Loading..." : `${activeMatches.length}/${MAX_OFFLINE_MATCHES} active offline battles`}
         </p>
       </div>
+
+      {searching ? (
+        <button
+          onClick={cancelSearch}
+          className="w-full flex items-center justify-center gap-2 bg-white/10 border border-white/20 py-4 rounded-2xl font-bold mb-6 active:scale-95 transition-transform"
+        >
+          <Loader2 className="w-5 h-5 animate-spin" /> Searching for a match...
+          <X className="w-4 h-4 ml-1" />
+        </button>
+      ) : (
+        <button
+          onClick={startSearch}
+          disabled={atCap}
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 py-4 rounded-2xl font-bold mb-6 active:scale-95 transition-transform disabled:opacity-40"
+        >
+          <Search className="w-5 h-5" /> Find Game
+        </button>
+      )}
 
       {activeMatches?.length > 0 && (
         <div className="mb-6 space-y-2">
@@ -150,7 +201,7 @@ export default function OfflineBattleSection() {
       {players?.length === 0 && <p className="text-white/50 text-sm">No other players yet.</p>}
 
       <div className="space-y-2">
-        {players?.map((p) => {
+        {filteredPlayers?.map((p) => {
           const requested = sentRequestIds.includes(p.id);
           return (
             <div key={p.id} className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3">

@@ -17,6 +17,7 @@ export default function PlayerLobbySection() {
   const searchingRef = useRef(false);
   const { requests: allRequests, refresh: refreshIncoming } = useIncomingBattleRequests();
   const incomingRequests = allRequests.filter((r) => r.matchType !== "offline");
+  const filteredPlayers = players?.filter((p) => !recentOpponents?.some((r) => r.id === p.id));
 
   useEffect(() => {
     base44.functions.invoke("getLobbyPlayers", {}).then(({ data }) => setPlayers(data?.players || []));
@@ -173,7 +174,7 @@ export default function PlayerLobbySection() {
       {players?.length === 0 && <p className="text-white/50 text-sm">No other players yet.</p>}
 
       <div className="space-y-2">
-        {players?.map((p) => {
+        {filteredPlayers?.map((p) => {
           const requested = sentRequestIds.includes(p.id);
           return (
             <div key={p.id} className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3">

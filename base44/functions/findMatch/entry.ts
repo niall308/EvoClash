@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { getRankIndex } from '../../shared/rankLogic.ts';
+import { countActiveOfflineMatches, MAX_ACTIVE_OFFLINE_MATCHES } from '../../shared/offlineBattle.ts';
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
@@ -11,16 +12,17 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = body.action || 'search';
+    const matchType = body.matchType === 'offline' ? 'offline' : 'live';
 
     if (action === 'cancel') {
-      const mine = await base44.entities.MatchQueue.filter({ created_by_id: user.id });
+      const mine = await base44.entities.MatchQueue.filter({ created_by_id: user.id, matchType });
       for (const q of mine) {
         await base44.entities.MatchQueue.delete(q.id);
       }
       return Response.json({ status: 'cancelled' });
     }
 
-    const mine = await base44.entities.MatchQueue.filter({ created_by_id: user.id });
+    const mine = await base44.entities.MatchQueue.filter({ created_by_id: user.id, matchType });
     const myEntry = mine[0];
     if (myEntry?.status === 'matched') {
       return Response.json({ status: 'matched', matchCode: myEntry.matchCode });
@@ -30,7 +32,7 @@ Deno.serve(async (req) => {
     const myWaitSeconds = myEntry ? (Date.now() - new Date(myEntry.created_date).getTime()) / 1000 : 0;
     const myTolerance = 1 + Math.floor(myWaitSeconds / 15);
 
-    const candidates = await base44.asServiceRole.entities.MatchQueue.filter({ status: 'searching' });
+    const candidates = await base44.asServiceRole.entities.MatchQueue.filter({ status: 'searching', matchType });
     let bestCandidate = null;
     let bestDiff = Infinity;
     for (const c of candidates) {
@@ -71,9 +73,20 @@ Deno.serve(async (req) => {
         return Response.json({ status: 'searching' });
       }
 
+      if (matchType === 'offline') {
+        const [myActive, oppActive] = await Promise.all([
+          countActiveOfflineMatches(base44, user.id),
+          countActiveOfflineMatches(base44, opponentUser.id),
+        ]);
+        if (myActive >= MAX_ACTIVE_OFFLINE_MATCHES || oppActive >= MAX_ACTIVE_OFFLINE_MATCHES) {
+          return Response.json({ status: 'searching' });
+        }
+      }
+
       const code = Math.random().toString(36).slice(2, 8).toUpperCase();
       await base44.asServiceRole.entities.PvpMatch.create({
         code,
+        matchType,
         player1Id: user.id,
         player1Name: user.username || user.full_name,
         player2Id: opponentUser.id,
@@ -87,7 +100,7 @@ Deno.serve(async (req) => {
       if (myEntry) {
         await base44.asServiceRole.entities.MatchQueue.update(myEntry.id, { status: 'matched', matchCode: code });
       } else {
-        await base44.entities.MatchQueue.create({ rankPoints: user.rankPoints || 0, status: 'matched', matchCode: code });
+        await base44.entities.MatchQueue.create({ rankPoints: user.rankPoints || 0, matchType, status: 'matched', matchCode: code });
       }
       await base44.asServiceRole.entities.MatchQueue.update(bestCandidate.id, { status: 'matched', matchCode: code });
 
@@ -95,7 +108,7 @@ Deno.serve(async (req) => {
     }
 
     if (!myEntry) {
-      await base44.entities.MatchQueue.create({ rankPoints: user.rankPoints || 0, status: 'searching' });
+      await base44.entities.MatchQueue.create({ rankPoints: user.rankPoints || 0, matchType, status: 'searching' });
     }
     return Response.json({ status: 'searching' });
   } catch (error) {
