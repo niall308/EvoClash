@@ -77,6 +77,28 @@ Deno.serve(async (req) => {
 
     await Promise.all([applyResult(player1, player2, p1Won), applyResult(player2, player1, !p1Won)]);
 
+    const durationSeconds = Math.round((Date.now() - new Date(match.created_date).getTime()) / 1000);
+    await Promise.all([
+      base44.asServiceRole.entities.BattleHistory.create({
+        created_by_id: player1.id,
+        opponentName: match.player2Name,
+        outcome: p1Won ? 'win' : 'loss',
+        cardsUsed: [],
+        playerScore: match.scoreP1 || 0,
+        aiScore: match.scoreP2 || 0,
+        durationSeconds,
+      }),
+      base44.asServiceRole.entities.BattleHistory.create({
+        created_by_id: player2.id,
+        opponentName: match.player1Name,
+        outcome: p1Won ? 'loss' : 'win',
+        cardsUsed: [],
+        playerScore: match.scoreP2 || 0,
+        aiScore: match.scoreP1 || 0,
+        durationSeconds,
+      }),
+    ]);
+
     await base44.asServiceRole.entities.PvpMatch.update(match.id, {
       status: 'finished',
       winnerId,

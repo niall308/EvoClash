@@ -183,6 +183,21 @@
     "player2CoinsEarned": {
       "type": "number",
       "default": 0
+    },
+    "turnStartedAt": {
+      "type": "string",
+      "default": "",
+      "description": "ISO timestamp of when the current battle turn began. Only meaningful for matchType 'live'; used to sync a countdown timer across both clients."
+    },
+    "player1Timeouts": {
+      "type": "number",
+      "default": 0,
+      "description": "Consecutive turn timeouts for player1. Resets to 0 whenever player1 attacks."
+    },
+    "player2Timeouts": {
+      "type": "number",
+      "default": 0,
+      "description": "Consecutive turn timeouts for player2. Resets to 0 whenever player2 attacks."
     }
   },
   "required": [

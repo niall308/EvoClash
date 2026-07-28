@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { computeDamage, maxHealth } from "@/lib/battleEngine";
-import { TIER_RANGES, DEFAULT_ACTIVE_POWERUPS } from "@/lib/gameConstants";
+import { TIER_RANGES, DEFAULT_ACTIVE_POWERUPS, TURN_TIME_LIMIT_SECONDS, MAX_CONSECUTIVE_TURN_TIMEOUTS } from "@/lib/gameConstants";
 import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
 
 const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -46,6 +46,17 @@ export default function usePvpMatch(matchCode) {
     return unsubscribe;
   }, [matchCode]);
 
+  // Realtime events can occasionally be missed by a client (dropped socket, tab
+  // backgrounded, etc). Poll as a fallback so the match keeps moving without
+  // requiring a manual page refresh.
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const matches = await base44.entities.PvpMatch.filter({ code: matchCode });
+      if (matches[0]) setMatch(matches[0]);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [matchCode]);
+
   const myRole = match && myId ? (match.player1Id === myId ? "player1" : "player2") : null;
   const oppRole = myRole === "player1" ? "player2" : "player1";
 
@@ -83,6 +94,7 @@ export default function usePvpMatch(matchCode) {
       } else {
         base44.entities.PvpMatch.update(match.id, {
           phase: "battle",
+          turnStartedAt: new Date().toISOString(),
           log: match.turn === "player1" ? `${match.player1Name} attacks first!` : `${match.player2Name} attacks first!`,
         });
       }
@@ -113,6 +125,7 @@ export default function usePvpMatch(matchCode) {
         turn: winner,
         rpsDone: true,
         phase: "battle",
+        turnStartedAt: new Date().toISOString(),
         player1Rps: "",
         player2Rps: "",
         log: winner === "player1" ? `${match.player1Name} attacks first!` : `${match.player2Name} attacks first!`,
@@ -237,6 +250,7 @@ export default function usePvpMatch(matchCode) {
         turn: roundLoser,
         phase: "draw",
         log: `${winnerName} wins round ${match.round}!`,
+        [`${myRole}Timeouts`]: 0,
         ...buffUpdates,
         ...CLEARED_BUFFS(targetRole),
       });
@@ -246,9 +260,49 @@ export default function usePvpMatch(matchCode) {
     await base44.entities.PvpMatch.update(match.id, {
       [`${targetRole}Hp`]: newHp,
       turn: oppRole,
+      turnStartedAt: new Date().toISOString(),
       log: `${myRole === "player1" ? match.player1Name : match.player2Name} deals ${result.damage} damage!`,
+      [`${myRole}Timeouts`]: 0,
       ...buffUpdates,
     });
+  }, [match, myRole, oppRole]);
+
+  // Turn timer for 'live' matches only ('offline' matches have no time limit).
+  // Derives the countdown from the shared turnStartedAt so both clients agree,
+  // and only the player whose turn it is drives the timeout action.
+  const [turnTimeLeft, setTurnTimeLeft] = useState(TURN_TIME_LIMIT_SECONDS);
+  const timeoutFiredRef = useRef(null);
+
+  useEffect(() => {
+    if (!match || match.matchType !== "live" || match.phase !== "battle" || !match.turnStartedAt) {
+      setTurnTimeLeft(TURN_TIME_LIMIT_SECONDS);
+      return;
+    }
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - new Date(match.turnStartedAt).getTime()) / 1000);
+      const left = Math.max(0, TURN_TIME_LIMIT_SECONDS - elapsed);
+      setTurnTimeLeft(left);
+      if (left === 0 && match.turn === myRole && timeoutFiredRef.current !== match.turnStartedAt) {
+        timeoutFiredRef.current = match.turnStartedAt;
+        const timeouts = (match[`${myRole}Timeouts`] || 0) + 1;
+        if (timeouts >= MAX_CONSECUTIVE_TURN_TIMEOUTS) {
+          base44.entities.PvpMatch.update(match.id, {
+            phase: "matchEnd",
+            log: "You ran out of time 3 times in a row — you forfeit the match!",
+          }).then(() => base44.functions.invoke("finishPvpMatch", { matchCode: match.code }));
+        } else {
+          base44.entities.PvpMatch.update(match.id, {
+            turn: oppRole,
+            turnStartedAt: new Date().toISOString(),
+            [`${myRole}Timeouts`]: timeouts,
+            log: `Time's up! You lost your turn (${timeouts}/${MAX_CONSECUTIVE_TURN_TIMEOUTS} timeouts).`,
+          });
+        }
+      }
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
   }, [match, myRole, oppRole]);
 
   const forfeit = useCallback(async () => {
@@ -460,5 +514,6 @@ export default function usePvpMatch(matchCode) {
     redrawHandPower,
     forceOpponentRedrawPower,
     boostPreview,
+    turnTimeLeft,
   };
 }

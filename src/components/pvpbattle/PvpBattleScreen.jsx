@@ -13,7 +13,7 @@ import ReshuffleModal from "@/components/battle/ReshuffleModal";
 import TypeChoiceModal from "@/components/battle/TypeChoiceModal";
 import PvpMatchEndModal from "@/components/pvpbattle/PvpMatchEndModal";
 import { maxHealth } from "@/lib/battleEngine";
-import { Swords, Flag, Zap, Loader2, ArrowLeft } from "lucide-react";
+import { Swords, Flag, Zap, Loader2, ArrowLeft, Clock } from "lucide-react";
 import usePvpMatch from "@/hooks/usePvpMatch";
 
 export default function PvpBattleScreen({ matchCode }) {
@@ -40,6 +40,7 @@ export default function PvpBattleScreen({ matchCode }) {
     redrawHandPower,
     forceOpponentRedrawPower,
     boostPreview,
+    turnTimeLeft,
   } = usePvpMatch(matchCode);
   const [showForfeitModal, setShowForfeitModal] = useState(false);
 
@@ -87,6 +88,14 @@ export default function PvpBattleScreen({ matchCode }) {
           <Flag className="w-3.5 h-3.5" /> Forfeit
         </button>
       </div>
+      {match.matchType === "live" && match.phase === "battle" && (
+        <div className="flex justify-center items-center gap-1.5 pb-1 text-xs font-bold">
+          <Clock className={`w-3.5 h-3.5 ${turnTimeLeft <= 30 ? "text-red-400" : "text-white/50"}`} />
+          <span className={turnTimeLeft <= 30 ? "text-red-400" : "text-white/50"}>
+            {isMyTurn ? "Your turn: " : `${oppName}'s turn: `}{turnTimeLeft}s
+          </span>
+        </div>
+      )}
 
       <div className="flex flex-col items-center pt-2 gap-2">
         <LivesIndicator lives={oppLives} />

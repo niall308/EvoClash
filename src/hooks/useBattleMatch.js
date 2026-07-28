@@ -28,6 +28,7 @@ const RPS_BEATS = { rock: "scissors", scissors: "paper", paper: "rock" };
 export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "Normal") {
   const [opponentName] = useState(() => randomFrom(AI_OPPONENT_NAMES));
   const [aiPool, setAiPool] = useState([]);
+  const [aiPoolLoaded, setAiPoolLoaded] = useState(false);
 
   // Draw the AI's 15-card pool from the pre-generated 100-card deck for this difficulty
   // (falls back to live generation if that deck hasn't been seeded yet by an admin).
@@ -40,6 +41,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         const tiers = AI_DIFFICULTY_TIERS[difficulty] || AI_DIFFICULTY_TIERS.Normal;
         setAiPool(shuffle(Array.from({ length: 15 }, () => generateRandomCard(randomFrom(tiers)))));
       }
+      setAiPoolLoaded(true);
     })();
   }, [difficulty]);
   const [playerPool, setPlayerPool] = useState(() => shuffle(playerCards));
@@ -994,7 +996,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   // If either side has no active card, no cards left in hand, and no cards left in the
   // deck to draw, they have no way to continue and lose the match.
   useEffect(() => {
-    if (phase !== "draw" || matchResult) return;
+    if (phase !== "draw" || matchResult || !aiPoolLoaded) return;
     const playerOut = !playerCard && playerHand.length === 0 && playerPool.length === 0;
     const aiOut = !aiCard && aiPool.length === 0;
     if (playerOut) {
@@ -1004,7 +1006,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       setLog("The opponent ran out of cards — you win the match!");
       applyProgression("player", score);
     }
-  }, [phase, playerCard, playerHand, playerPool, aiCard, aiPool, matchResult, score, applyProgression]);
+  }, [phase, playerCard, playerHand, playerPool, aiCard, aiPool, aiPoolLoaded, matchResult, score, applyProgression]);
 
   useEffect(() => {
     if (phase === "draw" && playerCard && aiCard) {
