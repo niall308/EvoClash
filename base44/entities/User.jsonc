@@ -259,6 +259,24 @@
       "type": "boolean",
       "default": false,
       "description": "Whether the user has already been shown the one-time offer to auto-build their first 15 cards."
+    },
+    "dailyMissionsDate": {
+      "type": "string",
+      "default": "",
+      "description": "UTC calendar date (YYYY-MM-DD) the daily missions were last reset."
+    },
+    "dailyMissionsBaseline": {
+      "type": "object",
+      "default": {},
+      "description": "Snapshot of each daily mission's lifetime metric value at the last reset, used to compute today's progress."
+    },
+    "dailyMissionsClaimed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "IDs of daily missions already claimed since the last reset."
     }
   }
 }

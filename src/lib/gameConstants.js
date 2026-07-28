@@ -304,3 +304,11 @@ export const POWER_DEFINITIONS = [
 
 export const MAX_ACTIVE_POWERUPS = 4;
 export const DEFAULT_ACTIVE_POWERUPS = ["burn", "reshuffle", "doubleAttack", "defense"];
+
+// Daily missions: reset every day, small coin rewards for simple daily goals.
+// Progress is measured as the change in each lifetime User metric since the last reset.
+export const DAILY_MISSIONS = [
+  { id: "dailyWinThree", label: "Win 3 Games", metric: "wins", target: 3, coinReward: 300 },
+  { id: "dailyEvolveOne", label: "Evolve a Card", metric: "creaturesEvolved", target: 1, coinReward: 500 },
+  { id: "dailyPlayFive", label: "Play 5 Games", metric: "gamesPlayed", target: 5, coinReward: 200 },
+];

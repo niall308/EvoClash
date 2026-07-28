@@ -6,6 +6,7 @@ import { CARD_BACK_URL } from "@/lib/gameConstants";
 import { useAuth } from "@/lib/AuthContext";
 import useClaimableMilestones from "@/hooks/useClaimableMilestones";
 import useIncomingTradeRequests from "@/hooks/useIncomingTradeRequests";
+import DailyMissionsSection from "@/components/home/DailyMissionsSection";
 
 const BUTTONS = [
   { to: "/play", label: "Play", icon: Swords, color: "from-red-600 to-orange-500" },
@@ -16,7 +17,7 @@ const BUTTONS = [
 ];
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const hasMarkedSeen = useRef(false);
   const hasClaimableMilestones = useClaimableMilestones(user);
   const { requests: incomingTrades } = useIncomingTradeRequests();
@@ -55,6 +56,7 @@ export default function Home() {
           </Link>
         )}
       </div>
+      <DailyMissionsSection user={user} onUserUpdate={updateUser} />
     </div>
   );
 }
