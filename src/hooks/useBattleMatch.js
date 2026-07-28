@@ -417,11 +417,15 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         busyRef.current = false;
         return;
       }
-      // Double Strike: attack again immediately this same turn
+      // Double Strike: grants a second attack this turn. Keep the turn on the player
+      // (like Time Freeze) instead of recursively calling attack() again — that recursion
+      // used a stale closure whose attackTwiceReady flag never actually cleared, causing
+      // an infinite attack loop.
       if (attackerSide === "player" && pfx.attackTwiceReady) {
         patchPfx({ attackTwiceReady: false });
+        setLog("Double Strike! Attack again!");
+        setTurn("player");
         busyRef.current = false;
-        attack("player");
         return;
       }
       if (attackerSide === "player" && pfx.timeFreezeQueued) {
