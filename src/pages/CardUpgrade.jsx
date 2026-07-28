@@ -7,12 +7,10 @@ import EvolveSection from "@/components/upgrade/EvolveSection";
 import TypeChangeSection from "@/components/upgrade/TypeChangeSection";
 import { checkUpgradeEligible } from "@/lib/upgradeCheck";
 import { getStatUpgradeCost, getStatUpgradeMaxUses } from "@/lib/statUpgradeCost";
-import { evolveName, randomInt } from "@/lib/cardGenerator";
-import { TIER_RANGES, STYLE_REFERENCE_URL, STAT_UPGRADES, TIER_UPGRADE_COST, TYPE_CHANGE_COST, EVOLVE_ARMOR_PROMPTS, UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
+import { TIER_RANGES, STAT_UPGRADES, TIER_UPGRADE_COST, TYPE_CHANGE_COST, UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 const USED_FIELD = { attack: "attackUpgradesUsed", defense: "defenseUpgradesUsed", bonusDamage: "bonusDamageUpgradesUsed" };
-const TIER_UPGRADE_FIELD = { 2: "tier2Upgrades", 3: "tier3Upgrades", 4: "tier4Upgrades" };
 
 function checkEvolutionLineComplete(card) {
   return (card.attackUpgradesUsed || 0) >= 1 && (card.defenseUpgradesUsed || 0) >= 1 && (card.bonusDamageUpgradesUsed || 0) >= 1;
@@ -93,50 +91,15 @@ export default function CardUpgrade() {
   const handleEvolve = async () => {
     if (!canEvolve || user.coins < TIER_UPGRADE_COST || evolving) return;
     setEvolving(true);
-    const newTier = card.tier + 1;
-    const newRange = TIER_RANGES[newTier];
-    const pct = 1 + (25 + Math.random() * 70) / 100;
-    const clamp = (v, min, max) => Math.min(max, Math.max(min, Math.round(v)));
-    // Only the higher of attack/defense is guaranteed to land inside the new tier's range
-    // (assigned a fresh random value there); the lower stat grows normally and can fall outside it.
-    const higherIsAttack = card.attack >= card.defense;
-    const higherValue = randomInt(newRange.statMin, newRange.statMax);
-    const lowerValue = Math.round((higherIsAttack ? card.defense : card.attack) * pct);
-    const templates = await base44.entities.CardTemplate.filter({ baseName: card.baseName });
-    const tierAnimation = templates[0]?.[`tier${newTier}Animation`];
-    const referenceImages = [card.imageUrl, STYLE_REFERENCE_URL];
-    if (tierAnimation) referenceImages.push(tierAnimation);
-    const { url } = await base44.integrations.Core.GenerateImage({
-      prompt: EVOLVE_ARMOR_PROMPTS[newTier],
-      existing_image_urls: referenceImages,
-    });
-    const updated = {
-      tier: newTier,
-      name: evolveName(card.name, newTier),
-      attack: higherIsAttack ? higherValue : lowerValue,
-      defense: higherIsAttack ? lowerValue : higherValue,
-      bonusDamage: clamp((card.bonusDamage || 0) * pct, newRange.bonusMin, newRange.bonusMax),
-      imageUrl: url,
-      winsVsBonus: 0,
-      winsVsNonBonus: 0,
-      gamesPlayed: 0,
-      attackUpgradesUsed: 0,
-      defenseUpgradesUsed: 0,
-      bonusDamageUpgradesUsed: 0,
-    };
-    await base44.entities.Card.update(card.id, updated);
-    const evolvedIds = user.evolvedCardIds || [];
-    const userUpdate = { coins: user.coins - TIER_UPGRADE_COST };
-    const tierField = TIER_UPGRADE_FIELD[newTier];
-    if (tierField) userUpdate[tierField] = (user[tierField] || 0) + 1;
-    if (!evolvedIds.includes(card.id)) {
-      userUpdate.evolvedCardIds = [...evolvedIds, card.id];
-      userUpdate.creaturesEvolved = (user.creaturesEvolved || 0) + 1;
+    try {
+      // Eligibility, cost, and stat/image generation are all re-validated server-side
+      // so the client's canEvolve check can't be bypassed to evolve for free.
+      const { data } = await base44.functions.invoke("evolveCard", { cardId: card.id });
+      setCard((c) => ({ ...c, ...data.card }));
+      setUser(data.user);
+    } finally {
+      setEvolving(false);
     }
-    const updatedUser = await base44.auth.updateMe(userUpdate);
-    setCard((c) => ({ ...c, ...updated }));
-    setUser(updatedUser);
-    setEvolving(false);
   };
 
   return (
