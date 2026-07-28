@@ -1,15 +1,17 @@
 import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Swords, Layers, Sparkles, User, ShieldCheck, Coins } from "lucide-react";
+import { Swords, Layers, Sparkles, User, ShieldCheck, Coins, ArrowLeftRight } from "lucide-react";
 import { CARD_BACK_URL } from "@/lib/gameConstants";
 import { useAuth } from "@/lib/AuthContext";
 import useClaimableMilestones from "@/hooks/useClaimableMilestones";
+import useIncomingTradeRequests from "@/hooks/useIncomingTradeRequests";
 
 const BUTTONS = [
   { to: "/play", label: "Play", icon: Swords, color: "from-red-600 to-orange-500" },
   { to: "/deck", label: "Deck", icon: Layers, color: "from-blue-600 to-cyan-500" },
   { to: "/generate", label: "AI Generate", icon: Sparkles, color: "from-purple-600 to-fuchsia-500" },
+  { to: "/trades", label: "Trades", icon: ArrowLeftRight, color: "from-sky-600 to-cyan-500" },
   { to: "/profile", label: "Profile", icon: User, color: "from-emerald-600 to-teal-500" },
 ];
 
@@ -17,6 +19,7 @@ export default function Home() {
   const { user } = useAuth();
   const hasMarkedSeen = useRef(false);
   const hasClaimableMilestones = useClaimableMilestones(user);
+  const { requests: incomingTrades } = useIncomingTradeRequests();
 
   useEffect(() => {
     if (user && !hasMarkedSeen.current) {
@@ -37,6 +40,11 @@ export default function Home() {
             {to === "/profile" && hasClaimableMilestones && (
               <span className="absolute -top-2 -right-2 w-7 h-7 flex items-center justify-center rounded-full bg-amber-400 border-2 border-[#0D1B2A] shadow-lg animate-pulse">
                 <Coins className="w-3.5 h-3.5 text-black" />
+              </span>
+            )}
+            {to === "/trades" && incomingTrades.length > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full bg-red-500 border-2 border-[#0D1B2A] text-white text-[10px] font-bold">
+                {incomingTrades.length}
               </span>
             )}
           </Link>

@@ -47,6 +47,20 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Only one side of any given pair is allowed to create the match — otherwise two
+    // users searching at the same moment can both pick each other as the best candidate
+    // and each independently create a separate PvpMatch, leaving one side of each match
+    // with no real opponent (it silently stalls, or later times out/forfeits, which looks
+    // like a random instant win/loss). Deterministically letting only the lexicographically
+    // smaller user id create the match means at most one side of a pair ever does so; the
+    // other side just keeps polling and picks up the resulting match on its next poll.
+    if (bestCandidate && user.id > bestCandidate.created_by_id) {
+      if (!myEntry) {
+        await base44.entities.MatchQueue.create({ rankPoints: user.rankPoints || 0, matchType, status: 'searching' });
+      }
+      return Response.json({ status: 'searching' });
+    }
+
     if (bestCandidate) {
       const opponentMatches = await base44.asServiceRole.entities.User.filter({ id: bestCandidate.created_by_id });
       const opponentUser = opponentMatches[0];

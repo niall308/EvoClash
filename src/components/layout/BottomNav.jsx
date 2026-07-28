@@ -2,6 +2,7 @@ import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Swords, Layers, Sparkles, User, ArrowLeftRight, Coins } from "lucide-react";
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
+import useIncomingTradeRequests from "@/hooks/useIncomingTradeRequests";
 import useClaimableMilestones from "@/hooks/useClaimableMilestones";
 import { useAuth } from "@/lib/AuthContext";
 import { getActiveTabPath, getLastTabPath } from "@/lib/tabNavigation";
@@ -19,6 +20,7 @@ export default function BottomNav() {
   const navigate = useNavigate();
   const activeTabPath = getActiveTabPath(location.pathname);
   const { requests } = useIncomingBattleRequests();
+  const { requests: incomingTrades } = useIncomingTradeRequests();
   const { user } = useAuth();
   const hasClaimableMilestones = useClaimableMilestones(user);
 
@@ -46,6 +48,11 @@ export default function BottomNav() {
               {tab.path === "/profile" && hasClaimableMilestones && (
                 <span className="absolute -top-1.5 -right-2 w-4 h-4 flex items-center justify-center rounded-full bg-amber-400 border border-[#0D1B2A]">
                   <Coins className="w-2.5 h-2.5 text-black" />
+                </span>
+              )}
+              {tab.path === "/trades" && incomingTrades.length > 0 && (
+                <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold">
+                  {incomingTrades.length}
                 </span>
               )}
             </div>

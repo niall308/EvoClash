@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Trophy, Swords, Gamepad2, History, HelpCircle, Flame, Snowflake, ShieldCheck, Trash2, ArrowLeftRight, Pencil, Bell } from "lucide-react";
+import { Trophy, Swords, Gamepad2, History, HelpCircle, Flame, Snowflake, ShieldCheck, Trash2, Pencil, Bell } from "lucide-react";
 import { getRankByRP } from "@/lib/rankSystem";
 import { useAuth } from "@/lib/AuthContext";
 import RankEmblem from "@/components/rank/RankEmblem";
@@ -89,13 +89,6 @@ export default function Profile() {
       <Link to="/history" className="flex items-center justify-between bg-white/5 rounded-xl p-4 mb-3">
         <span className="flex items-center gap-2 font-semibold text-sm">
           <History className="w-4 h-4 text-amber-400" /> Battle History
-        </span>
-        <span className="text-white/40 text-xs">View all →</span>
-      </Link>
-
-      <Link to="/trades" className="flex items-center justify-between bg-white/5 rounded-xl p-4 mb-3">
-        <span className="flex items-center gap-2 font-semibold text-sm">
-          <ArrowLeftRight className="w-4 h-4 text-amber-400" /> Trade Requests
         </span>
         <span className="text-white/40 text-xs">View all →</span>
       </Link>
