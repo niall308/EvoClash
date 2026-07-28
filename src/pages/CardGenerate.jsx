@@ -23,6 +23,8 @@ export default function CardGenerate() {
   const [selectedCreature, setSelectedCreature] = useState(null);
   const [previewCard, setPreviewCard] = useState(null);
   const [previewForced, setPreviewForced] = useState(false);
+  const [previewCreatureId, setPreviewCreatureId] = useState(null);
+  const [training, setTraining] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeDeckId, setActiveDeckId] = useState(null);
@@ -58,7 +60,12 @@ export default function CardGenerate() {
     const ownedTypes = new Set(user.ownedElementTypesList || []);
     for (let i = 0; i < AUTO_BUILD_COUNT; i++) {
       const cardData = generateRandomCard(1, { creatures });
-      const { prompt, existingImageUrls } = buildCardImagePrompt(cardData, { typeBackgrounds });
+      const matchedCreature = creatures.find((c) => c.baseName === cardData.baseName);
+      const { prompt, existingImageUrls } = buildCardImagePrompt(cardData, {
+        typeBackgrounds,
+        creatureDescription: matchedCreature?.description || "",
+        referenceImageUrl: matchedCreature?.referenceImageUrl || "",
+      });
       try {
         const { url } = await base44.integrations.Core.GenerateImage({ prompt, existing_image_urls: existingImageUrls });
         cardData.imageUrl = url;
@@ -95,12 +102,16 @@ export default function CardGenerate() {
       ? generateHybridCard(forcedHybrid ? forced : hybridCreatures[Math.floor(Math.random() * hybridCreatures.length)])
       : generateRandomCard(1, { creatures, forcedCreature: forced });
 
-    const creatureDescription = useHybrid
-      ? (forcedHybrid ? forced : hybridCreatures.find((c) => c.baseName === cardData.baseName))?.description || ""
-      : "";
+    const matchedCreature = useHybrid
+      ? (forcedHybrid ? forced : hybridCreatures.find((c) => c.baseName === cardData.baseName))
+      : creatures.find((c) => c.baseName === cardData.baseName);
     const { prompt, existingImageUrls } = buildCardImagePrompt(
       { ...cardData, isHybrid: useHybrid },
-      { typeBackgrounds, creatureDescription }
+      {
+        typeBackgrounds,
+        creatureDescription: matchedCreature?.description || "",
+        referenceImageUrl: matchedCreature?.referenceImageUrl || "",
+      }
     );
 
     try {
@@ -111,6 +122,7 @@ export default function CardGenerate() {
       cardData.imageUrl = url;
       setPreviewCard(cardData);
       setPreviewForced(!!forced);
+      setPreviewCreatureId(matchedCreature?.id || null);
     } catch (err) {
       toast({ title: "Generation failed", description: "Couldn't generate the card image. Please try again.", variant: "destructive" });
     } finally {
@@ -140,11 +152,28 @@ export default function CardGenerate() {
       setCount((c) => c + 1);
       setPreviewCard(null);
       setPreviewForced(false);
+      setPreviewCreatureId(null);
     } catch (err) {
       toast({ title: "Couldn't add card", description: "Something went wrong saving this card. Please try again.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleApproveReference = async () => {
+    if (!previewCreatureId || !previewCard) return;
+    setTraining(true);
+    try {
+      await base44.entities.Creature.update(previewCreatureId, { referenceImageUrl: previewCard.imageUrl });
+      setCreatures((list) => list.map((c) => (c.id === previewCreatureId ? { ...c, referenceImageUrl: previewCard.imageUrl } : c)));
+      toast({ title: "Saved as template", description: "Future generations of this creature will use this image as a guide." });
+    } finally {
+      setTraining(false);
+    }
+  };
+
+  const handleRejectReference = () => {
+    toast({ title: "Got it", description: "This image won't be used as a guide for future generations." });
   };
 
   const isAdmin = user?.role === "admin";
@@ -218,6 +247,27 @@ export default function CardGenerate() {
                 {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                 Generate New
               </button>
+            </div>
+          )}
+
+          {isAdmin && previewCard && previewCreatureId && (
+            <div className="flex flex-col items-center gap-2 mt-4">
+              <p className="text-[10px] uppercase tracking-wide text-white/40 font-bold">Train AI: is this anatomy correct?</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleApproveReference}
+                  disabled={training}
+                  className="flex items-center gap-1 bg-emerald-600/80 px-4 py-2 rounded-full text-xs font-bold active:scale-95 transition-transform disabled:opacity-40"
+                >
+                  {training ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "✓"} Use as Template
+                </button>
+                <button
+                  onClick={handleRejectReference}
+                  className="flex items-center gap-1 bg-red-600/80 px-4 py-2 rounded-full text-xs font-bold active:scale-95 transition-transform"
+                >
+                  ✗ Not Accurate
+                </button>
+              </div>
             </div>
           )}
         </div>

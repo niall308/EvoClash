@@ -27,6 +27,11 @@
     "description": {
       "type": "string",
       "default": ""
+    },
+    "referenceImageUrl": {
+      "type": "string",
+      "default": "",
+      "description": "Admin-approved generated image used as an anatomy reference for future AI card art of this creature."
     }
   },
   "required": [
