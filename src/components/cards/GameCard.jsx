@@ -47,14 +47,14 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
       }}
     >
       <div
-        className={`absolute top-1 left-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${
+        className={`absolute top-1 left-1 z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${
           boost?.tier ? "ring-2 ring-yellow-300 animate-pulse" : ""
         }`}
         style={{ background: boost?.tier ? "#FFD700" : color }}
       >
         T{boost?.tier || card.tier}
       </div>
-      <div className="absolute top-1 right-1 flex flex-col items-end gap-1">
+      <div className="absolute top-1 right-1 z-10 flex flex-col items-end gap-1">
         <div className="p-1 rounded-full bg-black/50">
           <Icon className="w-3 h-3" style={{ color }} />
         </div>

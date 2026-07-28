@@ -3,25 +3,27 @@ import { CheckCircle2, Target } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { DAILY_MISSIONS } from "@/lib/gameConstants";
 
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
+// Daily resets are handled server-side (Reset Daily Missions workflow, midnight EST).
+// This only sets an initial baseline for brand-new users who haven't been reset yet.
 export default function DailyMissionsSection({ user, onUserUpdate }) {
   const [claimingId, setClaimingId] = useState(null);
 
   useEffect(() => {
-    if (!user || user.dailyMissionsDate === todayKey()) return;
+    if (!user || user.dailyMissionsDate) return;
     const baseline = {};
     DAILY_MISSIONS.forEach((m) => {
       baseline[m.metric] = user[m.metric] || 0;
     });
     base44.auth
-      .updateMe({ dailyMissionsDate: todayKey(), dailyMissionsBaseline: baseline, dailyMissionsClaimed: [] })
+      .updateMe({
+        dailyMissionsDate: new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()),
+        dailyMissionsBaseline: baseline,
+        dailyMissionsClaimed: [],
+      })
       .then(onUserUpdate);
   }, [user, onUserUpdate]);
 
-  if (!user || user.dailyMissionsDate !== todayKey()) return null;
+  if (!user || !user.dailyMissionsDate) return null;
 
   const baseline = user.dailyMissionsBaseline || {};
   const claimed = user.dailyMissionsClaimed || [];
@@ -33,6 +35,7 @@ export default function DailyMissionsSection({ user, onUserUpdate }) {
       dailyMissionsClaimed: [...claimed, mission.id],
     });
     onUserUpdate(updated);
+    window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: updated.coins } }));
     setClaimingId(null);
   };
 

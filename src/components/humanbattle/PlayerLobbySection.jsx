@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Trophy, PlusCircle, Search, X, Loader2, Swords, Check } from "lucide-react";
+import { Trophy, PlusCircle, Search, X, Loader2, Swords, Check, Clock } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
 import { useAuth } from "@/lib/AuthContext";
@@ -15,8 +15,10 @@ export default function PlayerLobbySection() {
   const [searching, setSearching] = useState(false);
   const [sentRequestIds, setSentRequestIds] = useState([]);
   const [respondingId, setRespondingId] = useState(null);
+  const [searchSeconds, setSearchSeconds] = useState(0);
   const pollRef = useRef(null);
   const searchingRef = useRef(false);
+  const timerRef = useRef(null);
   const { requests: allRequests, refresh: refreshIncoming } = useIncomingBattleRequests();
   const incomingRequests = allRequests.filter((r) => r.matchType !== "offline");
   const filteredPlayers = players?.filter((p) => !recentOpponents?.some((r) => r.id === p.id));
@@ -26,6 +28,7 @@ export default function PlayerLobbySection() {
     base44.functions.invoke("getRecentOpponents", {}).then(({ data }) => setRecentOpponents(data?.opponents || []));
     return () => {
       clearInterval(pollRef.current);
+      clearInterval(timerRef.current);
       if (searchingRef.current) base44.functions.invoke("findMatch", { action: "cancel" });
     };
   }, []);
@@ -55,6 +58,7 @@ export default function PlayerLobbySection() {
     const { data } = await base44.functions.invoke("findMatch", { action: "search" });
     if (data?.status === "matched" && data.matchCode) {
       clearInterval(pollRef.current);
+      clearInterval(timerRef.current);
       setSearching(false);
       searchingRef.current = false;
       toast({ title: "Opponent found!", description: "Starting your battle..." });
@@ -65,15 +69,24 @@ export default function PlayerLobbySection() {
   const startSearch = async () => {
     setSearching(true);
     searchingRef.current = true;
+    setSearchSeconds(0);
+    timerRef.current = setInterval(() => setSearchSeconds((s) => s + 1), 1000);
     await poll();
     pollRef.current = setInterval(poll, 3000);
   };
 
   const cancelSearch = async () => {
     clearInterval(pollRef.current);
+    clearInterval(timerRef.current);
     setSearching(false);
     searchingRef.current = false;
     await base44.functions.invoke("findMatch", { action: "cancel" });
+  };
+
+  const formatSearchTime = (totalSeconds) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${String(secs).padStart(2, "0")}`;
   };
 
   return (
@@ -99,6 +112,9 @@ export default function PlayerLobbySection() {
           className="w-full flex items-center justify-center gap-2 bg-white/10 border border-white/20 py-4 rounded-2xl font-bold mb-6 active:scale-95 transition-transform"
         >
           <Loader2 className="w-5 h-5 animate-spin" /> Searching for a match...
+          <span className="flex items-center gap-1 text-white/60 text-sm font-mono">
+            <Clock className="w-3.5 h-3.5" /> {formatSearchTime(searchSeconds)}
+          </span>
           <X className="w-4 h-4 ml-1" />
         </button>
       ) : (

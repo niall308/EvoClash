@@ -1,0 +1,47 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "reset_daily_missions",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "reset_missions": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "resetDailyMissions",
+            "args": {
+              "cronToken": "ec_cron_9f4b7a2d6e8c1f35b0a9d7c4e2f8a1b6c3d5e9f0a7b2c8d4e6f1a3b5c9d0e7f2"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Reset daily missions",
+            "description": "Clear every user's daily mission progress"
+          }
+        }
+      }
+    ]
+  },
+  "name": "Reset Daily Missions",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 0 * * *",
+      "one_time_date": null,
+      "timezone": "America/New_York",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "description": "Resets every user's daily mission progress at midnight EST/EDT (America/New_York)."
+}
