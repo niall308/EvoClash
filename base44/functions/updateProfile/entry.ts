@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { containsProfanity } from '../../shared/profanity.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -14,6 +15,9 @@ Deno.serve(async (req) => {
     }
     if (!/^[a-zA-Z0-9_ ]+$/.test(trimmedUsername)) {
       return Response.json({ error: 'Username can only contain letters, numbers, underscores, and spaces' }, { status: 400 });
+    }
+    if (containsProfanity(trimmedUsername)) {
+      return Response.json({ error: 'That username is not allowed. Please choose a different one.' }, { status: 400 });
     }
 
     const existing = await base44.asServiceRole.entities.User.filter({ username: trimmedUsername });
