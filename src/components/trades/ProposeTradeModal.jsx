@@ -122,7 +122,7 @@ export default function ProposeTradeModal({ friend, myCards, maxCoins = 0, onClo
                 step={Math.max(1, Math.floor(maxCoins / 100) || 1)}
                 value={Math.min(coins, maxCoins)}
                 onChange={(e) => setCoins(Number(e.target.value))}
-                className="w-full"
+                className="w-full touch-none"
               />
               <p className="text-white/30 text-[10px] mt-1">You have {maxCoins.toLocaleString()} LC available</p>
             </div>
