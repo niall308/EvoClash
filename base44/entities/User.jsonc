@@ -233,6 +233,11 @@
       "type": "number",
       "default": 0
     },
+    "maxPvpWinStreak": {
+      "type": "number",
+      "default": 0,
+      "description": "Longest consecutive PvP (online + offline) win streak ever reached. Used for the win-streak leaderboard \u2014 never affected by AI battles."
+    },
     "lastDailyRewardClaimedAt": {
       "type": "string",
       "default": "",

@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
         currentPvpStreak: newPvpStreak,
         currentWinStreak: newWinStreak,
         maxWinStreak: Math.max(player.maxWinStreak || 0, newWinStreak),
+        maxPvpWinStreak: Math.max(player.maxPvpWinStreak || 0, newPvpStreak > 0 ? newPvpStreak : 0),
       });
     };
 

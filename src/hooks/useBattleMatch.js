@@ -205,6 +205,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       await base44.entities.BattleHistory.create({
         opponentName,
         outcome: winner === "player" ? "win" : "loss",
+        source: "ai",
         cardsUsed,
         playerScore: finalScore.player,
         aiScore: finalScore.ai,
@@ -1030,6 +1031,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     await base44.entities.BattleHistory.create({
       opponentName,
       outcome: "loss",
+      source: "ai",
       cardsUsed: [],
       playerScore: score.player,
       aiScore: score.ai,

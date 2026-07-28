@@ -320,6 +320,7 @@ export default function usePvpMatch(matchCode) {
     base44.entities.BattleHistory.create({
       opponentName: oppName,
       outcome: won ? "win" : "loss",
+      source: "pvp",
       cardsUsed: [],
       playerScore: myScore || 0,
       aiScore: oppScore || 0,

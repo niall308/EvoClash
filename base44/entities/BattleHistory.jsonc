@@ -12,6 +12,15 @@
         "loss"
       ]
     },
+    "source": {
+      "type": "string",
+      "enum": [
+        "ai",
+        "pvp"
+      ],
+      "default": "ai",
+      "description": "Whether this battle was against the AI or another player (PvP, online or offline). Used to keep leaderboards PvP-only."
+    },
     "cardsUsed": {
       "type": "array",
       "items": {
