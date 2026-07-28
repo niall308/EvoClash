@@ -305,6 +305,28 @@ export default function usePvpMatch(matchCode) {
     return () => clearInterval(interval);
   }, [match, myRole, oppRole]);
 
+  // Record this player's own Battle History entry once the match finishes.
+  // BattleHistory's created_by_id can only ever be the calling user, so each
+  // client must write its own record — a server function can't do this for
+  // both sides at once.
+  const historyRecordedRef = useRef(false);
+  useEffect(() => {
+    if (!match || !myRole || match.status !== "finished" || historyRecordedRef.current) return;
+    historyRecordedRef.current = true;
+    const won = match.winnerId === (myRole === "player1" ? match.player1Id : match.player2Id);
+    const myScore = myRole === "player1" ? match.scoreP1 : match.scoreP2;
+    const oppScore = myRole === "player1" ? match.scoreP2 : match.scoreP1;
+    const oppName = oppRole === "player1" ? match.player1Name : match.player2Name;
+    base44.entities.BattleHistory.create({
+      opponentName: oppName,
+      outcome: won ? "win" : "loss",
+      cardsUsed: [],
+      playerScore: myScore || 0,
+      aiScore: oppScore || 0,
+      durationSeconds: Math.round((Date.now() - new Date(match.created_date).getTime()) / 1000),
+    });
+  }, [match, myRole, oppRole]);
+
   const forfeit = useCallback(async () => {
     if (!match || !myRole) return;
     await base44.entities.PvpMatch.update(match.id, { phase: "matchEnd", log: "Your opponent forfeited!" });
