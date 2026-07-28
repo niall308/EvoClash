@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { generateRandomCard, generateHybridCard } from "@/lib/cardGenerator";
 import { buildCardImagePrompt } from "@/lib/cardImagePrompt";
 import { STYLE_REFERENCE_URL, HYBRID_CHANCE } from "@/lib/gameConstants";
-import { getCreationStatus, buildCreationUpdate, EXTRA_CREATURE_COST } from "@/lib/cardCreationLimits";
+import { getCreationStatus, EXTRA_CREATURE_COST } from "@/lib/cardCreationLimits";
 import { ensureActiveDeck } from "@/lib/decks";
 import GameCard from "@/components/cards/GameCard";
 import CreaturePicker from "@/components/generate/CreaturePicker";
@@ -69,9 +69,10 @@ export default function CardGenerate() {
         // Skip this card on failure and continue building the rest.
       }
     }
+    // totalCardsCreated/coins are already tracked server-side per card by
+    // createGeneratedCard; only set the one-time offer flag and owned types here.
     const updated = await base44.auth.updateMe({
       autoBuildOffered: true,
-      totalCardsCreated: AUTO_BUILD_COUNT,
       ownedElementTypesList: Array.from(ownedTypes),
       distinctTypesOwnedCount: ownedTypes.size,
     });
@@ -123,17 +124,18 @@ export default function CardGenerate() {
     if (!previewCard || saving || !user) return;
     if (status.needsPayment && (user.coins || 0) < EXTRA_CREATURE_COST) return;
     setSaving(true);
-    const userUpdate = buildCreationUpdate(user, count);
-    const ownedTypes = user.ownedElementTypesList || [];
-    if (!ownedTypes.includes(previewCard.type)) {
-      userUpdate.ownedElementTypesList = [...ownedTypes, previewCard.type];
-      userUpdate.distinctTypesOwnedCount = userUpdate.ownedElementTypesList.length;
-    }
     try {
-      const [, updatedUser] = await Promise.all([
-        base44.functions.invoke("createGeneratedCard", { cardData: previewCard, deckId: activeDeckId, forced: previewForced }),
-        Object.keys(userUpdate).length ? base44.auth.updateMe(userUpdate) : Promise.resolve(user),
-      ]);
+      // Coin cost / free-limit counters are enforced and persisted server-side
+      // by createGeneratedCard; only the owned-types tracking is client-driven.
+      const { data } = await base44.functions.invoke("createGeneratedCard", { cardData: previewCard, deckId: activeDeckId, forced: previewForced });
+      let updatedUser = data.user;
+      const ownedTypes = updatedUser.ownedElementTypesList || [];
+      if (!ownedTypes.includes(previewCard.type)) {
+        updatedUser = await base44.auth.updateMe({
+          ownedElementTypesList: [...ownedTypes, previewCard.type],
+          distinctTypesOwnedCount: ownedTypes.length + 1,
+        });
+      }
       setUser(updatedUser);
       setCount((c) => c + 1);
       setPreviewCard(null);

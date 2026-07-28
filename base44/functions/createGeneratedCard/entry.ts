@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { validateCardData } from '../../shared/cardValidation.ts';
+import { getCreationStatus, buildCreationUpdate, EXTRA_CREATURE_COST } from '../../shared/cardCreationLimits.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -34,8 +35,20 @@ Deno.serve(async (req) => {
       return Response.json({ error: validationError.message }, { status: 400 });
     }
 
+    // Re-verify the free-creation allowance and coin cost against the real,
+    // server-counted card total — never trust the client's coin/limit checks.
+    const ownedCards = await base44.entities.Card.filter({ ownerId: user.id });
+    const status = getCreationStatus(user, ownedCards.length);
+    if (status.needsPayment && (user.coins || 0) < EXTRA_CREATURE_COST) {
+      return Response.json({ error: 'Not enough coins' }, { status: 400 });
+    }
+
     const card = await base44.entities.Card.create({ ...safeCardData, deckId, ownerId: user.id });
-    return Response.json({ card });
+
+    const userUpdate = buildCreationUpdate(user, ownedCards.length);
+    const updatedUser = Object.keys(userUpdate).length ? await base44.auth.updateMe(userUpdate) : user;
+
+    return Response.json({ card, user: updatedUser });
   } catch (error) {
     console.error('createGeneratedCard error', error);
     return Response.json({ error: error.message }, { status: 500 });
