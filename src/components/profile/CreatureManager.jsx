@@ -23,13 +23,18 @@ export default function CreatureManager() {
     setCreatures((c) => c.filter((x) => x.id !== id));
   };
 
+  const handleUpdateDescription = async (id, description) => {
+    const updated = await base44.entities.Creature.update(id, { description });
+    setCreatures((c) => c.map((x) => (x.id === id ? updated : x)));
+  };
+
   return (
     <div className="mb-8">
       <h2 className="text-lg font-bold mb-3">Manage Creatures</h2>
       <CreatureForm onAdd={handleAdd} />
       <div className="space-y-2 max-h-72 overflow-y-auto">
         {creatures.map((c) => (
-          <CreatureRow key={c.id} creature={c} onDelete={handleDelete} />
+          <CreatureRow key={c.id} creature={c} onDelete={handleDelete} onUpdateDescription={handleUpdateDescription} />
         ))}
         {creatures.length === 0 && <p className="text-white/40 text-sm">No creatures yet.</p>}
       </div>

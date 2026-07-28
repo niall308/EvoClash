@@ -88,15 +88,17 @@ export default function CreatureForm({ onAdd }) {
           <PickerField label="Role" options={ROLE_OPTIONS} value={role} onSelect={setRole} />
         )}
       </div>
-      {isHybrid && (
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Design guide for the AI card generator, e.g. 'Top half is a Tyrannosaurus Rex with a unicorn-style horn, bottom half is a unicorn with T-Rex legs and a unicorn tail, all in a robot style'"
-          rows={3}
-          className="w-full bg-white/10 rounded-md px-3 py-2 text-xs outline-none resize-none"
-        />
-      )}
+      <textarea
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder={
+          isHybrid
+            ? "Design guide for the AI card generator, e.g. 'Top half is a Tyrannosaurus Rex with a unicorn-style horn, bottom half is a unicorn with T-Rex legs and a unicorn tail, all in a robot style'"
+            : "Anatomy guide for the AI card generator, e.g. 'a winged bird-woman with a human female torso and face, feathered wings instead of arms, and taloned bird feet — never a snake or reptile body'"
+        }
+        rows={3}
+        className="w-full bg-white/10 rounded-md px-3 py-2 text-xs outline-none resize-none"
+      />
       <button type="submit" className="w-full flex items-center justify-center gap-1 bg-purple-600 rounded-md py-2 text-sm font-semibold">
         <Plus className="w-4 h-4" /> Add Creature
       </button>
