@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Trophy, Swords, Gamepad2, History, HelpCircle, Flame, Snowflake, ShieldCheck, Trash2, Pencil, Bell } from "lucide-react";
+import { Trophy, Swords, Gamepad2, History, HelpCircle, Flame, Snowflake, ShieldCheck, Trash2, Pencil, Bell, LifeBuoy } from "lucide-react";
 import { getRankByRP } from "@/lib/rankSystem";
 import { useAuth } from "@/lib/AuthContext";
 import RankEmblem from "@/components/rank/RankEmblem";
 import ActiveMilestonesSummary from "@/components/profile/ActiveMilestonesSummary";
 import DeleteAccountModal from "@/components/profile/DeleteAccountModal";
 import EditProfileModal from "@/components/profile/EditProfileModal";
+import SupportModal from "@/components/profile/SupportModal";
 import { Image } from "@/components/ui/image";
 
 function Stat({ icon: Icon, label, value }) {
@@ -25,6 +26,7 @@ export default function Profile() {
   const [user, setUser] = useState(authUser);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
 
   useEffect(() => {
     if (!authUser) return;
@@ -110,6 +112,16 @@ export default function Profile() {
       </Link>
 
       <button
+        onClick={() => setShowSupportModal(true)}
+        className="w-full flex items-center justify-between bg-white/5 rounded-xl p-4 mb-3"
+      >
+        <span className="flex items-center gap-2 font-semibold text-sm">
+          <LifeBuoy className="w-4 h-4 text-amber-400" /> Support
+        </span>
+        <span className="text-white/40 text-xs">Open →</span>
+      </button>
+
+      <button
         onClick={() => setShowDeleteModal(true)}
         className="w-full flex items-center justify-center gap-2 text-red-400 text-sm font-semibold py-4 mt-8"
       >
@@ -131,6 +143,8 @@ export default function Profile() {
           }}
         />
       )}
+
+      {showSupportModal && <SupportModal onClose={() => setShowSupportModal(false)} />}
     </div>
   );
 }
