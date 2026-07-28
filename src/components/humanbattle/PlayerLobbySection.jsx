@@ -15,7 +15,8 @@ export default function PlayerLobbySection() {
   const [respondingId, setRespondingId] = useState(null);
   const pollRef = useRef(null);
   const searchingRef = useRef(false);
-  const { requests: incomingRequests, refresh: refreshIncoming } = useIncomingBattleRequests();
+  const { requests: allRequests, refresh: refreshIncoming } = useIncomingBattleRequests();
+  const incomingRequests = allRequests.filter((r) => r.matchType !== "offline");
 
   useEffect(() => {
     base44.functions.invoke("getLobbyPlayers", {}).then(({ data }) => setPlayers(data?.players || []));
@@ -32,6 +33,7 @@ export default function PlayerLobbySection() {
     await base44.functions.invoke("sendBattleInvite", {
       toUserId: player.id,
       toUserName: player.full_name,
+      matchType: "live",
     });
   };
 

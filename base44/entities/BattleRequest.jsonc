@@ -13,6 +13,15 @@
       "type": "string",
       "default": ""
     },
+    "matchType": {
+      "type": "string",
+      "enum": [
+        "live",
+        "offline"
+      ],
+      "default": "live",
+      "description": "'live' requires both players present; 'offline' has no turn time limit and can be left/resumed anytime."
+    },
     "status": {
       "type": "string",
       "enum": [

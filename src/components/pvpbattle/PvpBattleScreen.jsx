@@ -13,7 +13,7 @@ import ReshuffleModal from "@/components/battle/ReshuffleModal";
 import TypeChoiceModal from "@/components/battle/TypeChoiceModal";
 import PvpMatchEndModal from "@/components/pvpbattle/PvpMatchEndModal";
 import { maxHealth } from "@/lib/battleEngine";
-import { Swords, Flag, Zap, Loader2 } from "lucide-react";
+import { Swords, Flag, Zap, Loader2, ArrowLeft } from "lucide-react";
 import usePvpMatch from "@/hooks/usePvpMatch";
 
 export default function PvpBattleScreen({ matchCode }) {
@@ -74,7 +74,14 @@ export default function PvpBattleScreen({ matchCode }) {
   return (
     <div className="min-h-screen flex flex-col text-white" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
       <div className="grid grid-cols-3 items-center px-3 py-2 text-xs font-bold" style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}>
-        <span className="justify-self-start">Round {match.round}/5</span>
+        <span className="justify-self-start flex items-center gap-2">
+          {match.matchType === "offline" && (
+            <button onClick={() => navigate("/human-battle")} className="text-white/60 hover:text-white p-1 -m-1">
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+          )}
+          Round {match.round}/5
+        </span>
         <span className="justify-self-center whitespace-nowrap">You {myScore} — {oppScore} {oppName}</span>
         <button onClick={() => setShowForfeitModal(true)} className="justify-self-end flex items-center gap-1 text-white/60 hover:text-red-400 p-2 -m-2">
           <Flag className="w-3.5 h-3.5" /> Forfeit

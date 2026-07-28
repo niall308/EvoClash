@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Users, UserPlus } from "lucide-react";
+import { ArrowLeft, Users, UserPlus, Clock } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import PlayerLobbySection from "@/components/humanbattle/PlayerLobbySection";
+import OfflineBattleSection from "@/components/humanbattle/OfflineBattleSection";
 import FriendsSection from "@/components/profile/FriendsSection";
 
 const TABS = [
-  { key: "lobby", label: "Player Lobby", icon: Users },
+  { key: "lobby", label: "Live", icon: Users },
+  { key: "offline", label: "Offline", icon: Clock },
   { key: "friends", label: "Friends", icon: UserPlus },
 ];
 
@@ -23,12 +25,12 @@ export default function HumanBattle() {
       </Link>
       <h1 className="text-3xl font-black mb-6">Battle vs Human</h1>
 
-      <div className="grid grid-cols-2 gap-2 mb-6 bg-white/5 rounded-2xl p-1">
+      <div className="grid grid-cols-3 gap-2 mb-6 bg-white/5 rounded-2xl p-1">
         {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex items-center justify-center gap-1.5 py-3 rounded-xl text-sm font-bold transition-colors ${
+            className={`flex items-center justify-center gap-1.5 py-3 rounded-xl text-xs font-bold transition-colors ${
               tab === key ? "bg-gradient-to-r from-blue-600 to-cyan-500" : "text-white/50"
             }`}
           >
@@ -37,7 +39,9 @@ export default function HumanBattle() {
         ))}
       </div>
 
-      {tab === "lobby" ? <PlayerLobbySection /> : <FriendsSection user={user} onUserUpdate={updateUser} />}
+      {tab === "lobby" && <PlayerLobbySection />}
+      {tab === "offline" && <OfflineBattleSection />}
+      {tab === "friends" && <FriendsSection user={user} onUserUpdate={updateUser} />}
     </div>
   );
 }

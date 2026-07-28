@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { countActiveOfflineMatches, MAX_ACTIVE_OFFLINE_MATCHES } from '../../shared/offlineBattle.ts';
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const generateCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -35,6 +36,17 @@ Deno.serve(async (req) => {
     const fromUser = fromUsers[0];
     if (!fromUser) return Response.json({ error: 'Requesting player not found' }, { status: 404 });
 
+    const matchType = battleRequest.matchType === 'offline' ? 'offline' : 'live';
+    if (matchType === 'offline') {
+      const [fromUserActive, myActive] = await Promise.all([
+        countActiveOfflineMatches(base44, fromUser.id),
+        countActiveOfflineMatches(base44, user.id),
+      ]);
+      if (fromUserActive >= MAX_ACTIVE_OFFLINE_MATCHES || myActive >= MAX_ACTIVE_OFFLINE_MATCHES) {
+        return Response.json({ error: `One of you already has ${MAX_ACTIVE_OFFLINE_MATCHES} active offline battles. Finish one before starting another.` }, { status: 400 });
+      }
+    }
+
     const [myDecks, oppDecks] = await Promise.all([
       base44.asServiceRole.entities.Deck.filter({ created_by_id: user.id, isActive: true }),
       base44.asServiceRole.entities.Deck.filter({ created_by_id: fromUser.id, isActive: true }),
@@ -57,6 +69,7 @@ Deno.serve(async (req) => {
     const code = generateCode();
     await base44.asServiceRole.entities.PvpMatch.create({
       code,
+      matchType,
       player1Id: fromUser.id,
       player1Name: fromUser.username || fromUser.full_name,
       player2Id: user.id,

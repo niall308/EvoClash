@@ -5,6 +5,15 @@
     "code": {
       "type": "string"
     },
+    "matchType": {
+      "type": "string",
+      "enum": [
+        "live",
+        "offline"
+      ],
+      "default": "live",
+      "description": "'live' requires both players present; 'offline' has no turn time limit and can be left/resumed anytime."
+    },
     "player1Id": {
       "type": "string"
     },

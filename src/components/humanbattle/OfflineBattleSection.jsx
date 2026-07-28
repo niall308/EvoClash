@@ -1,0 +1,174 @@
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Check, X, Loader2, Clock, RotateCcw } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
+import { useAuth } from "@/lib/AuthContext";
+
+const MAX_OFFLINE_MATCHES = 10;
+
+export default function OfflineBattleSection() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [players, setPlayers] = useState(null);
+  const [recentOpponents, setRecentOpponents] = useState(null);
+  const [activeMatches, setActiveMatches] = useState(null);
+  const [sentRequestIds, setSentRequestIds] = useState([]);
+  const [respondingId, setRespondingId] = useState(null);
+  const { requests: allRequests, refresh: refreshIncoming } = useIncomingBattleRequests();
+  const incomingRequests = allRequests.filter((r) => r.matchType === "offline");
+
+  useEffect(() => {
+    if (!user) return;
+    base44.functions.invoke("getLobbyPlayers", {}).then(({ data }) => setPlayers(data?.players || []));
+    base44.functions.invoke("getRecentOpponents", {}).then(({ data }) => setRecentOpponents(data?.opponents || []));
+    Promise.all([
+      base44.entities.PvpMatch.filter({ player1Id: user.id, matchType: "offline", status: "active" }),
+      base44.entities.PvpMatch.filter({ player2Id: user.id, matchType: "offline", status: "active" }),
+    ]).then(([asP1, asP2]) => setActiveMatches([...asP1, ...asP2]));
+  }, [user?.id]);
+
+  const atCap = (activeMatches?.length || 0) >= MAX_OFFLINE_MATCHES;
+
+  const requestBattle = async (player) => {
+    if (!user || atCap) return;
+    setSentRequestIds((ids) => [...ids, player.id]);
+    await base44.functions.invoke("sendBattleInvite", {
+      toUserId: player.id,
+      toUserName: player.full_name,
+      matchType: "offline",
+    });
+  };
+
+  const respondToRequest = async (request, action) => {
+    setRespondingId(request.id);
+    const { data } = await base44.functions.invoke("respondBattleRequest", { requestId: request.id, action });
+    setRespondingId(null);
+    if (action === "accept" && data?.matchCode) {
+      navigate(`/pvp-battle/${data.matchCode}`);
+    } else {
+      refreshIncoming();
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-4">
+        <h2 className="text-lg font-bold mb-1">Offline PvP</h2>
+        <p className="text-white/60 text-sm">No time limit — leave anytime and resume later.</p>
+        <p className={`text-xs font-semibold mt-1 ${atCap ? "text-red-400" : "text-white/40"}`}>
+          {activeMatches === null ? "Loading..." : `${activeMatches.length}/${MAX_OFFLINE_MATCHES} active offline battles`}
+        </p>
+      </div>
+
+      {activeMatches?.length > 0 && (
+        <div className="mb-6 space-y-2">
+          <p className="text-white/50 text-xs font-semibold">Your Active Battles</p>
+          {activeMatches.map((m) => {
+            const oppName = m.player1Id === user.id ? m.player2Name : m.player1Name;
+            const myScore = m.player1Id === user.id ? m.scoreP1 : m.scoreP2;
+            const oppScore = m.player1Id === user.id ? m.scoreP2 : m.scoreP1;
+            return (
+              <button
+                key={m.id}
+                onClick={() => navigate(`/pvp-battle/${m.code}`)}
+                className="w-full flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3 text-left"
+              >
+                <div>
+                  <p className="font-bold text-sm">vs {oppName}</p>
+                  <p className="text-white/40 text-xs">
+                    Round {m.round} — You {myScore} : {oppScore} {oppName}
+                  </p>
+                </div>
+                <span className="flex items-center gap-1 text-xs font-bold text-amber-400">
+                  <RotateCcw className="w-3.5 h-3.5" /> Resume
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {incomingRequests.length > 0 && (
+        <div className="mb-6 space-y-2">
+          <p className="text-white/50 text-xs font-semibold">Offline Battle Requests</p>
+          {incomingRequests.map((req) => (
+            <div key={req.id} className="flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-3">
+              <div>
+                <p className="font-bold text-sm">{req.fromUserName}</p>
+                <p className="text-white/40 text-xs">wants an offline battle</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => respondToRequest(req, "decline")}
+                  disabled={respondingId === req.id}
+                  className="p-2 rounded-full bg-white/10 text-white/60 disabled:opacity-40"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => respondToRequest(req, "accept")}
+                  disabled={respondingId === req.id}
+                  className="flex items-center gap-1.5 bg-emerald-500 text-black text-xs font-bold px-3 py-2 rounded-full disabled:opacity-40"
+                >
+                  {respondingId === req.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  Accept
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {recentOpponents?.length > 0 && (
+        <div className="mb-6">
+          <p className="text-white/50 text-xs font-semibold mb-2">Recent Opponents</p>
+          <div className="space-y-2">
+            {recentOpponents.map((p) => {
+              const requested = sentRequestIds.includes(p.id);
+              return (
+                <div key={p.id} className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3">
+                  <p className="font-bold text-sm">{p.full_name}</p>
+                  <button
+                    onClick={() => requestBattle(p)}
+                    disabled={requested || atCap}
+                    className={`flex items-center gap-1 text-xs font-bold px-3 py-2 rounded-full active:scale-95 transition-transform disabled:opacity-50 ${
+                      requested ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500 text-black"
+                    }`}
+                  >
+                    {requested ? <Check className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                    {requested ? "Requested" : "Challenge"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {players === null && <p className="text-white/50 text-sm">Loading players...</p>}
+      {players?.length === 0 && <p className="text-white/50 text-sm">No other players yet.</p>}
+
+      <div className="space-y-2">
+        {players?.map((p) => {
+          const requested = sentRequestIds.includes(p.id);
+          return (
+            <div key={p.id} className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3">
+              <p className="font-bold text-sm">{p.full_name}</p>
+              <button
+                onClick={() => requestBattle(p)}
+                disabled={requested || atCap}
+                className={`flex items-center gap-1 text-xs font-bold px-3 py-2 rounded-full active:scale-95 transition-transform disabled:opacity-50 ${
+                  requested ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500 text-black"
+                }`}
+              >
+                {requested ? <Check className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                {requested ? "Requested" : "Challenge"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
