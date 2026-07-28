@@ -162,7 +162,7 @@ export default function PvpBattleScreen({ matchCode }) {
 
       <div
         className="flex items-end justify-between px-4 gap-3"
-        style={{ paddingBottom: match.matchType === "offline" ? "calc(env(safe-area-inset-bottom) + 4.5rem)" : "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 4.5rem)" }}
       >
         <div className="flex-1 flex justify-start">
           {match.phase !== "matchEnd" && (
@@ -218,7 +218,7 @@ export default function PvpBattleScreen({ matchCode }) {
           onCancel={() => setShowForfeitModal(false)}
         />
       )}
-      {match.matchType === "offline" && <BottomNav />}
+      <BottomNav />
     </div>
   );
 }
