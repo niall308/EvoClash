@@ -13,7 +13,7 @@
           "with": {
             "function_name": "notifyDailyRewardReady",
             "args": {
-              "cronToken": "ec_cron_3f8b6a1d9e4c7f20b5a8d1c6e3f9a2b7"
+              "cronToken": "ec_cron_9f4b7a2d6e8c1f35b0a9d7c4e2f8a1b6c3d5e9f0a7b2c8d4e6f1a3b5c9d0e7f2"
             }
           },
           "then": "end",

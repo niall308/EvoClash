@@ -13,7 +13,7 @@
           "with": {
             "function_name": "expireTrades",
             "args": {
-              "cronToken": "ec_cron_7f3a1d9c4b2e8f56a0d3c7b1e9f2a4d6"
+              "cronToken": "ec_cron_9f4b7a2d6e8c1f35b0a9d7c4e2f8a1b6c3d5e9f0a7b2c8d4e6f1a3b5c9d0e7f2"
             }
           },
           "then": "end",

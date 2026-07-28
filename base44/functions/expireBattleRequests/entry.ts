@@ -1,10 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 
-// Internal shared secret used to authorize the scheduled workflow call.
-// Not a real API credential - just prevents anonymous callers from hitting this
-// endpoint directly. Must match the value passed by the "Expire Battle Requests" workflow.
-const CRON_TOKEN = 'ec_cron_9d4f2a7b1c8e6f30a5d9c2b4e7f1a8c3';
-
 // Marks pending battle (rematch) requests older than 24 hours as expired.
 Deno.serve(async (req) => {
   try {
@@ -13,7 +8,8 @@ Deno.serve(async (req) => {
 
     const user = await base44.auth.me().catch(() => null);
     const isAdmin = user && user.role === 'admin';
-    const isAuthorizedCron = body?.cronToken === CRON_TOKEN;
+    const cronSecret = Deno.env.get('CRON_SECRET');
+    const isAuthorizedCron = !!cronSecret && body?.cronToken === cronSecret;
     if (!isAdmin && !isAuthorizedCron) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
