@@ -4,10 +4,12 @@ import { Trophy, PlusCircle, Search, X, Loader2, Swords, Check } from "lucide-re
 import { base44 } from "@/api/base44Client";
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
 import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function PlayerLobbySection() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [players, setPlayers] = useState(null);
   const [recentOpponents, setRecentOpponents] = useState(null);
   const [searching, setSearching] = useState(false);
@@ -55,7 +57,8 @@ export default function PlayerLobbySection() {
       clearInterval(pollRef.current);
       setSearching(false);
       searchingRef.current = false;
-      navigate(`/pvp-battle/${data.matchCode}`);
+      toast({ title: "Opponent found!", description: "Starting your battle..." });
+      setTimeout(() => navigate(`/pvp-battle/${data.matchCode}`), 1000);
     }
   };
 
