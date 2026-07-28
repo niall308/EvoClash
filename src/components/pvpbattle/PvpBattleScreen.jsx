@@ -12,6 +12,7 @@ import PowerButtons from "@/components/battle/PowerButtons";
 import ReshuffleModal from "@/components/battle/ReshuffleModal";
 import TypeChoiceModal from "@/components/battle/TypeChoiceModal";
 import PvpMatchEndModal from "@/components/pvpbattle/PvpMatchEndModal";
+import BottomNav from "@/components/layout/BottomNav";
 import { maxHealth } from "@/lib/battleEngine";
 import { Swords, Flag, Zap, Loader2, ArrowLeft, Clock } from "lucide-react";
 import usePvpMatch from "@/hooks/usePvpMatch";
@@ -159,7 +160,10 @@ export default function PvpBattleScreen({ matchCode }) {
         {match.phase === "battle" && !isMyTurn && <p className="text-white/40 text-xs mt-4">Waiting for {oppName}...</p>}
       </div>
 
-      <div className="flex items-end justify-between px-4 gap-3" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}>
+      <div
+        className="flex items-end justify-between px-4 gap-3"
+        style={{ paddingBottom: match.matchType === "offline" ? "calc(env(safe-area-inset-bottom) + 4.5rem)" : "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
+      >
         <div className="flex-1 flex justify-start">
           {match.phase !== "matchEnd" && (
             <PowerButtons user={user} activeKeys={activePowerUps} canUseMap={canUseMap} handlers={handlers} />
@@ -214,6 +218,7 @@ export default function PvpBattleScreen({ matchCode }) {
           onCancel={() => setShowForfeitModal(false)}
         />
       )}
+      {match.matchType === "offline" && <BottomNav />}
     </div>
   );
 }
