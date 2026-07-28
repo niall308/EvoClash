@@ -5,15 +5,28 @@ import { Upload, Loader2, X } from "lucide-react";
 import DrawerPicker from "@/components/common/DrawerPicker";
 import { Image } from "@/components/ui/image";
 
-const ALL_CREATURES = CATEGORIES.flatMap((cat) => CREATURES[cat].map((name) => ({ name, category: cat })));
+const STATIC_CREATURES = CATEGORIES.flatMap((cat) => CREATURES[cat].map((name) => ({ name, category: cat })));
 const TIERS = [1, 2, 3, 4];
 
 export default function CreatureAnimationManager() {
   const [templates, setTemplates] = useState([]);
-  const [selected, setSelected] = useState(ALL_CREATURES[0].name);
+  const [allCreatures, setAllCreatures] = useState(STATIC_CREATURES);
+  const [selected, setSelected] = useState(STATIC_CREATURES[0].name);
   const [uploadingTier, setUploadingTier] = useState(null);
 
-  const load = async () => setTemplates(await base44.entities.CardTemplate.list());
+  const load = async () => {
+    const [templateList, customCreatures] = await Promise.all([
+      base44.entities.CardTemplate.list(),
+      base44.entities.Creature.list(),
+    ]);
+    setTemplates(templateList);
+    const custom = customCreatures.map((c) => ({ name: c.baseName, category: c.category }));
+    const merged = [...STATIC_CREATURES];
+    custom.forEach((c) => {
+      if (!merged.some((m) => m.name === c.name)) merged.push(c);
+    });
+    setAllCreatures(merged);
+  };
   useEffect(() => {
     load();
   }, []);
@@ -25,7 +38,7 @@ export default function CreatureAnimationManager() {
     if (!file) return;
     setUploadingTier(tier);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const creature = ALL_CREATURES.find((c) => c.name === selected);
+    const creature = allCreatures.find((c) => c.name === selected);
     const existing = getTemplate(selected);
     const field = `tier${tier}Animation`;
     if (existing) {
@@ -53,7 +66,7 @@ export default function CreatureAnimationManager() {
         label="Select Creature"
         value={selected}
         onSelect={setSelected}
-        options={ALL_CREATURES.map((c) => ({ value: c.name, label: c.name }))}
+        options={allCreatures.map((c) => ({ value: c.name, label: c.name }))}
         triggerClassName="bg-white/10 rounded-lg px-3 py-2 text-sm mb-4 w-full justify-between"
       />
       <div className="grid grid-cols-2 gap-3">
