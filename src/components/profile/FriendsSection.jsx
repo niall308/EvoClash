@@ -16,11 +16,23 @@ export default function FriendsSection({ user, onUserUpdate }) {
   const [tradeFriend, setTradeFriend] = useState(null);
   const [tradeMessage, setTradeMessage] = useState("");
   const [selectedFriend, setSelectedFriend] = useState(null);
+  const [onlineStatus, setOnlineStatus] = useState({});
 
   useEffect(() => {
     base44.entities.Friend.filter({ created_by_id: user.id }, "-created_date").then(setFriends);
     base44.entities.Card.filter({ ownerId: user.id }).then(setMyCards);
   }, [user.id]);
+
+  useEffect(() => {
+    if (!friends?.length) return;
+    base44.functions
+      .invoke("getFriendsOnlineStatus", { userIds: friends.map((f) => f.friendUserId) })
+      .then(({ data }) => {
+        const map = {};
+        (data?.statuses || []).forEach((s) => (map[s.id] = s.online));
+        setOnlineStatus(map);
+      });
+  }, [friends]);
 
   useEffect(() => {
     if (!user.friendCode) {
@@ -99,7 +111,8 @@ export default function FriendsSection({ user, onUserUpdate }) {
         ) : (
           friends.map((f) => (
             <div key={f.id} className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2.5">
-              <button onClick={() => setSelectedFriend(f)} className="font-semibold text-sm text-left">
+              <button onClick={() => setSelectedFriend(f)} className="flex items-center gap-2 font-semibold text-sm text-left">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${onlineStatus[f.friendUserId] ? "bg-emerald-400" : "bg-white/20"}`} />
                 {f.friendName}
               </button>
               <button
