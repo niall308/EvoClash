@@ -57,6 +57,15 @@ export default function usePvpMatch(matchCode) {
     return () => clearInterval(interval);
   }, [matchCode]);
 
+  // Applies a change to the match instantly in local state (so the acting player
+  // sees the result immediately, with no round-trip wait), then persists it in
+  // the background. The realtime subscription will later deliver the same data
+  // back to us, which is a harmless no-op re-render.
+  const updateMatch = useCallback((matchId, updates) => {
+    setMatch((prev) => (prev && prev.id === matchId ? { ...prev, ...updates } : prev));
+    return base44.entities.PvpMatch.update(matchId, updates);
+  }, []);
+
   const myRole = match && myId ? (match.player1Id === myId ? "player1" : "player2") : null;
   const oppRole = myRole === "player1" ? "player2" : "player1";
 
@@ -136,41 +145,41 @@ export default function usePvpMatch(matchCode) {
   const pickRps = useCallback(
     (choice) => {
       if (!match || match.phase !== "rps" || !myRole) return;
-      base44.entities.PvpMatch.update(match.id, { [`${myRole}Rps`]: choice });
+      updateMatch(match.id, { [`${myRole}Rps`]: choice });
     },
-    [match, myRole]
+    [match, myRole, updateMatch]
   );
 
   const playCard = useCallback(
     (card) => {
       if (!match || match.phase !== "draw" || !myRole || myCard?.id || pendingHybrid?.id) return;
       if (card.isHybrid) {
-        base44.entities.PvpMatch.update(match.id, {
+        updateMatch(match.id, {
           [`${myRole}Hand`]: myHand.filter((c) => c.id !== card.id),
           [`${myRole}PendingHybrid`]: card,
         });
         return;
       }
-      base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         [`${myRole}Hand`]: myHand.filter((c) => c.id !== card.id),
         [`${myRole}Card`]: card,
         [`${myRole}Hp`]: maxHealth(card),
       });
     },
-    [match, myRole, myCard, myHand, pendingHybrid]
+    [match, myRole, myCard, myHand, pendingHybrid, updateMatch]
   );
 
   const chooseHybridType = useCallback(
     (type) => {
       if (!match || !myRole || !pendingHybrid?.id) return;
       const finalCard = { ...pendingHybrid, type };
-      base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         [`${myRole}Card`]: finalCard,
         [`${myRole}Hp`]: maxHealth(finalCard),
         [`${myRole}PendingHybrid`]: {},
       });
     },
-    [match, myRole, pendingHybrid]
+    [match, myRole, pendingHybrid, updateMatch]
   );
 
   const attack = useCallback(async () => {
@@ -199,7 +208,7 @@ export default function usePvpMatch(matchCode) {
     if (usingBlock) buffUpdates[`${oppRole}BlockActive`] = false;
 
     if (result.tie) {
-      await base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         player1Card: {},
         player2Card: {},
         player1Hp: 0,
@@ -227,7 +236,7 @@ export default function usePvpMatch(matchCode) {
       const winnerName = roundWinner === "player1" ? match.player1Name : match.player2Name;
 
       if (matchOver) {
-        await base44.entities.PvpMatch.update(match.id, {
+        await updateMatch(match.id, {
           scoreP1: newScoreP1,
           scoreP2: newScoreP2,
           [`${targetRole}Hp`]: 0,
@@ -241,7 +250,7 @@ export default function usePvpMatch(matchCode) {
 
       // The loser of the round goes first next round (unless an extra-turn power grants another attack within the round).
       const roundLoser = roundWinner === "player1" ? "player2" : "player1";
-      await base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         scoreP1: newScoreP1,
         scoreP2: newScoreP2,
         [`${targetRole}Card`]: {},
@@ -257,7 +266,7 @@ export default function usePvpMatch(matchCode) {
       return;
     }
 
-    await base44.entities.PvpMatch.update(match.id, {
+    updateMatch(match.id, {
       [`${targetRole}Hp`]: newHp,
       turn: oppRole,
       turnStartedAt: new Date().toISOString(),
@@ -265,7 +274,7 @@ export default function usePvpMatch(matchCode) {
       [`${myRole}Timeouts`]: 0,
       ...buffUpdates,
     });
-  }, [match, myRole, oppRole]);
+  }, [match, myRole, oppRole, updateMatch]);
 
   // Turn timer for 'live' matches only ('offline' matches have no time limit).
   // Derives the countdown from the shared turnStartedAt so both clients agree,
@@ -330,19 +339,21 @@ export default function usePvpMatch(matchCode) {
 
   const forfeit = useCallback(async () => {
     if (!match || !myRole) return;
-    await base44.entities.PvpMatch.update(match.id, { phase: "matchEnd", log: "Your opponent forfeited!" });
+    await updateMatch(match.id, { phase: "matchEnd", log: "Your opponent forfeited!" });
     await base44.functions.invoke("finishPvpMatch", { matchCode: match.code });
-  }, [match, myRole]);
+  }, [match, myRole, updateMatch]);
 
   // ---- Power-ups (shared user cooldown fields, same as AI battles) ----
   const activatePower = useCallback(
     async (field, effectFn) => {
       if (powerUsedThisTurn || !user || !isTimestampReady(user[field], DAY_MS)) return;
       const now = new Date().toISOString();
-      const updatedUser = await base44.auth.updateMe({ [field]: now });
-      setUser(updatedUser);
+      setUser((prev) => (prev ? { ...prev, [field]: now } : prev));
       setPowerUsedThisTurn(true);
+      const updatedUserPromise = base44.auth.updateMe({ [field]: now });
       await effectFn();
+      const updatedUser = await updatedUserPromise;
+      setUser(updatedUser);
     },
     [user, powerUsedThisTurn]
   );
@@ -351,10 +362,12 @@ export default function usePvpMatch(matchCode) {
     async (field, effectFn) => {
       if (powerUsedThisTurn || !user || !isTimestampReady(user[field], WEEK_MS)) return;
       const now = new Date().toISOString();
-      const updatedUser = await base44.auth.updateMe({ [field]: now });
-      setUser(updatedUser);
+      setUser((prev) => (prev ? { ...prev, [field]: now } : prev));
       setPowerUsedThisTurn(true);
+      const updatedUserPromise = base44.auth.updateMe({ [field]: now });
       await effectFn();
+      const updatedUser = await updatedUserPromise;
+      setUser(updatedUser);
     },
     [user, powerUsedThisTurn]
   );
@@ -365,10 +378,12 @@ export default function usePvpMatch(matchCode) {
       const reset = isTimestampReady(user[resetField], DAY_MS);
       const newUses = reset ? 1 : (user[usesField] || 0) + 1;
       const newResetAt = reset ? new Date().toISOString() : user[resetField];
-      const updatedUser = await base44.auth.updateMe({ [usesField]: newUses, [resetField]: newResetAt });
-      setUser(updatedUser);
+      setUser((prev) => (prev ? { ...prev, [usesField]: newUses, [resetField]: newResetAt } : prev));
       setPowerUsedThisTurn(true);
+      const updatedUserPromise = base44.auth.updateMe({ [usesField]: newUses, [resetField]: newResetAt });
       await effectFn();
+      const updatedUser = await updatedUserPromise;
+      setUser(updatedUser);
     },
     [user, powerUsedThisTurn]
   );
@@ -377,7 +392,7 @@ export default function usePvpMatch(matchCode) {
     if (!match || !oppCard?.id || oppPool.length === 0 || match.phase !== "battle" || match.turn !== myRole) return;
     activatePower("burnPowerUsedAt", async () => {
       const newCard = oppPool[0];
-      await base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         [`${oppRole}Card`]: newCard,
         [`${oppRole}Hp`]: maxHealth(newCard),
         [`${oppRole}Pool`]: oppPool.slice(1),
@@ -385,7 +400,7 @@ export default function usePvpMatch(matchCode) {
         log: "Burn! The opponent's card was destroyed and replaced — no life lost.",
       });
     });
-  }, [activatePower, match, oppCard, oppPool, myRole, oppRole]);
+  }, [activatePower, match, oppCard, oppPool, myRole, oppRole, updateMatch]);
 
   const openReshuffle = useCallback(() => setReshuffleModalOpen(true), []);
   const closeReshuffle = useCallback(() => setReshuffleModalOpen(false), []);
@@ -394,20 +409,20 @@ export default function usePvpMatch(matchCode) {
     if (!match || myCard?.id || myHand.length === 0) return;
     activatePower("reshufflePowerUsedAt", async () => {
       const combined = shuffle([...myHand, ...myPool]);
-      await base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         [`${myRole}Hand`]: combined.slice(0, 5),
         [`${myRole}Pool`]: combined.slice(5),
         log: "You drew a new hand!",
       });
     });
     setReshuffleModalOpen(false);
-  }, [activatePower, match, myCard, myHand, myPool, myRole]);
+  }, [activatePower, match, myCard, myHand, myPool, myRole, updateMatch]);
 
   const forceOpponentRedrawPower = useCallback(() => {
     if (!match || !oppCard?.id || oppPool.length === 0 || match.phase !== "battle" || match.turn !== myRole) return;
     activatePower("reshufflePowerUsedAt", async () => {
       const newCard = oppPool[0];
-      await base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         [`${oppRole}Card`]: newCard,
         [`${oppRole}Hp`]: maxHealth(newCard),
         [`${oppRole}Pool`]: oppPool.slice(1),
@@ -416,47 +431,47 @@ export default function usePvpMatch(matchCode) {
       });
     });
     setReshuffleModalOpen(false);
-  }, [activatePower, match, oppCard, oppPool, myRole, oppRole]);
+  }, [activatePower, match, oppCard, oppPool, myRole, oppRole, updateMatch]);
 
   const doubleAttackPower = useCallback(() => {
     if (!match || match.phase !== "battle" || match.turn !== myRole) return;
     activatePower("doubleAttackPowerUsedAt", async () => {
-      await base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         [`${myRole}DoubleAttackActive`]: true,
         log: "Double Attack ready — your next strike deals double damage!",
       });
     });
-  }, [activatePower, match, myRole]);
+  }, [activatePower, match, myRole, updateMatch]);
 
   const tripleDefensePower = useCallback(() => {
     if (!match || match.phase !== "battle" || match.turn !== myRole) return;
     activatePower("defensePowerUsedAt", async () => {
-      await base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         [`${myRole}TripleDefenseActive`]: true,
         log: "Triple Defense ready — your card will block the next hit with 3x defense!",
       });
     });
-  }, [activatePower, match, myRole]);
+  }, [activatePower, match, myRole, updateMatch]);
 
   const blockPower = useCallback(() => {
     if (!match || match.phase !== "battle" || match.turn !== myRole) return;
     activateDailyMultiPower("blockPowerUsesToday", "blockPowerResetAt", 5, async () => {
-      await base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         [`${myRole}BlockActive`]: true,
         log: "Block ready — you will completely block the opponent's next attack!",
       });
     });
-  }, [activateDailyMultiPower, match, myRole]);
+  }, [activateDailyMultiPower, match, myRole, updateMatch]);
 
   const halfAttackPower = useCallback(() => {
     if (!match || !oppCard?.id || match.phase !== "battle" || match.turn !== myRole) return;
     activateDailyMultiPower("halfAttackPowerUsesToday", "halfAttackPowerResetAt", 2, async () => {
-      await base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         [`${oppRole}AttackHalvedTurns`]: 2,
         log: "Half Attack activated — the opponent's card deals half damage for its next 2 attacks!",
       });
     });
-  }, [activateDailyMultiPower, match, oppCard, myRole, oppRole]);
+  }, [activateDailyMultiPower, match, oppCard, myRole, oppRole, updateMatch]);
 
   const randomTierStats = (tier) => {
     const { statMin, statMax, bonusMin, bonusMax } = TIER_RANGES[tier];
@@ -467,13 +482,13 @@ export default function usePvpMatch(matchCode) {
     (tier, field) => {
       if (!match || match.phase !== "battle" || match.turn !== myRole || !myCard?.id) return;
       activateWeeklyPower(field, async () => {
-        await base44.entities.PvpMatch.update(match.id, {
+        updateMatch(match.id, {
           [`${myRole}TempTierBoost`]: { tier, ...randomTierStats(tier) },
           log: `Tier ${tier} Upgrade activated — your card gets randomized T${tier} stats for your next attack!`,
         });
       });
     },
-    [activateWeeklyPower, match, myRole, myCard]
+    [activateWeeklyPower, match, myRole, myCard, updateMatch]
   );
 
   const t2UpgradePower = useCallback(() => tierUpgradePower(2, "t2UpgradePowerUsedAt"), [tierUpgradePower]);
