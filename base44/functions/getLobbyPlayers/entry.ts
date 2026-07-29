@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       .slice(0, 30)
       .map(({ u, rank }) => ({
         id: u.id,
-        full_name: u.full_name || 'Anonymous',
+        full_name: u.username || u.full_name || 'Anonymous',
         wins: u.wins || 0,
         rank,
         online: u.lastSeenAt ? now - new Date(u.lastSeenAt).getTime() < ONLINE_WINDOW_MS : false,
