@@ -21,7 +21,8 @@ Deno.serve(async (req) => {
     const toNotify = allUsers.filter(
       (u) =>
         u.email &&
-        u.notifyDailyRewardReady !== false &&
+        u.notifyEmails === true &&
+        u.notifyDailyRewardReady === true &&
         u.lastDailyRewardClaimedAt !== today &&
         u.lastDailyRewardNotifiedAt !== today
     );

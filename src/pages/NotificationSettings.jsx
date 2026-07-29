@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Swords, Gift, ArrowLeftRight } from "lucide-react";
+import { ArrowLeft, Swords, Gift, ArrowLeftRight, Mail } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Switch } from "@/components/ui/switch";
@@ -23,6 +23,12 @@ const OPTIONS = [
     icon: ArrowLeftRight,
     title: "Trade Requests",
     description: "When you receive a new trade request",
+  },
+  {
+    key: "notifyEmails",
+    icon: Mail,
+    title: "Emails",
+    description: "Receive any notifications by email",
   },
 ];
 
@@ -48,7 +54,7 @@ export default function NotificationSettings() {
 
       <div className="space-y-3">
         {OPTIONS.map(({ key, icon: Icon, title, description }) => {
-          const enabled = user[key] !== false;
+          const enabled = user[key] === true;
           return (
             <div key={key} className="flex items-center justify-between bg-white/5 rounded-xl p-4">
               <div className="flex items-center gap-3 pr-3">
@@ -58,11 +64,16 @@ export default function NotificationSettings() {
                   <p className="text-white/40 text-xs">{description}</p>
                 </div>
               </div>
-              <Switch
-                checked={enabled}
-                disabled={saving === key}
-                onCheckedChange={(value) => handleToggle(key, value)}
-              />
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`text-xs font-bold ${enabled ? "text-emerald-400" : "text-white/40"}`}>
+                  {enabled ? "On" : "Off"}
+                </span>
+                <Switch
+                  checked={enabled}
+                  disabled={saving === key}
+                  onCheckedChange={(value) => handleToggle(key, value)}
+                />
+              </div>
             </div>
           );
         })}

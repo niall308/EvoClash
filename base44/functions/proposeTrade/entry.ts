@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     });
 
     const toUser = await base44.asServiceRole.entities.User.get(toUserId).catch(() => null);
-    if (toUser?.email && toUser.notifyTradeRequests !== false) {
+    if (toUser?.email && toUser.notifyEmails === true && toUser.notifyTradeRequests === true) {
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: toUser.email,
         subject: `${user.username || user.full_name} sent you a trade request!`,
