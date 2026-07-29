@@ -6,6 +6,7 @@ import { CARD_BACK_URL } from "@/lib/gameConstants";
 import { useAuth } from "@/lib/AuthContext";
 import useClaimableMilestones from "@/hooks/useClaimableMilestones";
 import useIncomingTradeRequests from "@/hooks/useIncomingTradeRequests";
+import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
 import DailyMissionsSection from "@/components/home/DailyMissionsSection";
 
 const BUTTONS = [
@@ -21,6 +22,7 @@ export default function Home() {
   const hasMarkedSeen = useRef(false);
   const hasClaimableMilestones = useClaimableMilestones(user);
   const { requests: incomingTrades } = useIncomingTradeRequests();
+  const { requests: incomingBattles } = useIncomingBattleRequests();
 
   useEffect(() => {
     if (user && !hasMarkedSeen.current) {
@@ -38,6 +40,11 @@ export default function Home() {
         {BUTTONS.map(({ to, label, icon: Icon, color }) => (
           <Link key={to} to={to} className={`relative flex items-center gap-4 bg-gradient-to-r ${color} rounded-2xl p-5 font-bold shadow-lg active:scale-95 transition-transform`}>
             <Icon className="w-6 h-6" /> {label}
+            {to === "/play" && incomingBattles.length > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full bg-red-500 border-2 border-[#0D1B2A] text-white text-[10px] font-bold">
+                {incomingBattles.length}
+              </span>
+            )}
             {to === "/profile" && hasClaimableMilestones && (
               <span className="absolute -top-2 -right-2 w-7 h-7 flex items-center justify-center rounded-full bg-amber-400 border-2 border-[#0D1B2A] shadow-lg animate-pulse">
                 <Coins className="w-3.5 h-3.5 text-black" />
