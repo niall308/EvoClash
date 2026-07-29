@@ -12,9 +12,13 @@ Deno.serve(async (req) => {
 
     let match = null;
 
-    // Username lookup is case-insensitive since entity filters do exact matching.
+    // Username/name lookup is case-insensitive since entity filters do exact matching.
+    // Falls back to full_name for users who haven't set a custom username yet.
     const allUsers = await base44.asServiceRole.entities.User.list(undefined, 1000);
-    match = allUsers.find((u) => (u.username || '').toLowerCase() === q.toLowerCase());
+    const qLower = q.toLowerCase();
+    match =
+      allUsers.find((u) => (u.username || '').toLowerCase() === qLower) ||
+      allUsers.find((u) => !u.username && (u.full_name || '').toLowerCase() === qLower);
 
     if (!match) {
       for (const field of ['friendCode', 'email']) {
