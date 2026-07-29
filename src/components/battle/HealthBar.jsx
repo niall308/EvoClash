@@ -16,7 +16,7 @@ export default function HealthBar({ current, max, label }) {
           className="h-full rounded-full"
           style={{ background: color }}
           animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
         />
       </div>
     </div>

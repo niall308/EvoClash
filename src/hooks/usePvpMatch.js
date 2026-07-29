@@ -53,7 +53,7 @@ export default function usePvpMatch(matchCode) {
     const interval = setInterval(async () => {
       const matches = await base44.entities.PvpMatch.filter({ code: matchCode });
       if (matches[0]) setMatch(matches[0]);
-    }, 3000);
+    }, 1500);
     return () => clearInterval(interval);
   }, [matchCode]);
 

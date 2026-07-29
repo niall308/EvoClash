@@ -101,9 +101,9 @@ export default function PvpBattleScreen({ matchCode }) {
       <div className="flex flex-col items-center pt-2 gap-2">
         <LivesIndicator lives={oppLives} />
         <p className="text-white/50 text-xs -mt-1">{oppName}</p>
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           {oppCard?.id && (
-            <motion.div key={oppCard.id + match.round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
+            <motion.div key={oppCard.id + match.round} initial={{ x: 120, rotateY: 90, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
               <GameCard card={oppCard} size="md" faceDown={faceDown} hpRatio={Math.max(0, oppHp / maxHealth(oppCard))} />
             </motion.div>
           )}
@@ -174,9 +174,9 @@ export default function PvpBattleScreen({ matchCode }) {
                 <HealthBar current={myHp} max={maxHealth(myCard)} label="You" />
               </div>
             )}
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="popLayout">
               {myCard?.id && (
-                <motion.div key={myCard.id + match.round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
+                <motion.div key={myCard.id + match.round} initial={{ x: 120, rotateY: 90, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
                   <GameCard card={myCard} size="md" faceDown={faceDown} hpRatio={Math.max(0, myHp / maxHealth(myCard))} boost={boostPreview} />
                 </motion.div>
               )}
