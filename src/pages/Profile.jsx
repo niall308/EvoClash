@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Trophy, Swords, Gamepad2, History, HelpCircle, Flame, Snowflake, ShieldCheck, Trash2, Pencil, Bell, LifeBuoy } from "lucide-react";
+import { Trophy, Swords, Gamepad2, History, HelpCircle, Flame, Snowflake, ShieldCheck, Trash2, Pencil, Bell, LifeBuoy, LogOut } from "lucide-react";
 import { getRankByRP } from "@/lib/rankSystem";
 import { useAuth } from "@/lib/AuthContext";
 import RankEmblem from "@/components/rank/RankEmblem";
@@ -122,8 +122,15 @@ export default function Profile() {
       </button>
 
       <button
+        onClick={() => logout(true)}
+        className="w-full flex items-center justify-center gap-2 text-white/70 text-sm font-semibold py-4 mt-8"
+      >
+        <LogOut className="w-4 h-4" /> Log Out
+      </button>
+
+      <button
         onClick={() => setShowDeleteModal(true)}
-        className="w-full flex items-center justify-center gap-2 text-red-400 text-sm font-semibold py-4 mt-8"
+        className="w-full flex items-center justify-center gap-2 text-red-400 text-sm font-semibold py-4"
       >
         <Trash2 className="w-4 h-4" /> Delete Account
       </button>
