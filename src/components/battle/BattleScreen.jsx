@@ -167,36 +167,35 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
         )}
       </div>
 
-      <div
-        className="flex items-end justify-between px-4 gap-3"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
-      >
-        <div className="flex-1 flex justify-start">
-          {phase !== "matchEnd" && (
-            <PowerButtons user={user} activeKeys={activePowerUps} canUseMap={canUseMap} handlers={handlers} />
-          )}
-        </div>
-        <div className="flex flex-col items-center gap-2">
-          <LivesIndicator lives={playerLives} />
-          {playerCard && (
-            <div className="w-40">
-              <HealthBar current={playerHP} max={playerMaxHP} label="You" />
-            </div>
-          )}
-          <AnimatePresence mode="wait">
-            {playerCard && (
-              <motion.div key={(playerCard.id || playerCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-                <GameCard card={playerCard} size="md" faceDown={faceDown} statusEffects={playerEffects} hpRatio={playerHpRatio} boost={boostPreview} />
-              </motion.div>
+      <div style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}>
+        <div className="flex items-end justify-between px-4 gap-3">
+          <div className="flex-1 flex justify-start">
+            {phase !== "matchEnd" && (
+              <PowerButtons user={user} activeKeys={activePowerUps} canUseMap={canUseMap} handlers={handlers} />
             )}
-          </AnimatePresence>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <LivesIndicator lives={playerLives} />
+            {playerCard && (
+              <div className="w-40">
+                <HealthBar current={playerHP} max={playerMaxHP} label="You" />
+              </div>
+            )}
+            <AnimatePresence mode="wait">
+              {playerCard && (
+                <motion.div key={(playerCard.id || playerCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
+                  <GameCard card={playerCard} size="md" faceDown={faceDown} statusEffects={playerEffects} hpRatio={playerHpRatio} boost={boostPreview} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          <div className="flex-1 flex justify-end">
+            <DeckStack remaining={playerRemaining} />
+          </div>
         </div>
-        <div className="flex-1 flex justify-end">
-          <DeckStack remaining={playerRemaining} />
-        </div>
-      </div>
 
-      {!playerCard && playerHand.length > 0 && <PlayerHand hand={playerHand} onSelect={playCard} />}
+        {!playerCard && playerHand.length > 0 && <PlayerHand hand={playerHand} onSelect={playCard} />}
+      </div>
 
       <GraveyardPile cards={graveyardCards} />
       {reshuffleModalOpen && (

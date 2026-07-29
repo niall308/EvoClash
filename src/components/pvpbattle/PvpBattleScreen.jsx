@@ -160,36 +160,35 @@ export default function PvpBattleScreen({ matchCode }) {
         {match.phase === "battle" && !isMyTurn && <p className="text-white/40 text-xs mt-4">Waiting for {oppName}...</p>}
       </div>
 
-      <div
-        className="flex items-end justify-between px-4 gap-3"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 4.5rem)" }}
-      >
-        <div className="flex-1 flex justify-start">
-          {match.phase !== "matchEnd" && (
-            <PowerButtons user={user} activeKeys={activePowerUps} canUseMap={canUseMap} handlers={handlers} />
-          )}
-        </div>
-        <div className="flex flex-col items-center gap-2">
-          <LivesIndicator lives={myLives} />
-          {myCard?.id && (
-            <div className="w-40">
-              <HealthBar current={myHp} max={maxHealth(myCard)} label="You" />
-            </div>
-          )}
-          <AnimatePresence mode="wait">
-            {myCard?.id && (
-              <motion.div key={myCard.id + match.round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-                <GameCard card={myCard} size="md" faceDown={faceDown} hpRatio={Math.max(0, myHp / maxHealth(myCard))} boost={boostPreview} />
-              </motion.div>
+      <div style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 4.5rem)" }}>
+        <div className="flex items-end justify-between px-4 gap-3">
+          <div className="flex-1 flex justify-start">
+            {match.phase !== "matchEnd" && (
+              <PowerButtons user={user} activeKeys={activePowerUps} canUseMap={canUseMap} handlers={handlers} />
             )}
-          </AnimatePresence>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <LivesIndicator lives={myLives} />
+            {myCard?.id && (
+              <div className="w-40">
+                <HealthBar current={myHp} max={maxHealth(myCard)} label="You" />
+              </div>
+            )}
+            <AnimatePresence mode="wait">
+              {myCard?.id && (
+                <motion.div key={myCard.id + match.round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
+                  <GameCard card={myCard} size="md" faceDown={faceDown} hpRatio={Math.max(0, myHp / maxHealth(myCard))} boost={boostPreview} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          <div className="flex-1 flex justify-end">
+            <DeckStack remaining={myPoolRemaining} />
+          </div>
         </div>
-        <div className="flex-1 flex justify-end">
-          <DeckStack remaining={myPoolRemaining} />
-        </div>
-      </div>
 
-      {!myCard?.id && myHand.length > 0 && match.phase === "draw" && <PlayerHand hand={myHand} onSelect={playCard} />}
+        {!myCard?.id && myHand.length > 0 && match.phase === "draw" && <PlayerHand hand={myHand} onSelect={playCard} />}
+      </div>
 
       {reshuffleModalOpen && (
         <ReshuffleModal
