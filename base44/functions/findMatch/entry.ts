@@ -22,11 +22,20 @@ Deno.serve(async (req) => {
       return Response.json({ status: 'cancelled' });
     }
 
+    // A user's MatchQueue entry is only ever consumed once (read here and then acted
+    // on by the client). If it's left behind — e.g. the client closed/crashed right
+    // after matching instead of cleanly unmounting — a stale 'matched' entry from a
+    // long-finished match can otherwise be picked up by a brand new search, instantly
+    // "matching" the user into an already-finished match against their old opponent.
+    // Clean up ALL of this user's leftover entries the moment we find one, so every
+    // fresh search starts from a clean slate.
     const mine = await base44.entities.MatchQueue.filter({ created_by_id: user.id, matchType });
-    const myEntry = mine[0];
-    if (myEntry?.status === 'matched') {
-      return Response.json({ status: 'matched', matchCode: myEntry.matchCode });
+    const matchedEntry = mine.find((m) => m.status === 'matched');
+    if (matchedEntry) {
+      await Promise.all(mine.map((m) => base44.entities.MatchQueue.delete(m.id)));
+      return Response.json({ status: 'matched', matchCode: matchedEntry.matchCode });
     }
+    const myEntry = mine.find((m) => m.status === 'searching');
 
     const myRank = getRankIndex(user.rankPoints);
     const myWaitSeconds = myEntry ? (Date.now() - new Date(myEntry.created_date).getTime()) / 1000 : 0;

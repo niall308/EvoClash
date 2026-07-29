@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Check, X, Loader2, Clock, RotateCcw, Search } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
+import useSentBattleRequestAcceptance from "@/hooks/useSentBattleRequestAcceptance";
 import { useAuth } from "@/lib/AuthContext";
 
 const MAX_OFFLINE_MATCHES = 10;
@@ -14,12 +15,14 @@ export default function OfflineBattleSection() {
   const [recentOpponents, setRecentOpponents] = useState(null);
   const [activeMatches, setActiveMatches] = useState(null);
   const [sentRequestIds, setSentRequestIds] = useState([]);
+  const [pendingRequestIds, setPendingRequestIds] = useState([]);
   const [respondingId, setRespondingId] = useState(null);
   const [searching, setSearching] = useState(false);
   const pollRef = useRef(null);
   const searchingRef = useRef(false);
   const { requests: allRequests, refresh: refreshIncoming } = useIncomingBattleRequests();
   const incomingRequests = allRequests.filter((r) => r.matchType === "offline");
+  useSentBattleRequestAcceptance(pendingRequestIds, "offline");
   const filteredPlayers = players?.filter((p) => !recentOpponents?.some((r) => r.id === p.id));
 
   useEffect(() => {
@@ -66,11 +69,12 @@ export default function OfflineBattleSection() {
   const requestBattle = async (player) => {
     if (!user || atCap) return;
     setSentRequestIds((ids) => [...ids, player.id]);
-    await base44.functions.invoke("sendBattleInvite", {
+    const { data } = await base44.functions.invoke("sendBattleInvite", {
       toUserId: player.id,
       toUserName: player.full_name,
       matchType: "offline",
     });
+    if (data?.battleRequest?.id) setPendingRequestIds((ids) => [...ids, data.battleRequest.id]);
   };
 
   const respondToRequest = async (request, action) => {

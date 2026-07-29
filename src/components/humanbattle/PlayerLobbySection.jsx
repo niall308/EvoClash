@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Trophy, PlusCircle, Search, X, Loader2, Swords, Check, Clock } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
+import useSentBattleRequestAcceptance from "@/hooks/useSentBattleRequestAcceptance";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -14,6 +15,7 @@ export default function PlayerLobbySection() {
   const [recentOpponents, setRecentOpponents] = useState(null);
   const [searching, setSearching] = useState(false);
   const [sentRequestIds, setSentRequestIds] = useState([]);
+  const [pendingRequestIds, setPendingRequestIds] = useState([]);
   const [respondingId, setRespondingId] = useState(null);
   const [searchSeconds, setSearchSeconds] = useState(0);
   const pollRef = useRef(null);
@@ -21,6 +23,7 @@ export default function PlayerLobbySection() {
   const timerRef = useRef(null);
   const { requests: allRequests, refresh: refreshIncoming } = useIncomingBattleRequests();
   const incomingRequests = allRequests.filter((r) => r.matchType !== "offline");
+  useSentBattleRequestAcceptance(pendingRequestIds, "live");
   const filteredPlayers = players?.filter((p) => !recentOpponents?.some((r) => r.id === p.id));
 
   useEffect(() => {
@@ -36,11 +39,12 @@ export default function PlayerLobbySection() {
   const requestBattle = async (player) => {
     if (!user) return;
     setSentRequestIds((ids) => [...ids, player.id]);
-    await base44.functions.invoke("sendBattleInvite", {
+    const { data } = await base44.functions.invoke("sendBattleInvite", {
       toUserId: player.id,
       toUserName: player.full_name,
       matchType: "live",
     });
+    if (data?.battleRequest?.id) setPendingRequestIds((ids) => [...ids, data.battleRequest.id]);
   };
 
   const respondToRequest = async (request, action) => {
