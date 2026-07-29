@@ -6,6 +6,7 @@ import { getRankByRP } from "@/lib/rankSystem";
 import RankEmblem from "@/components/rank/RankEmblem";
 import { ensureActiveDeck } from "@/lib/decks";
 import { useAuth } from "@/lib/AuthContext";
+import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
 
 const DIFFICULTIES = ["Easy", "Normal", "Hard", "Extreme"];
 
@@ -14,6 +15,7 @@ export default function Play() {
   const { user } = useAuth();
   const [count, setCount] = useState(null);
   const [difficulty, setDifficulty] = useState("Normal");
+  const { requests: incomingBattles } = useIncomingBattleRequests();
 
   useEffect(() => {
     if (!user) return;
@@ -69,9 +71,14 @@ export default function Play() {
         <button
           onClick={() => ready && navigate("/human-battle")}
           disabled={!ready}
-          className="w-full flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-500 p-5 rounded-2xl font-bold text-left disabled:opacity-40"
+          className="relative w-full flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-500 p-5 rounded-2xl font-bold text-left disabled:opacity-40"
         >
           <Users className="w-8 h-8" /> Battle vs Human
+          {incomingBattles.length > 0 && (
+            <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full bg-red-500 border-2 border-[#0D1B2A] text-white text-[10px] font-bold">
+              {incomingBattles.length}
+            </span>
+          )}
         </button>
         <Link to="/leaderboards" className="w-full flex items-center gap-4 bg-gradient-to-r from-amber-500 to-yellow-600 p-5 rounded-2xl font-bold text-left">
           <Trophy className="w-8 h-8" /> Leaderboards
