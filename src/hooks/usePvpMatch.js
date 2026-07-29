@@ -28,6 +28,8 @@ export default function usePvpMatch(matchCode) {
   const [user, setUser] = useState(null);
   const [powerUsedThisTurn, setPowerUsedThisTurn] = useState(false);
   const [reshuffleModalOpen, setReshuffleModalOpen] = useState(false);
+  const [effect, setEffect] = useState(null);
+  const prevHpRef = useRef({ my: null, opp: null, round: null });
 
   useEffect(() => {
     (async () => {
@@ -75,6 +77,23 @@ export default function usePvpMatch(matchCode) {
   const myPool = match?.[`${myRole}Pool`] || [];
   const oppPool = match?.[`${oppRole}Pool`] || [];
   const pendingHybrid = match?.[`${myRole}PendingHybrid`];
+
+  // Detect HP drops between renders to trigger attack/hit animations — works for
+  // both the attacker's and defender's clients since both read the same match state.
+  useEffect(() => {
+    if (!match || !myRole) return;
+    const myHpNow = match[`${myRole}Hp`] || 0;
+    const oppHpNow = match[`${oppRole}Hp`] || 0;
+    const prev = prevHpRef.current;
+    if (prev.round === match.round && prev.my !== null && prev.opp !== null) {
+      if (oppHpNow < prev.opp) {
+        setEffect({ key: Date.now(), side: "opp", value: prev.opp - oppHpNow });
+      } else if (myHpNow < prev.my) {
+        setEffect({ key: Date.now(), side: "me", value: prev.my - myHpNow });
+      }
+    }
+    prevHpRef.current = { my: myHpNow, opp: oppHpNow, round: match.round };
+  }, [match?.[myRole ? `${myRole}Hp` : ""], match?.[oppRole ? `${oppRole}Hp` : ""], match?.round, myRole, oppRole]);
 
   // Only one power-up per turn — reset the moment it becomes my turn.
   useEffect(() => {
@@ -553,5 +572,6 @@ export default function usePvpMatch(matchCode) {
     forceOpponentRedrawPower,
     boostPreview,
     turnTimeLeft,
+    effect,
   };
 }

@@ -6,7 +6,7 @@ import PlayerLobbySection from "@/components/humanbattle/PlayerLobbySection";
 import OfflineBattleSection from "@/components/humanbattle/OfflineBattleSection";
 import FriendsSection from "@/components/profile/FriendsSection";
 
-const TABS = [
+const ALL_TABS = [
   { key: "lobby", label: "Live", icon: Users },
   { key: "offline", label: "Offline", icon: Clock },
   { key: "friends", label: "Friends", icon: UserPlus },
@@ -14,7 +14,9 @@ const TABS = [
 
 export default function HumanBattle() {
   const { user, updateUser } = useAuth();
-  const [tab, setTab] = useState("lobby");
+  const isAdmin = user?.role === "admin";
+  const TABS = isAdmin ? ALL_TABS : ALL_TABS.filter((t) => t.key !== "lobby");
+  const [tab, setTab] = useState(isAdmin ? "lobby" : "offline");
 
   if (!user) return null;
 
@@ -25,7 +27,7 @@ export default function HumanBattle() {
       </Link>
       <h1 className="text-3xl font-black mb-6">Battle vs Human</h1>
 
-      <div className="grid grid-cols-3 gap-2 mb-6 bg-white/5 rounded-2xl p-1">
+      <div className={`grid gap-2 mb-6 bg-white/5 rounded-2xl p-1 ${isAdmin ? "grid-cols-3" : "grid-cols-2"}`}>
         {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}

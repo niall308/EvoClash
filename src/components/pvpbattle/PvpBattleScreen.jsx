@@ -6,6 +6,8 @@ import HealthBar from "@/components/battle/HealthBar";
 import DeckStack from "@/components/battle/DeckStack";
 import LivesIndicator from "@/components/battle/LivesIndicator";
 import RpsPicker from "@/components/battle/RpsPicker";
+import AttackArrow from "@/components/battle/AttackArrow";
+import DamageNumber from "@/components/battle/DamageNumber";
 import ForfeitModal from "@/components/battle/ForfeitModal";
 import PlayerHand from "@/components/battle/PlayerHand";
 import PowerButtons from "@/components/battle/PowerButtons";
@@ -42,6 +44,7 @@ export default function PvpBattleScreen({ matchCode }) {
     forceOpponentRedrawPower,
     boostPreview,
     turnTimeLeft,
+    effect,
   } = usePvpMatch(matchCode);
   const [showForfeitModal, setShowForfeitModal] = useState(false);
 
@@ -116,6 +119,8 @@ export default function PvpBattleScreen({ matchCode }) {
       </div>
 
       <div className="flex-1 relative flex flex-col items-center justify-center px-4">
+        <AttackArrow direction={effect?.side === "me" ? "up" : "down"} color={effect?.side === "me" ? "#FF4500" : "#00BFFF"} trigger={effect?.key} />
+        <DamageNumber value={effect?.value} trigger={effect?.key} />
         <p className="text-center text-sm text-white/70 max-w-xs">{match.log}</p>
         {match.phase === "rps" && (
           <div className="mt-4">
