@@ -10,13 +10,19 @@ Deno.serve(async (req) => {
     const q = (query || '').trim();
     if (!q) return Response.json({ error: 'Missing query' }, { status: 400 });
 
-    const fields = ['username', 'friendCode', 'email'];
     let match = null;
-    for (const field of fields) {
-      const results = await base44.asServiceRole.entities.User.filter({ [field]: q }, undefined, 1);
-      if (results.length > 0) {
-        match = results[0];
-        break;
+
+    // Username lookup is case-insensitive since entity filters do exact matching.
+    const allUsers = await base44.asServiceRole.entities.User.list(undefined, 1000);
+    match = allUsers.find((u) => (u.username || '').toLowerCase() === q.toLowerCase());
+
+    if (!match) {
+      for (const field of ['friendCode', 'email']) {
+        const results = await base44.asServiceRole.entities.User.filter({ [field]: q }, undefined, 1);
+        if (results.length > 0) {
+          match = results[0];
+          break;
+        }
       }
     }
 
