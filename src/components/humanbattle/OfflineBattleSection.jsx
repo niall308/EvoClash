@@ -119,6 +119,8 @@ export default function OfflineBattleSection() {
             const oppName = m.player1Id === user.id ? m.player2Name : m.player1Name;
             const myScore = m.player1Id === user.id ? m.scoreP1 : m.scoreP2;
             const oppScore = m.player1Id === user.id ? m.scoreP2 : m.scoreP1;
+            const myRole = m.player1Id === user.id ? "player1" : "player2";
+            const isMyTurn = m.turn === myRole;
             return (
               <button
                 key={m.id}
@@ -131,8 +133,8 @@ export default function OfflineBattleSection() {
                     Round {m.round} — You {myScore} : {oppScore} {oppName}
                   </p>
                 </div>
-                <span className="flex items-center gap-1 text-xs font-bold text-amber-400">
-                  <RotateCcw className="w-3.5 h-3.5" /> Resume
+                <span className={`flex items-center gap-1 text-xs font-bold ${isMyTurn ? "text-amber-400" : "text-white/50"}`}>
+                  <RotateCcw className="w-3.5 h-3.5" /> {isMyTurn ? "Your Turn" : "Their Turn"}
                 </span>
               </button>
             );
