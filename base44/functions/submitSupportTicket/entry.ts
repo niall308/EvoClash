@@ -23,7 +23,7 @@ Issue Description:
 ${description}`;
 
     await base44.integrations.Core.SendEmail({
-      to: 'niallmcs95@gmail.com',
+      to: 'evo.clash1916@gmail.com',
       subject: `EvoClash Support ${title}`,
       body,
     });
