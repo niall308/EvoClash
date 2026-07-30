@@ -15,7 +15,7 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
   const isHybrid = card.isHybrid;
   const Icon = isHybrid ? HelpCircle : TYPE_ICONS[card.type] || Sparkles;
   const color = isHybrid ? "#FFD700" : TYPE_COLORS[card.type];
-  const sizes = { xs: "w-14 h-20", hand: "w-16 h-24", sm: "w-20 h-28", md: "w-32 h-44", lg: "w-40 h-56" };
+  const sizes = { xs: "w-14 h-20", hand: "w-24 h-36", sm: "w-20 h-28", md: "w-32 h-44", lg: "w-40 h-56" };
   const intensity = Math.min(0.85, 0.3 + (1 - hpRatio) * 0.55);
   const effectGroups = [...new Set(statusEffects.map((t) => TYPE_EFFECT_GROUP[t]).filter(Boolean))];
   const isFading = effectGroups.includes("fade") || effectGroups.includes("dissolve");

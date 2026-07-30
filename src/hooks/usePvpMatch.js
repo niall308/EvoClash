@@ -95,6 +95,14 @@ export default function usePvpMatch(matchCode) {
     prevHpRef.current = { my: myHpNow, opp: oppHpNow, round: match.round };
   }, [match?.[myRole ? `${myRole}Hp` : ""], match?.[oppRole ? `${oppRole}Hp` : ""], match?.round, myRole, oppRole]);
 
+  // Auto-clear the hit effect (attack arrow + damage number) after it plays, so it
+  // doesn't stay stuck on screen.
+  useEffect(() => {
+    if (!effect) return;
+    const t = setTimeout(() => setEffect(null), 1200);
+    return () => clearTimeout(t);
+  }, [effect?.key]);
+
   // Only one power-up per turn — reset the moment it becomes my turn.
   useEffect(() => {
     if (match?.turn === myRole) setPowerUsedThisTurn(false);
