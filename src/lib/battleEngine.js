@@ -19,5 +19,5 @@ export function computeDamage(attacker, defender, attackMultiplier = 1, defenseM
 }
 
 export function maxHealth(card) {
-  return Math.round(card.attack + card.defense * 1.5);
+  return Math.round(card.attack + card.defense * 1.2);
 }
