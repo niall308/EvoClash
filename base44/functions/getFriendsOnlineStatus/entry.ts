@@ -12,12 +12,19 @@ Deno.serve(async (req) => {
     const { userIds } = await req.json();
     if (!Array.isArray(userIds) || userIds.length === 0) return Response.json({ statuses: [] });
 
+    // Only allow checking the status of users who are actually the caller's friends,
+    // so this endpoint can't be used to track arbitrary users' presence.
+    const friends = await base44.entities.Friend.filter({ created_by_id: user.id });
+    const friendIds = new Set(friends.map((f) => f.friendUserId));
+    const allowedIds = userIds.filter((id) => friendIds.has(id));
+    if (allowedIds.length === 0) return Response.json({ statuses: [] });
+
     const now = Date.now();
     const users = await Promise.all(
-      userIds.map((id) => base44.asServiceRole.entities.User.filter({ id }, undefined, 1))
+      allowedIds.map((id) => base44.asServiceRole.entities.User.filter({ id }, undefined, 1))
     );
 
-    const statuses = userIds.map((id, i) => {
+    const statuses = allowedIds.map((id, i) => {
       const u = users[i]?.[0];
       const online = u?.lastSeenAt ? now - new Date(u.lastSeenAt).getTime() < ONLINE_WINDOW_MS : false;
       return { id, online };
