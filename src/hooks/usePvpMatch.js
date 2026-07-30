@@ -85,7 +85,10 @@ export default function usePvpMatch(matchCode) {
     const myHpNow = match[`${myRole}Hp`] || 0;
     const oppHpNow = match[`${oppRole}Hp`] || 0;
     const prev = prevHpRef.current;
-    if (prev.my !== null && prev.opp !== null) {
+    // Only ever show the hit animation while a battle is actually in progress — otherwise
+    // a card drawn/selected during the "draw" phase (Hp going from 0 up to its max) can
+    // race with a late-arriving update and get misread as a hit.
+    if (match.phase === "battle" && prev.my !== null && prev.opp !== null) {
       if (oppHpNow < prev.opp) {
         setEffect({ key: Date.now(), side: "opp", value: prev.opp - oppHpNow });
       } else if (myHpNow < prev.my) {
@@ -93,7 +96,7 @@ export default function usePvpMatch(matchCode) {
       }
     }
     prevHpRef.current = { my: myHpNow, opp: oppHpNow, round: match.round };
-  }, [match?.[myRole ? `${myRole}Hp` : ""], match?.[oppRole ? `${oppRole}Hp` : ""], match?.round, myRole, oppRole]);
+  }, [match?.[myRole ? `${myRole}Hp` : ""], match?.[oppRole ? `${oppRole}Hp` : ""], match?.round, myRole, oppRole, match?.phase]);
 
   // Auto-clear the hit effect (attack arrow + damage number) after it plays, so it
   // doesn't stay stuck on screen.
