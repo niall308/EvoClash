@@ -4,12 +4,16 @@ import { Eye } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import RankEmblem from "@/components/rank/RankEmblem";
 import LobbyPreviewModal from "@/components/humanbattle/LobbyPreviewModal";
+import LobbyFilterBar from "@/components/humanbattle/LobbyFilterBar";
+import { getRankByRP } from "@/lib/rankSystem";
 
 // Publicly listed open offline lobbies anyone can browse and join.
 export default function OpenLobbiesList() {
   const navigate = useNavigate();
   const [lobbies, setLobbies] = useState(null);
   const [previewLobby, setPreviewLobby] = useState(null);
+  const [search, setSearch] = useState("");
+  const [tierFilter, setTierFilter] = useState("all");
   const pollRef = useRef(null);
 
   const refresh = () => base44.functions.invoke("getOpenLobbies", {}).then(({ data }) => setLobbies(data?.lobbies || []));
@@ -20,13 +24,25 @@ export default function OpenLobbiesList() {
     return () => clearInterval(pollRef.current);
   }, []);
 
+  const filteredLobbies = lobbies?.filter((l) => {
+    const matchesSearch = l.hostName.toLowerCase().includes(search.trim().toLowerCase());
+    const matchesTier = tierFilter === "all" || getRankByRP(l.rankPoints).name === tierFilter;
+    return matchesSearch && matchesTier;
+  });
+
   return (
     <div className="mb-6">
       <p className="text-white/50 text-xs font-semibold mb-2">Open Lobbies</p>
+      {lobbies?.length > 0 && (
+        <LobbyFilterBar search={search} onSearchChange={setSearch} tierFilter={tierFilter} onTierFilterChange={setTierFilter} />
+      )}
       {lobbies === null && <p className="text-white/50 text-sm">Loading lobbies...</p>}
       {lobbies?.length === 0 && <p className="text-white/40 text-sm">No open lobbies right now — create one!</p>}
+      {lobbies?.length > 0 && filteredLobbies.length === 0 && (
+        <p className="text-white/40 text-sm">No lobbies match your search.</p>
+      )}
       <div className="space-y-2">
-        {lobbies?.map((l) => (
+        {filteredLobbies?.map((l) => (
           <button
             key={l.id}
             onClick={() => setPreviewLobby(l)}
