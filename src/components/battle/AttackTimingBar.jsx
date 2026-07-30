@@ -11,15 +11,22 @@ const SEGMENTS = [
   { start: 65, end: 85, color: "#eab308", multiplier: 1.0 },
   { start: 85, end: 100, color: "#ef4444", multiplier: 0.8 },
 ];
-const DURATION_MS = 1500;
+const DURATION_MS = 1200;
 
 function segmentAt(pct) {
   return SEGMENTS.find((s) => pct >= s.start && pct <= s.end) || SEGMENTS[0];
 }
 
+// Eases the slider so it moves fastest through the middle of the bar and slows
+// down as it approaches either side.
+function ease(t) {
+  return (1 - Math.cos(Math.PI * t)) / 2;
+}
+
 // Timing minigame that replaces the plain Attack button: a slider bounces left-right
-// across a red→yellow→green→blue→green→yellow→red bar every 1.5s. Tapping Attack
-// locks the slider and reports the landed segment's damage multiplier via onLock.
+// across a red→yellow→green→blue→green→yellow→red bar, taking 1.2s per full
+// left-to-right sweep. Tapping Attack locks the slider and reports the landed
+// segment's damage multiplier via onLock.
 export default function AttackTimingBar({ onLock }) {
   const [pct, setPct] = useState(0);
   const rafRef = useRef(null);
@@ -29,7 +36,9 @@ export default function AttackTimingBar({ onLock }) {
     const tick = (now) => {
       if (startRef.current === null) startRef.current = now;
       const elapsed = (now - startRef.current) % (DURATION_MS * 2);
-      const p = elapsed <= DURATION_MS ? (elapsed / DURATION_MS) * 100 : 100 - ((elapsed - DURATION_MS) / DURATION_MS) * 100;
+      const forward = elapsed <= DURATION_MS;
+      const t = forward ? elapsed / DURATION_MS : (elapsed - DURATION_MS) / DURATION_MS;
+      const p = (forward ? ease(t) : 1 - ease(t)) * 100;
       setPct(p);
       rafRef.current = requestAnimationFrame(tick);
     };
