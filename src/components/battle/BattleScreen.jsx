@@ -14,6 +14,7 @@ import ForfeitModal from "@/components/battle/ForfeitModal";
 import PowerButtons from "@/components/battle/PowerButtons";
 import ReshuffleModal from "@/components/battle/ReshuffleModal";
 import TypeChoiceModal from "@/components/battle/TypeChoiceModal";
+import AttackTimingBar from "@/components/battle/AttackTimingBar";
 import { maxHealth } from "@/lib/battleEngine";
 import { Swords, Flag, Play, Zap, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -73,7 +74,12 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
   const playerLives = Math.max(0, 3 - score.ai);
   const aiLives = Math.max(0, 3 - score.player);
   const [showForfeitModal, setShowForfeitModal] = useState(false);
+  const [readied, setReadied] = useState(false);
   const faceDown = !rpsDone && (phase === "draw" || phase === "rps");
+
+  React.useEffect(() => {
+    if (!(phase === "battle" && turn === "player")) setReadied(false);
+  }, [phase, turn]);
 
   return (
     <div className="min-h-screen flex flex-col text-white" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
@@ -157,12 +163,21 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
                 <Zap className="w-3.5 h-3.5" /> Tier Upgrade ready!
               </span>
             )}
-            <button
-              onClick={() => attack("player")}
-              className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform"
-            >
-              <Swords className="w-5 h-5" /> Attack
-            </button>
+            {readied ? (
+              <AttackTimingBar
+                onLock={(multiplier) => {
+                  setReadied(false);
+                  attack("player", multiplier);
+                }}
+              />
+            ) : (
+              <button
+                onClick={() => setReadied(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform"
+              >
+                <Swords className="w-5 h-5" /> Ready
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -170,7 +185,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
       <div style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}>
         <div className="flex items-end justify-between px-4 gap-3">
           <div className="flex-1 flex justify-start">
-            {phase !== "matchEnd" && (
+            {phase !== "matchEnd" && !readied && (
               <PowerButtons user={user} activeKeys={activePowerUps} canUseMap={canUseMap} handlers={handlers} />
             )}
           </div>

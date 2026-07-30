@@ -266,7 +266,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   );
 
   const attack = useCallback(
-    async (attackerSide) => {
+    async (attackerSide, timingMultiplier = 1) => {
       if (busyRef.current || phase !== "battle") return;
       busyRef.current = true;
       if (attackerSide === "player") consecutiveTimeoutsRef.current = 0;
@@ -304,7 +304,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
 
       const result = usingBlock || usingNegate || usingDivineProtection
         ? { tie: false, recoil: false, damage: 0, isCrit: false }
-        : computeDamage(attacker, defender, usingDoubleAttack ? 2 : 1, defenseMultiplier, {
+        : computeDamage(attacker, defender, (usingDoubleAttack ? 2 : 1) * (attackerSide === "player" ? timingMultiplier : 1), defenseMultiplier, {
             ignoreDefensePercent: usingIgnoreDefense ? pfx.ignoreDefensePercent : 0,
             trueDamage: usingTrueDamage,
             forceCrit: usingGuaranteedCrit,

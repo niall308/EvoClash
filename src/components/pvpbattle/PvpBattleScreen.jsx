@@ -13,6 +13,7 @@ import PlayerHand from "@/components/battle/PlayerHand";
 import PowerButtons from "@/components/battle/PowerButtons";
 import ReshuffleModal from "@/components/battle/ReshuffleModal";
 import TypeChoiceModal from "@/components/battle/TypeChoiceModal";
+import AttackTimingBar from "@/components/battle/AttackTimingBar";
 import PvpMatchEndModal from "@/components/pvpbattle/PvpMatchEndModal";
 import BottomNav from "@/components/layout/BottomNav";
 import { maxHealth } from "@/lib/battleEngine";
@@ -47,6 +48,11 @@ export default function PvpBattleScreen({ matchCode }) {
     effect,
   } = usePvpMatch(matchCode);
   const [showForfeitModal, setShowForfeitModal] = useState(false);
+  const [readied, setReadied] = useState(false);
+
+  React.useEffect(() => {
+    if (!(match?.phase === "battle" && match?.turn === myRole)) setReadied(false);
+  }, [match?.phase, match?.turn, myRole]);
 
   if (!match || !myRole) {
     return (
@@ -154,12 +160,21 @@ export default function PvpBattleScreen({ matchCode }) {
                 <Zap className="w-3.5 h-3.5" /> Tier Upgrade ready!
               </span>
             )}
-            <button
-              onClick={attack}
-              className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform"
-            >
-              <Swords className="w-5 h-5" /> Attack
-            </button>
+            {readied ? (
+              <AttackTimingBar
+                onLock={(multiplier) => {
+                  setReadied(false);
+                  attack(multiplier);
+                }}
+              />
+            ) : (
+              <button
+                onClick={() => setReadied(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform"
+              >
+                <Swords className="w-5 h-5" /> Ready
+              </button>
+            )}
           </div>
         )}
         {match.phase === "battle" && !isMyTurn && <p className="text-white/40 text-xs mt-4">Waiting for {oppName}...</p>}
@@ -168,7 +183,7 @@ export default function PvpBattleScreen({ matchCode }) {
       <div style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 4.5rem)" }}>
         <div className="flex items-end justify-between px-4 gap-3">
           <div className="flex-1 flex justify-start">
-            {match.phase !== "matchEnd" && (
+            {match.phase !== "matchEnd" && !readied && (
               <PowerButtons user={user} activeKeys={activePowerUps} canUseMap={canUseMap} handlers={handlers} />
             )}
           </div>

@@ -209,7 +209,7 @@ export default function usePvpMatch(matchCode) {
     [match, myRole, pendingHybrid, updateMatch]
   );
 
-  const attack = useCallback(async () => {
+  const attack = useCallback(async (timingMultiplier = 1) => {
     if (!match || match.phase !== "battle" || match.turn !== myRole) return;
     let attacker = match[`${myRole}Card`];
     const defender = match[`${oppRole}Card`];
@@ -225,7 +225,7 @@ export default function usePvpMatch(matchCode) {
 
     const result = usingBlock
       ? { tie: false, recoil: false, damage: 0, isCrit: false }
-      : computeDamage(attacker, defender, usingDoubleAttack ? 2 : 1, usingTripleDefense ? 3 : 1);
+      : computeDamage(attacker, defender, (usingDoubleAttack ? 2 : 1) * timingMultiplier, usingTripleDefense ? 3 : 1);
 
     const buffUpdates = {};
     if (usingDoubleAttack) buffUpdates[`${myRole}DoubleAttackActive`] = false;
