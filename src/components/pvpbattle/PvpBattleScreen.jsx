@@ -71,7 +71,7 @@ export default function PvpBattleScreen({ matchCode }) {
   const oppScore = oppRole === "player1" ? match.scoreP1 : match.scoreP2;
   const myPoolRemaining =
     (match[`${myRole}Pool`] || []).length + (match[`${myRole}Hand`] || []).length + (myCard?.id ? 1 : 0);
-  const isMyTurn = match.turn === myRole && match.phase === "battle";
+  const isMyTurn = match.turn === myRole && match.phase === "battle" && !!myCard?.id && !!oppCard?.id;
   const faceDown = !match.rpsDone && (match.phase === "draw" || match.phase === "rps");
   const myLives = Math.max(0, 3 - oppScore);
   const oppLives = Math.max(0, 3 - myScore);
@@ -128,7 +128,7 @@ export default function PvpBattleScreen({ matchCode }) {
       </div>
 
       <div className="flex-1 relative flex flex-col items-center justify-center px-4">
-        <AttackArrow direction={effect?.side === "me" ? "up" : "down"} color={effect?.side === "me" ? "#FF4500" : "#00BFFF"} trigger={effect?.key} />
+        <AttackArrow direction={effect?.side === "opp" ? "up" : "down"} color={effect?.side === "opp" ? "#FF4500" : "#00BFFF"} trigger={effect?.key} />
         <DamageNumber value={effect?.value} trigger={effect?.key} />
         <p className="text-center text-sm text-white/70 max-w-xs">{match.log}</p>
         {match.phase === "rps" && (

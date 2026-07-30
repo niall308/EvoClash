@@ -41,12 +41,30 @@ export default function usePvpMatch(matchCode) {
     })();
   }, [matchCode]);
 
+  // Realtime events and the poll fallback below can arrive out of order (a poll
+  // in flight can resolve with a snapshot taken before a realtime update already
+  // applied locally). Applying an older snapshot on top of newer state makes HP/
+  // card fields momentarily "revert" — which the hit-detection effect below then
+  // misreads as a real attack, flashing a bogus damage number/arrow, or briefly
+  // showing a card as missing (NaN damage if the player attacks during that blip).
+  // Guard every incoming snapshot so it's only applied when it's not older than
+  // what we already have.
+  const applyIncoming = useCallback((incoming) => {
+    if (!incoming) return;
+    setMatch((prev) => {
+      if (!prev || prev.id !== incoming.id) return incoming;
+      const prevTime = new Date(prev.updated_date || prev.created_date).getTime();
+      const incomingTime = new Date(incoming.updated_date || incoming.created_date).getTime();
+      return incomingTime >= prevTime ? incoming : prev;
+    });
+  }, []);
+
   useEffect(() => {
     const unsubscribe = base44.entities.PvpMatch.subscribe((event) => {
-      if (event.data?.code === matchCode) setMatch(event.data);
+      if (event.data?.code === matchCode) applyIncoming(event.data);
     });
     return unsubscribe;
-  }, [matchCode]);
+  }, [matchCode, applyIncoming]);
 
   // Realtime events can occasionally be missed by a client (dropped socket, tab
   // backgrounded, etc). Poll as a fallback so the match keeps moving without
@@ -54,10 +72,10 @@ export default function usePvpMatch(matchCode) {
   useEffect(() => {
     const interval = setInterval(async () => {
       const matches = await base44.entities.PvpMatch.filter({ code: matchCode });
-      if (matches[0]) setMatch(matches[0]);
+      if (matches[0]) applyIncoming(matches[0]);
     }, 1500);
     return () => clearInterval(interval);
-  }, [matchCode]);
+  }, [matchCode, applyIncoming]);
 
   // Applies a change to the match instantly in local state (so the acting player
   // sees the result immediately, with no round-trip wait), then persists it in
@@ -218,6 +236,7 @@ export default function usePvpMatch(matchCode) {
     if (!match || match.phase !== "battle" || match.turn !== myRole) return;
     let attacker = match[`${myRole}Card`];
     const defender = match[`${oppRole}Card`];
+    if (!attacker?.id || !defender?.id) return;
     const usingDoubleAttack = !!match[`${myRole}DoubleAttackActive`];
     const usingTripleDefense = !!match[`${oppRole}TripleDefenseActive`];
     const usingBlock = !!match[`${oppRole}BlockActive`];
