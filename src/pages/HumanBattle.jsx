@@ -17,7 +17,7 @@ export default function HumanBattle() {
   const { user, updateUser } = useAuth();
   const isAdmin = user?.role === "admin";
   const TABS = isAdmin ? ALL_TABS : ALL_TABS.filter((t) => t.key !== "lobby");
-  const [tab, setTab] = useState(isAdmin ? "lobby" : "offline");
+  const [tab, setTab] = useState("offline");
   const { matches: offlineMatches } = useOfflineMatches();
   const myTurnCount = user ? offlineMatches.filter((m) => isMyTurnInMatch(m, user.id)).length : 0;
 
