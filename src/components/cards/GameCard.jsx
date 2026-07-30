@@ -84,8 +84,8 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
         <p className="text-white font-bold text-[11px] leading-tight truncate">{card.name}</p>
         <div className="flex items-center justify-center gap-1 mt-1 text-[11px] font-semibold">
           <Icon className="w-2.5 h-2.5" style={{ color }} />
-          <span className={boost?.attack ? "text-yellow-300 animate-pulse" : "text-orange-300"}>A{boost?.attack || card.attack}</span>
-          <span className={boost?.defense ? "text-yellow-300 animate-pulse" : "text-blue-300"}>D{boost?.defense || card.defense}</span>
+          <span className={boost?.attack ? "text-yellow-300 animate-pulse ring-1 ring-amber-400 rounded px-1" : "text-orange-300"}>A{boost?.attack || card.attack}</span>
+          <span className={boost?.defense ? "text-yellow-300 animate-pulse ring-1 ring-amber-400 rounded px-1" : "text-blue-300"}>D{boost?.defense || card.defense}</span>
         </div>
         {card.bonusDamage > 0 && (
           <div className="flex items-center justify-center gap-1 text-[11px] text-yellow-300">

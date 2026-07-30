@@ -4,6 +4,7 @@ import { Check, X, Loader2, Clock, RotateCcw, Search, PlusCircle } from "lucide-
 import { base44 } from "@/api/base44Client";
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
 import useSentBattleRequestAcceptance from "@/hooks/useSentBattleRequestAcceptance";
+import useOfflineMatches, { isMyTurnInMatch } from "@/hooks/useOfflineMatches";
 import { useAuth } from "@/lib/AuthContext";
 import OpenLobbiesList from "@/components/humanbattle/OpenLobbiesList";
 
@@ -14,7 +15,8 @@ export default function OfflineBattleSection() {
   const { user } = useAuth();
   const [players, setPlayers] = useState(null);
   const [recentOpponents, setRecentOpponents] = useState(null);
-  const [activeMatches, setActiveMatches] = useState(null);
+  const { matches: activeMatchesLive, loaded: activeMatchesLoaded } = useOfflineMatches();
+  const activeMatches = activeMatchesLoaded ? activeMatchesLive : null;
   const [sentRequestIds, setSentRequestIds] = useState([]);
   const [pendingRequestIds, setPendingRequestIds] = useState([]);
   const [respondingId, setRespondingId] = useState(null);
@@ -30,10 +32,6 @@ export default function OfflineBattleSection() {
     if (!user) return;
     base44.functions.invoke("getLobbyPlayers", {}).then(({ data }) => setPlayers(data?.players || []));
     base44.functions.invoke("getRecentOpponents", {}).then(({ data }) => setRecentOpponents(data?.opponents || []));
-    Promise.all([
-      base44.entities.PvpMatch.filter({ player1Id: user.id, matchType: "offline", status: "active" }),
-      base44.entities.PvpMatch.filter({ player2Id: user.id, matchType: "offline", status: "active" }),
-    ]).then(([asP1, asP2]) => setActiveMatches([...asP1, ...asP2]));
     return () => {
       clearInterval(pollRef.current);
       if (searchingRef.current) base44.functions.invoke("findMatch", { action: "cancel", matchType: "offline" });
@@ -134,8 +132,7 @@ export default function OfflineBattleSection() {
             const oppName = m.player1Id === user.id ? m.player2Name : m.player1Name;
             const myScore = m.player1Id === user.id ? m.scoreP1 : m.scoreP2;
             const oppScore = m.player1Id === user.id ? m.scoreP2 : m.scoreP1;
-            const myRole = m.player1Id === user.id ? "player1" : "player2";
-            const isMyTurn = m.turn === myRole;
+            const isMyTurn = isMyTurnInMatch(m, user.id);
             return (
               <button
                 key={m.id}

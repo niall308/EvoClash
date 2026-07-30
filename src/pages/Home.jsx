@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/AuthContext";
 import useClaimableMilestones from "@/hooks/useClaimableMilestones";
 import useIncomingTradeRequests from "@/hooks/useIncomingTradeRequests";
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
+import useOfflineMatches, { isMyTurnInMatch } from "@/hooks/useOfflineMatches";
 import DailyMissionsSection from "@/components/home/DailyMissionsSection";
 
 const BUTTONS = [
@@ -23,6 +24,9 @@ export default function Home() {
   const hasClaimableMilestones = useClaimableMilestones(user);
   const { requests: incomingTrades } = useIncomingTradeRequests();
   const { requests: incomingBattles } = useIncomingBattleRequests();
+  const { matches: offlineMatches } = useOfflineMatches();
+  const myTurnCount = user ? offlineMatches.filter((m) => isMyTurnInMatch(m, user.id)).length : 0;
+  const playNotifCount = incomingBattles.length + myTurnCount;
 
   useEffect(() => {
     if (user && !hasMarkedSeen.current) {
@@ -40,9 +44,9 @@ export default function Home() {
         {BUTTONS.map(({ to, label, icon: Icon, color }) => (
           <Link key={to} to={to} className={`relative flex items-center gap-4 bg-gradient-to-r ${color} rounded-2xl p-5 font-bold shadow-lg active:scale-95 transition-transform`}>
             <Icon className="w-6 h-6" /> {label}
-            {to === "/play" && incomingBattles.length > 0 && (
+            {to === "/play" && playNotifCount > 0 && (
               <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full bg-red-500 border-2 border-[#0D1B2A] text-white text-[10px] font-bold">
-                {incomingBattles.length}
+                {playNotifCount}
               </span>
             )}
             {to === "/profile" && hasClaimableMilestones && (

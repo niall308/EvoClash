@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import PlayerLobbySection from "@/components/humanbattle/PlayerLobbySection";
 import OfflineBattleSection from "@/components/humanbattle/OfflineBattleSection";
 import FriendsSection from "@/components/profile/FriendsSection";
+import useOfflineMatches, { isMyTurnInMatch } from "@/hooks/useOfflineMatches";
 
 const ALL_TABS = [
   { key: "lobby", label: "Live", icon: Users },
@@ -17,6 +18,8 @@ export default function HumanBattle() {
   const isAdmin = user?.role === "admin";
   const TABS = isAdmin ? ALL_TABS : ALL_TABS.filter((t) => t.key !== "lobby");
   const [tab, setTab] = useState(isAdmin ? "lobby" : "offline");
+  const { matches: offlineMatches } = useOfflineMatches();
+  const myTurnCount = user ? offlineMatches.filter((m) => isMyTurnInMatch(m, user.id)).length : 0;
 
   if (!user) return null;
 
@@ -32,11 +35,16 @@ export default function HumanBattle() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex items-center justify-center gap-1.5 py-3 rounded-xl text-xs font-bold transition-colors ${
+            className={`relative flex items-center justify-center gap-1.5 py-3 rounded-xl text-xs font-bold transition-colors ${
               tab === key ? "bg-gradient-to-r from-blue-600 to-cyan-500" : "text-white/50"
             }`}
           >
             <Icon className="w-4 h-4" /> {label}
+            {key === "offline" && myTurnCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold">
+                {myTurnCount}
+              </span>
+            )}
           </button>
         ))}
       </div>

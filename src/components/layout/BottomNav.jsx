@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Swords, Layers, Sparkles, User, ArrowLeftRight, Coins } from "lucide-react";
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
 import useIncomingTradeRequests from "@/hooks/useIncomingTradeRequests";
+import useOfflineMatches, { isMyTurnInMatch } from "@/hooks/useOfflineMatches";
 import useClaimableMilestones from "@/hooks/useClaimableMilestones";
 import { useAuth } from "@/lib/AuthContext";
 import { getActiveTabPath, getLastTabPath } from "@/lib/tabNavigation";
@@ -23,6 +24,9 @@ export default function BottomNav() {
   const { requests: incomingTrades } = useIncomingTradeRequests();
   const { user } = useAuth();
   const hasClaimableMilestones = useClaimableMilestones(user);
+  const { matches: offlineMatches } = useOfflineMatches();
+  const myTurnCount = user ? offlineMatches.filter((m) => isMyTurnInMatch(m, user.id)).length : 0;
+  const playNotifCount = requests.length + myTurnCount;
 
   return (
     <nav
@@ -40,9 +44,9 @@ export default function BottomNav() {
           >
             <div className="relative">
               <Icon className={`w-5 h-5 ${active ? "text-amber-400" : "text-white/40"}`} />
-              {tab.path === "/" && requests.length > 0 && (
+              {tab.path === "/" && playNotifCount > 0 && (
                 <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold">
-                  {requests.length}
+                  {playNotifCount}
                 </span>
               )}
               {tab.path === "/profile" && hasClaimableMilestones && (
