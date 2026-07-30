@@ -59,6 +59,14 @@ Deno.serve(async (req) => {
       player2Pool: shuffle(myCards).slice(0, 15),
     });
 
+    if (hostUser.email && hostUser.notifyEmails === true && hostUser.notifyLobbyJoin === true) {
+      await base44.asServiceRole.integrations.Core.SendEmail({
+        to: hostUser.email,
+        subject: 'Someone joined your lobby!',
+        body: `${user.username || user.full_name} joined your EvoClash lobby and the match has started!`,
+      });
+    }
+
     return Response.json({ code: lobby.code });
   } catch (error) {
     console.error('joinOpenLobby error', error);

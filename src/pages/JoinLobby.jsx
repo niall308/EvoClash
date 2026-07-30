@@ -49,6 +49,7 @@ export default function JoinLobby() {
     });
     setLobby(updated);
     setStatus("joined");
+    base44.functions.invoke("notifyLobbyJoined", { lobbyId: lobby.id });
   };
 
   return (

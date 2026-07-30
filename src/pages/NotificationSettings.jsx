@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Swords, Gift, ArrowLeftRight, Mail } from "lucide-react";
+import { ArrowLeft, Swords, Gift, ArrowLeftRight, Mail, RotateCcw, Users } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Switch } from "@/components/ui/switch";
@@ -23,6 +23,18 @@ const OPTIONS = [
     icon: ArrowLeftRight,
     title: "Trade Requests",
     description: "When you receive a new trade request",
+  },
+  {
+    key: "notifyYourTurn",
+    icon: RotateCcw,
+    title: "Your Turn",
+    description: "When it becomes your turn in an offline battle",
+  },
+  {
+    key: "notifyLobbyJoin",
+    icon: Users,
+    title: "Lobby Joined",
+    description: "When someone joins your lobby",
   },
   {
     key: "notifyEmails",

@@ -260,6 +260,16 @@
       "type": "boolean",
       "default": true
     },
+    "notifyYourTurn": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to email the user when it becomes their turn in an offline PvP match."
+    },
+    "notifyLobbyJoin": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to email the user when someone joins their lobby."
+    },
     "autoBuildOffered": {
       "type": "boolean",
       "default": false,

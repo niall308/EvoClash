@@ -168,6 +168,8 @@ export default function usePvpMatch(matchCode) {
         player1Rps: "",
         player2Rps: "",
         log: winner === "player1" ? `${match.player1Name} attacks first!` : `${match.player2Name} attacks first!`,
+      }).then(() => {
+        if (match.matchType === "offline") base44.functions.invoke("notifyTurnChange", { matchCode: match.code });
       });
     }
   }, [match, myRole]);
@@ -291,6 +293,8 @@ export default function usePvpMatch(matchCode) {
         phase: "draw",
         [`${myRole}Timeouts`]: 0,
         ...CLEARED_BUFFS(targetRole),
+      }).then(() => {
+        if (match.matchType === "offline") base44.functions.invoke("notifyTurnChange", { matchCode: match.code });
       });
       return;
     }
@@ -302,6 +306,8 @@ export default function usePvpMatch(matchCode) {
       log: `${myRole === "player1" ? match.player1Name : match.player2Name} deals ${result.damage} damage!`,
       [`${myRole}Timeouts`]: 0,
       ...buffUpdates,
+    }).then(() => {
+      if (match.matchType === "offline") base44.functions.invoke("notifyTurnChange", { matchCode: match.code });
     });
   }, [match, myRole, oppRole, updateMatch]);
 
