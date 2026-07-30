@@ -40,6 +40,7 @@ Deno.serve(async (req) => {
 
     await base44.asServiceRole.entities.PvpMatch.create({
       code: lobby.code,
+      matchType: lobby.matchType || 'live',
       player1Id: user.id,
       player1Name: user.username || user.full_name,
       player2Id: opponentUser.id,

@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, X, Loader2, Clock, RotateCcw, Search } from "lucide-react";
+import { Check, X, Loader2, Clock, RotateCcw, Search, PlusCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
 import useSentBattleRequestAcceptance from "@/hooks/useSentBattleRequestAcceptance";
 import { useAuth } from "@/lib/AuthContext";
+import OpenLobbiesList from "@/components/humanbattle/OpenLobbiesList";
 
 const MAX_OFFLINE_MATCHES = 10;
 
@@ -101,7 +102,7 @@ export default function OfflineBattleSection() {
       {searching ? (
         <button
           onClick={cancelSearch}
-          className="w-full flex items-center justify-center gap-2 bg-white/10 border border-white/20 py-4 rounded-2xl font-bold mb-6 active:scale-95 transition-transform"
+          className="w-full flex items-center justify-center gap-2 bg-white/10 border border-white/20 py-4 rounded-2xl font-bold mb-3 active:scale-95 transition-transform"
         >
           <Loader2 className="w-5 h-5 animate-spin" /> Searching for a match...
           <X className="w-4 h-4 ml-1" />
@@ -110,11 +111,21 @@ export default function OfflineBattleSection() {
         <button
           onClick={startSearch}
           disabled={atCap}
-          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 py-4 rounded-2xl font-bold mb-6 active:scale-95 transition-transform disabled:opacity-40"
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 py-4 rounded-2xl font-bold mb-3 active:scale-95 transition-transform disabled:opacity-40"
         >
           <Search className="w-5 h-5" /> Find Game
         </button>
       )}
+
+      <button
+        onClick={() => navigate("/create-offline-lobby")}
+        disabled={atCap}
+        className="w-full flex items-center justify-center gap-2 bg-white/10 border border-white/20 py-4 rounded-2xl font-bold mb-6 active:scale-95 transition-transform disabled:opacity-40"
+      >
+        <PlusCircle className="w-5 h-5" /> Create Lobby
+      </button>
+
+      <OpenLobbiesList />
 
       {activeMatches?.length > 0 && (
         <div className="mb-6 space-y-2">

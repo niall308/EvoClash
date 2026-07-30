@@ -5,6 +5,15 @@
     "code": {
       "type": "string"
     },
+    "matchType": {
+      "type": "string",
+      "enum": [
+        "live",
+        "offline"
+      ],
+      "default": "live",
+      "description": "'live' lobbies use the code-invite flow; 'offline' lobbies are publicly listed for anyone to join from the Offline tab."
+    },
     "status": {
       "type": "string",
       "enum": [

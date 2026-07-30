@@ -37,6 +37,7 @@ import CoinHistory from '@/pages/CoinHistory';
 import Lobby from '@/pages/Lobby';
 import CreateLobby from '@/pages/CreateLobby';
 import JoinLobby from '@/pages/JoinLobby';
+import CreateOfflineLobby from '@/pages/CreateOfflineLobby';
 import Trades from '@/pages/Trades';
 import AppLayout from '@/components/layout/AppLayout';
 import AdminRoute from '@/components/AdminRoute';
@@ -100,6 +101,7 @@ const AuthenticatedApp = () => {
           <Route path="/lobby" element={<Lobby />} />
           <Route path="/create-lobby" element={<CreateLobby />} />
           <Route path="/join-lobby/:code" element={<JoinLobby />} />
+          <Route path="/create-offline-lobby" element={<CreateOfflineLobby />} />
           <Route path="/trades" element={<Trades />} />
         </Route>
         <Route path="/battle" element={<Battle />} />
