@@ -32,8 +32,19 @@ Deno.serve(async (req) => {
     const mine = await base44.entities.MatchQueue.filter({ created_by_id: user.id, matchType });
     const matchedEntry = mine.find((m) => m.status === 'matched');
     if (matchedEntry) {
+      // Only honor this leftover 'matched' entry if the match it points to still
+      // actually exists and is still active — otherwise (already finished, or the
+      // record is gone) a fresh search would instantly "matched" the user right
+      // back into a long-over game, showing a stale win/loss. Discard it and fall
+      // through to a normal fresh search instead.
+      const existingMatches = matchedEntry.matchCode
+        ? await base44.entities.PvpMatch.filter({ code: matchedEntry.matchCode })
+        : [];
+      const stillActive = existingMatches[0]?.status === 'active';
       await Promise.all(mine.map((m) => base44.entities.MatchQueue.delete(m.id)));
-      return Response.json({ status: 'matched', matchCode: matchedEntry.matchCode });
+      if (stillActive) {
+        return Response.json({ status: 'matched', matchCode: matchedEntry.matchCode });
+      }
     }
     const myEntry = mine.find((m) => m.status === 'searching');
 
