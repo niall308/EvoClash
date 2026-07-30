@@ -12,11 +12,14 @@ Deno.serve(async (req) => {
     const type = body?.type || 'wins';
 
     if (type === 'streak') {
-      const users = await base44.asServiceRole.entities.User.list('-maxPvpWinStreak', 50);
-      const leaderboard = users.map((u) => ({
-        full_name: u.username || u.full_name || 'Anonymous',
-        streak: u.maxPvpWinStreak || 0,
-      }));
+      const users = await base44.asServiceRole.entities.User.list('-maxPvpWinStreak', 200);
+      const leaderboard = users
+        .filter((u) => u.role !== 'admin')
+        .slice(0, 50)
+        .map((u) => ({
+          full_name: u.username || u.full_name || 'Anonymous',
+          streak: u.maxPvpWinStreak || 0,
+        }));
       return Response.json({ leaderboard });
     }
 
@@ -32,26 +35,28 @@ Deno.serve(async (req) => {
       for (const record of recentPvpWins) {
         winsByUser[record.created_by_id] = (winsByUser[record.created_by_id] || 0) + 1;
       }
-      const topUserIds = Object.entries(winsByUser)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 50);
+      const candidateUserIds = Object.entries(winsByUser).sort((a, b) => b[1] - a[1]);
 
-      const users = await Promise.all(
-        topUserIds.map(([userId]) => base44.asServiceRole.entities.User.filter({ id: userId }, undefined, 1))
+      const candidateUsers = await Promise.all(
+        candidateUserIds.map(([userId]) => base44.asServiceRole.entities.User.filter({ id: userId }, undefined, 1))
       );
-      const leaderboard = topUserIds.map(([userId, wins], i) => {
-        const u = users[i]?.[0];
-        return { full_name: u?.username || u?.full_name || 'Anonymous', wins };
-      });
+      const leaderboard = candidateUserIds
+        .map(([userId, wins], i) => ({ user: candidateUsers[i]?.[0], wins }))
+        .filter(({ user }) => user?.role !== 'admin')
+        .slice(0, 50)
+        .map(({ user, wins }) => ({ full_name: user?.username || user?.full_name || 'Anonymous', wins }));
       return Response.json({ leaderboard });
     }
 
-    const users = await base44.asServiceRole.entities.User.list('-pvpWins', 50);
-    const leaderboard = users.map((u) => ({
-      full_name: u.username || u.full_name || 'Anonymous',
-      wins: u.pvpWins || 0,
-      losses: u.pvpLosses || 0,
-    }));
+    const users = await base44.asServiceRole.entities.User.list('-pvpWins', 200);
+    const leaderboard = users
+      .filter((u) => u.role !== 'admin')
+      .slice(0, 50)
+      .map((u) => ({
+        full_name: u.username || u.full_name || 'Anonymous',
+        wins: u.pvpWins || 0,
+        losses: u.pvpLosses || 0,
+      }));
     return Response.json({ leaderboard });
   } catch (error) {
     console.error('getLeaderboard error', error);
