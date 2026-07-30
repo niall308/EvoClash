@@ -85,7 +85,7 @@ export default function usePvpMatch(matchCode) {
     const myHpNow = match[`${myRole}Hp`] || 0;
     const oppHpNow = match[`${oppRole}Hp`] || 0;
     const prev = prevHpRef.current;
-    if (prev.round === match.round && prev.my !== null && prev.opp !== null) {
+    if (prev.my !== null && prev.opp !== null) {
       if (oppHpNow < prev.opp) {
         setEffect({ key: Date.now(), side: "opp", value: prev.opp - oppHpNow });
       } else if (myHpNow < prev.my) {
@@ -262,15 +262,17 @@ export default function usePvpMatch(matchCode) {
       const matchOver = newScoreP1 >= 3 || newScoreP2 >= 3;
       const winnerName = roundWinner === "player1" ? match.player1Name : match.player2Name;
 
+      // Show the finishing hit (damage number + arrow) first, before swapping cards/round,
+      // so the destroy animation actually gets a chance to play.
+      await updateMatch(match.id, {
+        [`${targetRole}Hp`]: 0,
+        log: matchOver ? `${winnerName} wins the match!` : `${winnerName} wins round ${match.round}!`,
+        ...buffUpdates,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 900));
+
       if (matchOver) {
-        await updateMatch(match.id, {
-          scoreP1: newScoreP1,
-          scoreP2: newScoreP2,
-          [`${targetRole}Hp`]: 0,
-          phase: "matchEnd",
-          log: `${winnerName} wins the match!`,
-          ...buffUpdates,
-        });
+        await updateMatch(match.id, { scoreP1: newScoreP1, scoreP2: newScoreP2, phase: "matchEnd" });
         await base44.functions.invoke("finishPvpMatch", { matchCode: match.code });
         return;
       }
@@ -281,13 +283,10 @@ export default function usePvpMatch(matchCode) {
         scoreP1: newScoreP1,
         scoreP2: newScoreP2,
         [`${targetRole}Card`]: {},
-        [`${targetRole}Hp`]: 0,
         round: match.round + 1,
         turn: roundLoser,
         phase: "draw",
-        log: `${winnerName} wins round ${match.round}!`,
         [`${myRole}Timeouts`]: 0,
-        ...buffUpdates,
         ...CLEARED_BUFFS(targetRole),
       });
       return;
