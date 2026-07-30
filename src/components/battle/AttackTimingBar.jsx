@@ -13,6 +13,9 @@ const SEGMENTS = [
 ];
 const DURATION_MS = 1200;
 
+const RESULT_LABELS = { 0.8: "Weak", 1.0: "Normal", 1.2: "Perfect", 2.0: "Critical" };
+const HOLD_MS = 1500;
+
 function segmentAt(pct) {
   return SEGMENTS.find((s) => pct >= s.start && pct <= s.end) || SEGMENTS[0];
 }
@@ -29,6 +32,7 @@ function ease(t) {
 // segment's damage multiplier via onLock.
 export default function AttackTimingBar({ onLock }) {
   const [pct, setPct] = useState(0);
+  const [locked, setLocked] = useState(null);
   const rafRef = useRef(null);
   const startRef = useRef(null);
 
@@ -49,7 +53,8 @@ export default function AttackTimingBar({ onLock }) {
   const handleAttack = () => {
     cancelAnimationFrame(rafRef.current);
     const seg = segmentAt(pct);
-    onLock(seg.multiplier);
+    setLocked({ ...seg, stoppedAt: pct });
+    setTimeout(() => onLock(seg.multiplier), HOLD_MS);
   };
 
   return (
@@ -60,15 +65,21 @@ export default function AttackTimingBar({ onLock }) {
         ))}
         <div
           className="absolute top-0 h-full w-1 bg-white shadow-[0_0_6px_2px_rgba(255,255,255,0.9)]"
-          style={{ left: `${pct}%`, transform: "translateX(-50%)" }}
+          style={{ left: `${locked ? locked.stoppedAt : pct}%`, transform: "translateX(-50%)" }}
         />
       </div>
-      <button
-        onClick={handleAttack}
-        className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform"
-      >
-        <Swords className="w-5 h-5" /> Attack
-      </button>
+      {locked ? (
+        <span className="text-white font-bold" style={{ color: locked.color }}>
+          {RESULT_LABELS[locked.multiplier]}!
+        </span>
+      ) : (
+        <button
+          onClick={handleAttack}
+          className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform"
+        >
+          <Swords className="w-5 h-5" /> Attack
+        </button>
+      )}
     </div>
   );
 }
