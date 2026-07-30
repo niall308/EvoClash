@@ -87,7 +87,10 @@ export default function PvpBattleScreen({ matchCode }) {
       <div className="grid grid-cols-3 items-center px-3 py-2 text-xs font-bold" style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.5rem)" }}>
         <span className="justify-self-start flex items-center gap-2">
           {match.matchType === "offline" && (
-            <button onClick={() => navigate("/human-battle")} className="text-white/60 hover:text-white p-1 -m-1">
+            <button
+              onClick={() => navigate("/human-battle")}
+              className="text-white/60 hover:text-white min-w-[44px] min-h-[44px] -m-2.5 flex items-center justify-center"
+            >
               <ArrowLeft className="w-3.5 h-3.5" />
             </button>
           )}

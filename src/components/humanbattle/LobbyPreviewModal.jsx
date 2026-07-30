@@ -33,7 +33,10 @@ export default function LobbyPreviewModal({ lobby, onClose, onJoined }) {
       >
         <div className="flex items-start justify-between mb-4">
           <h2 className="text-xl font-black">{lobby.hostName}'s Lobby</h2>
-          <button onClick={onClose} className="text-white/50 hover:text-white p-1 -m-1">
+          <button
+            onClick={onClose}
+            className="text-white/50 hover:text-white min-w-[44px] min-h-[44px] -m-2.5 flex items-center justify-center"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>

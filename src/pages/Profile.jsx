@@ -62,7 +62,10 @@ export default function Profile() {
         )}
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-2xl font-black">{user.username || user.full_name}</h1>
-          <button onClick={() => setShowEditModal(true)} className="p-1.5 rounded-full bg-white/10 text-white/60">
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 text-white/60"
+          >
             <Pencil className="w-3.5 h-3.5" />
           </button>
         </div>

@@ -8,8 +8,8 @@ const STATUS_LABEL = {
   completed: { text: "Accepted", color: "text-emerald-400" },
   transferred: { text: "Accepted", color: "text-sky-400" },
   declined: { text: "Declined", color: "text-red-400" },
-  cancelled: { text: "Cancelled", color: "text-white/40" },
-  expired: { text: "Expired", color: "text-white/40" },
+  cancelled: { text: "Cancelled", color: "text-white/60" },
+  expired: { text: "Expired", color: "text-white/60" },
 };
 
 export default function TradeRequestCard({ trade, direction, onAccept, onDecline, onCancel, onClaim, onCounter, busy }) {
@@ -58,7 +58,7 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
         <p className="text-xs font-semibold text-white/70">
           {direction === "incoming" ? `From ${trade.fromUserName || "a friend"}` : `To ${trade.toUserName}`}
         </p>
-        <span className={`flex items-center gap-1 text-[10px] font-bold ${status.color}`}>
+        <span className={`flex items-center gap-1 text-[11px] font-bold ${status.color}`}>
           <Clock className="w-3 h-3" /> {statusText}
         </span>
       </div>
@@ -66,12 +66,12 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
       <div className="flex items-center justify-center gap-3 mb-2">
         <div className="text-center">
           <GameCard card={fromCard} size="xs" />
-          <p className="text-[9px] text-white/50 mt-1">{direction === "incoming" ? "They offer" : "You offer"}</p>
+          <p className="text-[11px] text-white/60 mt-1">{direction === "incoming" ? "They offer" : "You offer"}</p>
         </div>
         <ArrowLeftRight className="w-4 h-4 text-amber-400 shrink-0" />
         <div className="text-center">
           <GameCard card={toCard} size="xs" />
-          <p className="text-[9px] text-white/50 mt-1">{direction === "incoming" ? "For your" : "You receive"}</p>
+          <p className="text-[11px] text-white/60 mt-1">{direction === "incoming" ? "For your" : "You receive"}</p>
         </div>
       </div>
 
@@ -82,7 +82,7 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
       )}
 
       {isPending && !isMyTurn && (
-        <p className="text-center text-white/40 text-[11px] mb-1">Waiting for a response...</p>
+        <p className="text-center text-white/60 text-[11px] mb-1">Waiting for a response...</p>
       )}
 
       {isPending && isMyTurn && !countering && (
@@ -114,7 +114,7 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
       {isPending && isMyTurn && countering && (
         <div onClick={(e) => e.stopPropagation()} className="mb-1">
           <div className="flex items-center justify-between mb-1">
-            <label className="text-white/50 text-[10px]">Your counteroffer (LC coins)</label>
+            <label className="text-white/60 text-[11px]">Your counteroffer (LC coins)</label>
             <span className="text-amber-300 text-xs font-bold">{counterValue.toLocaleString()} LC</span>
           </div>
           <input
@@ -136,7 +136,7 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
       )}
 
       {trade.status === "expired" && (
-        <p className="text-center text-white/40 text-[11px]">This trade request expired.</p>
+        <p className="text-center text-white/60 text-[11px]">This trade request expired.</p>
       )}
 
       {isPending && direction === "outgoing" && (

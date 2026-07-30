@@ -47,7 +47,7 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
       }}
     >
       <div
-        className={`absolute top-1 left-1 z-10 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white ${
+        className={`absolute top-1 left-1 z-10 text-[11px] font-bold px-1.5 py-0.5 rounded-full text-white ${
           boost?.tier ? "ring-2 ring-yellow-300 animate-pulse" : ""
         }`}
         style={{ background: boost?.tier ? "#FFD700" : color }}
@@ -88,7 +88,7 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
           <span className={boost?.defense ? "text-yellow-300 animate-pulse" : "text-blue-300"}>D{boost?.defense || card.defense}</span>
         </div>
         {card.bonusDamage > 0 && (
-          <div className="flex items-center justify-center gap-1 text-[10px] text-yellow-300">
+          <div className="flex items-center justify-center gap-1 text-[11px] text-yellow-300">
             <span>+{card.bonusDamage}</span>
             <span className="flex gap-0.5">
               {isHybrid ? (
