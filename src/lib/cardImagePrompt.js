@@ -1,17 +1,23 @@
 import { CREATURE_ANATOMY, STYLE_REFERENCE_URL, CREATURE_STANCES, CREATURE_COLOR_PALETTES } from "@/lib/gameConstants";
 
+// GenerateImage fetches reference images over the public internet, so private
+// file URIs (base44.app/api/apps/.../files/...) can't be read and make the
+// whole integration fail. Only pass publicly accessible URLs as references.
+const isPublicRefUrl = (url) => !!url && !url.includes("base44.app/api/apps/");
+
 // Shared AI-art prompt builder used by both the player card generator and the
 // admin AI-deck generator, so both produce consistent, on-model artwork that
 // respects admin-configured type backgrounds.
 export function buildCardImagePrompt(cardData, { typeBackgrounds = [], creatureDescription = "", referenceImageUrl = "" } = {}) {
   const stance = CREATURE_STANCES[Math.floor(Math.random() * CREATURE_STANCES.length)];
   const palette = CREATURE_COLOR_PALETTES[Math.floor(Math.random() * CREATURE_COLOR_PALETTES.length)];
-  const bgRef = typeBackgrounds.find((b) => b.type === cardData.type);
+  const bgRef = typeBackgrounds.find((b) => b.type === cardData.type && isPublicRefUrl(b.imageUrl));
   const backgroundInstruction = bgRef
     ? `Include a background environment that matches the elemental mood, colors, and setting of the additional background reference image provided — use that reference ONLY for its environment style, do not copy any creature or object from it.`
     : `Include a background environment that fits a ${cardData.type} elemental setting (e.g. lava fields for Lava, icy tundra for Ice, storm clouds for Wind).`;
 
-  const referenceInstruction = referenceImageUrl
+  const publicReferenceUrl = isPublicRefUrl(referenceImageUrl) ? referenceImageUrl : "";
+  const referenceInstruction = publicReferenceUrl
     ? ` An admin-approved reference image of this exact creature is also provided — match its head shape, body structure, and anatomy precisely; only vary its pose and color scheme as instructed above, and ignore its background.`
     : "";
 
@@ -21,6 +27,6 @@ export function buildCardImagePrompt(cardData, { typeBackgrounds = [], creatureD
 
   const existingImageUrls = [STYLE_REFERENCE_URL];
   if (bgRef) existingImageUrls.push(bgRef.imageUrl);
-  if (referenceImageUrl) existingImageUrls.push(referenceImageUrl);
+  if (publicReferenceUrl) existingImageUrls.push(publicReferenceUrl);
   return { prompt, existingImageUrls };
 }
