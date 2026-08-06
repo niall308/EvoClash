@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { Suspense, useEffect } from "react";
 import { Outlet, useLocation, useNavigationType } from "react-router-dom";
 import CoinsBadge from "@/components/layout/CoinsBadge";
 import BottomNav from "@/components/layout/BottomNav";
@@ -22,7 +22,13 @@ export default function AppLayout() {
         className={isBack ? "page-enter page-enter-back" : "page-enter"}
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 3rem)", paddingBottom: "calc(env(safe-area-inset-bottom) + 4rem)" }}
       >
-        <Outlet />
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="w-8 h-8 border-4 border-white/20 border-t-amber-400 rounded-full animate-spin"></div>
+          </div>
+        }>
+          <Outlet />
+        </Suspense>
       </div>
       <BottomNav />
     </div>
