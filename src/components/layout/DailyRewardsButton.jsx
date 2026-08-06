@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { Gift } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { canClaimDailyReward, getEstDateString } from "@/lib/dailyRewardsClient";
-import SlotMachineModal from "@/components/layout/SlotMachineModal";
+
+// Lazy-load the slot-machine modal so framer-motion (SlotReel / CoinFlyAnimation)
+// and canvas-confetti are only pulled in when a user actually opens a daily
+// reward, keeping them out of the always-on initial bundle.
+const SlotMachineModal = lazy(() => import("@/components/layout/SlotMachineModal"));
 
 export default function DailyRewardsButton() {
   const { user, updateUser } = useAuth();
@@ -25,12 +29,14 @@ export default function DailyRewardsButton() {
       </button>
 
       {open && (
-        <SlotMachineModal
-          onClose={() => setOpen(false)}
-          onClaimed={(newTotal) =>
-            updateUser({ ...user, coins: newTotal, lastDailyRewardClaimedAt: getEstDateString() })
-          }
-        />
+        <Suspense fallback={null}>
+          <SlotMachineModal
+            onClose={() => setOpen(false)}
+            onClaimed={(newTotal) =>
+              updateUser({ ...user, coins: newTotal, lastDailyRewardClaimedAt: getEstDateString() })
+            }
+          />
+        </Suspense>
       )}
     </>
   );

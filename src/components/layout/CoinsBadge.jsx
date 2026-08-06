@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, Link } from "react-router-dom";
 import { Coins, Plus } from "lucide-react";
-import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import DailyRewardsButton from "@/components/layout/DailyRewardsButton";
 
@@ -40,15 +39,13 @@ export default function CoinsBadge() {
         >
           <Plus className="w-[10px] h-[10px]" />
         </Link>
-        <motion.div
+        <div
           key={bump}
-          initial={bump ? { scale: 1.4 } : false}
-          animate={{ scale: 1 }}
-          className="flex items-center gap-1 bg-black/50 backdrop-blur px-3 py-1.5 rounded-full text-amber-300 text-xs font-bold border border-amber-400/30"
+          className={`flex items-center gap-1 bg-black/50 backdrop-blur px-3 py-1.5 rounded-full text-amber-300 text-xs font-bold border border-amber-400/30${bump ? " animate-coin-pop" : ""}`}
         >
           <Coins className="w-3.5 h-3.5" />
           {coins} LC
-        </motion.div>
+        </div>
       </div>
     </div>,
     document.body
