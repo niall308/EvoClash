@@ -11,6 +11,14 @@ const EFFECT_OVERLAY_CLASS = {
   dissolve: "bg-gradient-to-br from-blue-900/40 via-transparent to-blue-900/60",
 };
 
+// The card is authored once at this master size, then scaled (CSS transform) to
+// whatever footprint the caller wants. This keeps every detail — frame, badges,
+// name, stats, image — proportional and fully visible at any size, instead of
+// re-flowing fixed-pixel bits into a cramped/clipped card.
+const DESIGN_W = 160;
+const DESIGN_H = 224;
+const FOOTPRINT = { xs: 56, hand: 96, sm: 80, md: 128, lg: 160 };
+
 const OrnateDivider = () => (
   <div className="flex items-center gap-1 px-2 my-0.5">
     <span className="h-px flex-1 bg-gradient-to-r from-transparent via-[#C5A059]/40 to-[#C5A059]/60" />
@@ -23,7 +31,9 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
   const isHybrid = card.isHybrid;
   const Icon = isHybrid ? HelpCircle : TYPE_ICONS[card.type] || Sparkles;
   const typeColor = isHybrid ? "#FFD700" : TYPE_COLORS[card.type];
-  const sizes = { xs: "w-14 h-20", hand: "w-24 h-36", sm: "w-20 h-28", md: "w-32 h-44", lg: "w-40 h-56" };
+  const w = FOOTPRINT[size] ?? 128;
+  const h = Math.round(w * (DESIGN_H / DESIGN_W));
+  const scale = w / DESIGN_W;
   const intensity = Math.min(0.85, 0.3 + (1 - hpRatio) * 0.55);
   const effectGroups = [...new Set(statusEffects.map((t) => TYPE_EFFECT_GROUP[t]).filter(Boolean))];
   const isFading = effectGroups.includes("fade") || effectGroups.includes("dissolve");
@@ -38,21 +48,149 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
   const buffedDefense = boost?.defense || card.defense;
   const effectiveTier = boost?.tier || card.tier;
   const advantageTypes = TYPE_ADVANTAGES[card.type] || [];
-  const hasOrb = card.bonusDamage > 0 || isHybrid;
+  const glowClass = glow || isMaxedT4 ? "shadow-[0_0_25px_6px_rgba(255,215,0,0.85)] animate-pulse" : "";
+
+  // Scaled wrapper: footprint box + absolutely-positioned master-size inner.
+  const Wrap = ({ children, className = "", style = {} }) => (
+    <div className="relative" style={{ width: w, height: h }}>
+      <div
+        className={`absolute left-0 top-0 ${className}`}
+        style={{ width: DESIGN_W, height: DESIGN_H, transform: `scale(${scale})`, transformOrigin: "top left", ...style }}
+      >
+        {children}
+      </div>
+    </div>
+  );
 
   if (faceDown) {
     return (
-      <div className={`relative ${sizes[size]} rounded-2xl border-2 border-white/20 shadow-xl overflow-hidden`}>
+      <Wrap className="rounded-2xl overflow-hidden border-2 border-white/20 shadow-xl">
         <img src={CARD_BACK_URL} alt="Face down card" className="w-full h-full object-cover" />
-      </div>
+      </Wrap>
     );
   }
 
-  const cardBody = (
+  const cardFace = (
     <div
-      className={`relative ${isHybrid ? "w-full h-full" : sizes[size]} rounded-[10px] p-[3px] shadow-xl transition-all ${
-        glow || isMaxedT4 ? "shadow-[0_0_25px_6px_rgba(255,215,0,0.85)] animate-pulse" : ""
-      }`}
+      className="relative w-full h-full rounded-[10px] overflow-hidden flex flex-col"
+      style={{
+        background: "linear-gradient(160deg, #0D1B2A 0%, #1A2E45 100%)",
+        boxShadow: "inset 0 0 0 1px rgba(197,160,89,0.55)",
+      }}
+    >
+      {/* Tier badge — top-left */}
+      <div
+        className={`absolute top-1 left-1 z-20 w-5 h-5 rounded-full flex items-center justify-center font-serif font-black ${
+          boost?.tier ? "ring-2 ring-yellow-300 animate-pulse" : ""
+        }`}
+        style={{ background: "linear-gradient(160deg, #5E4A2E 0%, #4E3E26 100%)", boxShadow: "inset 0 0 0 1.5px #C5A059" }}
+      >
+        <span style={{ color: "#E8C97A", fontSize: "9px", textShadow: "0 1px 1px rgba(0,0,0,0.6)" }}>T{effectiveTier}</span>
+      </div>
+
+      {/* Type / delete stack — top-right */}
+      <div className="absolute top-1 right-1 z-20 flex flex-col items-end gap-1">
+        <div
+          className="w-5 h-5 rounded-full flex items-center justify-center"
+          style={{ background: "linear-gradient(160deg, #5E4A2E 0%, #4E3E26 100%)", boxShadow: "inset 0 0 0 1.5px #C5A059" }}
+        >
+          <Icon className="w-3 h-3" style={{ color: typeColor }} />
+        </div>
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(card.id);
+            }}
+            className="p-1 rounded-full bg-black/60 text-red-400 hover:text-red-300"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+
+      {/* Creature image area (~70%) */}
+      <div className="relative flex-1 flex items-center justify-center overflow-hidden" style={{ maxHeight: "70%" }}>
+        {card.imageUrl ? (
+          <>
+            <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover" />
+            <span className="pointer-events-none absolute inset-1 rounded-md" style={{ boxShadow: "inset 0 0 0 1px rgba(197,160,89,0.35)" }} />
+          </>
+        ) : (
+          <Icon className="w-8 h-8" style={{ color: typeColor }} />
+        )}
+        {effectGroups.map((g) => (
+          <div key={g} className={`absolute inset-0 pointer-events-none ${EFFECT_OVERLAY_CLASS[g]}`} style={{ opacity: intensity }} />
+        ))}
+      </div>
+
+      {/* Lower info panel */}
+      <div
+        className="relative flex flex-col pt-1.5 pb-1.5 px-1.5 z-10"
+        style={{ background: "linear-gradient(180deg, #23232F 0%, #1A1A25 100%)" }}
+      >
+        {/* watermark pattern */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          style={{ backgroundImage: "repeating-linear-gradient(45deg, #C5A059 0 1px, transparent 1px 6px), repeating-linear-gradient(-45deg, #C5A059 0 1px, transparent 1px 6px)" }}
+        />
+        <OrnateDivider />
+
+        {/* Name */}
+        <p
+          className="font-serif font-bold text-center leading-tight truncate relative px-1"
+          style={{ color: "#E8C97A", fontSize: "11px", textShadow: "0 1px 1px rgba(0,0,0,0.7)" }}
+        >
+          {card.name}
+        </p>
+
+        <OrnateDivider />
+
+        {/* Stats row */}
+        <div className="flex items-center justify-center gap-2 relative font-serif font-bold" style={{ fontSize: "11px" }}>
+          <Icon className="w-3 h-3" style={{ color: typeColor }} />
+          <span
+            className={boost?.attack ? "text-yellow-300 animate-pulse ring-1 ring-amber-400 rounded px-1" : ""}
+            style={{ color: boost?.attack ? undefined : "#D98850", textShadow: "0 1px 1px rgba(0,0,0,0.6)" }}
+          >
+            A{buffedAttack}
+          </span>
+          <span className="text-[#C5A059]/40">·</span>
+          <span
+            className={boost?.defense ? "text-yellow-300 animate-pulse ring-1 ring-amber-400 rounded px-1" : ""}
+            style={{ color: boost?.defense ? undefined : "#84A3B8", textShadow: "0 1px 1px rgba(0,0,0,0.6)" }}
+          >
+            D{buffedDefense}
+          </span>
+        </div>
+
+        {/* Bonus footer */}
+        <div className="flex items-center justify-center gap-1 relative font-serif font-bold" style={{ fontSize: "10px" }}>
+          <span style={{ color: card.bonusDamage > 0 ? "#E8C97A" : "rgba(232,201,122,0.35)", textShadow: "0 1px 1px rgba(0,0,0,0.6)" }}>
+            +{card.bonusDamage}
+          </span>
+          {card.bonusDamage > 0 && (
+            <span className="flex gap-0.5">
+              {isHybrid ? (
+                <HelpCircle className="w-2 h-2" style={{ color: "#FFD700" }} />
+              ) : (
+                advantageTypes.map((t) => {
+                  const TIcon = TYPE_ICONS[t];
+                  return <TIcon key={t} className="w-2 h-2" style={{ color: TYPE_COLORS[t] }} />;
+                })
+              )}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // The metallic frame + glow live on its own layer so the rounded corners and
+  // shadows scale with the rest of the artwork.
+  const framedFace = (
+    <div
+      className={`relative w-full h-full rounded-[10px] p-[3px] shadow-xl transition-all ${glowClass}`}
       style={{
         background: "linear-gradient(160deg, #D8D8D8 0%, #8A8A8A 50%, #5A5A5A 100%)",
         opacity: cardOpacity,
@@ -61,134 +199,19 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
       {/* Gold filigree corner accents on the metallic frame */}
       <span className="pointer-events-none absolute bottom-0 left-0 w-3 h-3 rounded-bl-[8px]" style={{ background: "radial-gradient(circle at 0% 100%, #C5A059 0%, #8A6A2E 55%, transparent 75%)" }} />
       <span className="pointer-events-none absolute bottom-0 right-0 w-3 h-3 rounded-br-[8px]" style={{ background: "radial-gradient(circle at 100% 100%, #C5A059 0%, #8A6A2E 55%, transparent 75%)" }} />
-
-      <div
-        className="relative w-full h-full rounded-[8px] overflow-hidden flex flex-col"
-        style={{
-          background: "linear-gradient(160deg, #0D1B2A 0%, #1A2E45 100%)",
-          boxShadow: "inset 0 0 0 1px rgba(197,160,89,0.55)",
-        }}
-      >
-        {/* Tier badge — top-left */}
-        <div
-          className={`absolute top-1 left-1 z-20 w-5 h-5 rounded-full flex items-center justify-center font-serif font-black ${
-            boost?.tier ? "ring-2 ring-yellow-300 animate-pulse" : ""
-          }`}
-          style={{ background: "linear-gradient(160deg, #5E4A2E 0%, #4E3E26 100%)", boxShadow: "inset 0 0 0 1.5px #C5A059" }}
-        >
-          <span style={{ color: "#E8C97A", fontSize: "9px", textShadow: "0 1px 1px rgba(0,0,0,0.6)" }}>T{effectiveTier}</span>
-        </div>
-
-        {/* Type / delete stack — top-right */}
-        <div className="absolute top-1 right-1 z-20 flex flex-col items-end gap-1">
-          <div
-            className="w-5 h-5 rounded-full flex items-center justify-center"
-            style={{ background: "linear-gradient(160deg, #5E4A2E 0%, #4E3E26 100%)", boxShadow: "inset 0 0 0 1.5px #C5A059" }}
-          >
-            <Icon className="w-3 h-3" style={{ color: typeColor }} />
-          </div>
-          {onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(card.id);
-              }}
-              className="p-1 rounded-full bg-black/60 text-red-400 hover:text-red-300"
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
-          )}
-        </div>
-
-        {/* Creature image area (~70%) */}
-        <div className="relative flex-1 flex items-center justify-center overflow-hidden" style={{ maxHeight: "70%" }}>
-          {card.imageUrl ? (
-            <>
-              <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover" />
-              <span className="pointer-events-none absolute inset-1 rounded-md" style={{ boxShadow: "inset 0 0 0 1px rgba(197,160,89,0.35)" }} />
-            </>
-          ) : (
-            <Icon className="w-8 h-8" style={{ color: typeColor }} />
-          )}
-          {effectGroups.map((g) => (
-            <div key={g} className={`absolute inset-0 pointer-events-none ${EFFECT_OVERLAY_CLASS[g]}`} style={{ opacity: intensity }} />
-          ))}
-        </div>
-
-        {/* Lower info panel */}
-        <div
-          className="relative flex flex-col pt-1.5 pb-1.5 px-1.5 z-10"
-          style={{ background: "linear-gradient(180deg, #23232F 0%, #1A1A25 100%)" }}
-        >
-          {/* watermark pattern */}
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.06]"
-            style={{ backgroundImage: "repeating-linear-gradient(45deg, #C5A059 0 1px, transparent 1px 6px), repeating-linear-gradient(-45deg, #C5A059 0 1px, transparent 1px 6px)" }}
-          />
-          <OrnateDivider />
-
-          {/* Name */}
-          <p
-            className="font-serif font-bold text-center leading-tight truncate relative px-1"
-            style={{ color: "#E8C97A", fontSize: "11px", textShadow: "0 1px 1px rgba(0,0,0,0.7)" }}
-          >
-            {card.name}
-          </p>
-
-          <OrnateDivider />
-
-          {/* Stats row */}
-          <div className="flex items-center justify-center gap-2 relative font-serif font-bold" style={{ fontSize: "11px" }}>
-            <Icon className="w-3 h-3" style={{ color: typeColor }} />
-            <span
-              className={boost?.attack ? "text-yellow-300 animate-pulse ring-1 ring-amber-400 rounded px-1" : ""}
-              style={{ color: boost?.attack ? undefined : "#D98850", textShadow: "0 1px 1px rgba(0,0,0,0.6)" }}
-            >
-              A{buffedAttack}
-            </span>
-            <span className="text-[#C5A059]/40">·</span>
-            <span
-              className={boost?.defense ? "text-yellow-300 animate-pulse ring-1 ring-amber-400 rounded px-1" : ""}
-              style={{ color: boost?.defense ? undefined : "#84A3B8", textShadow: "0 1px 1px rgba(0,0,0,0.6)" }}
-            >
-              D{buffedDefense}
-            </span>
-          </div>
-
-          {/* Bonus footer */}
-          <div className="flex items-center justify-center gap-1 relative font-serif font-bold" style={{ fontSize: "10px" }}>
-            <span style={{ color: card.bonusDamage > 0 ? "#E8C97A" : "rgba(232,201,122,0.35)", textShadow: "0 1px 1px rgba(0,0,0,0.6)" }}>
-              +{card.bonusDamage}
-            </span>
-            {card.bonusDamage > 0 && (
-              <span className="flex gap-0.5">
-                {isHybrid ? (
-                  <HelpCircle className="w-2 h-2" style={{ color: "#FFD700" }} />
-                ) : (
-                  advantageTypes.map((t) => {
-                    const TIcon = TYPE_ICONS[t];
-                    return <TIcon key={t} className="w-2 h-2" style={{ color: TYPE_COLORS[t] }} />;
-                  })
-                )}
-              </span>
-            )}
-          </div>
-        </div>
-
-      </div>
+      {cardFace}
     </div>
   );
 
   if (isHybrid) {
     return (
-      <div
-        className={`${sizes[size]} rounded-[10px] p-[3px] ${glow || isMaxedT4 ? "animate-pulse" : ""}`}
-        style={{ background: "conic-gradient(from 180deg, #ff0000, #ff9900, #ffee00, #33ff00, #00ffee, #0066ff, #9900ff, #ff0000)" }}
-      >
-        {cardBody}
-      </div>
+      <Wrap>
+        <div className={`relative w-full h-full rounded-[10px] p-[3px] ${glowClass ? "animate-pulse" : ""}`} style={{ background: "conic-gradient(from 180deg, #ff0000, #ff9900, #ffee00, #33ff00, #00ffee, #0066ff, #9900ff, #ff0000)" }}>
+          {cardFace}
+        </div>
+      </Wrap>
     );
   }
 
-  return cardBody;
+  return <Wrap>{framedFace}</Wrap>;
 }
