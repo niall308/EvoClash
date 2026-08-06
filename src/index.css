@@ -103,6 +103,17 @@
     -webkit-touch-callout: default;
   }
 
+  @keyframes pageEnter {
+    from { opacity: 0; transform: translateX(100px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes pageEnterBack {
+    from { opacity: 0; transform: translateX(-100px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .page-enter { animation: pageEnter 0.2s ease-out; }
+  .page-enter-back { animation: pageEnterBack 0.2s ease-out; }
+
   ::-webkit-scrollbar {
     display: none;
   }
