@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -15,7 +15,14 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
 
+  // Guard against concurrent/repeated auth + startup calls so multiple mounts
+  // (e.g. StrictMode double-invoke or remounts) only trigger one network round-trip.
+  const authCheckRef = useRef(false);
+  const appStateCheckRef = useRef(false);
+
   const checkUserAuth = useCallback(async () => {
+    if (authCheckRef.current) return;
+    authCheckRef.current = true;
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
@@ -40,10 +47,14 @@ export const AuthProvider = ({ children }) => {
           message: 'Authentication required'
         });
       }
+    } finally {
+      authCheckRef.current = false;
     }
   }, []);
 
   const checkAppState = useCallback(async () => {
+    if (appStateCheckRef.current) return;
+    appStateCheckRef.current = true;
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
@@ -111,6 +122,8 @@ export const AuthProvider = ({ children }) => {
       });
       setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
+    } finally {
+      appStateCheckRef.current = false;
     }
   }, [checkUserAuth]);
 
