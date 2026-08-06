@@ -25,7 +25,8 @@ const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + mi
 const RPS_OPTIONS = ["rock", "paper", "scissors"];
 const RPS_BEATS = { rock: "scissors", scissors: "paper", paper: "rock" };
 
-export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "Normal") {
+export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "Normal", options = {}) {
+  const { skipRewards = false, aiPoolOverride } = options;
   const [opponentName] = useState(() => randomFrom(AI_OPPONENT_NAMES));
   const [aiPool, setAiPool] = useState([]);
   const [aiPoolLoaded, setAiPoolLoaded] = useState(false);
@@ -34,6 +35,11 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   // (falls back to live generation if that deck hasn't been seeded yet by an admin).
   useEffect(() => {
     (async () => {
+      if (aiPoolOverride) {
+        setAiPool(shuffle(aiPoolOverride).slice(0, 15));
+        setAiPoolLoaded(true);
+        return;
+      }
       const deckCards = await base44.entities.AiDeckCard.filter({ difficulty });
       if (deckCards.length > 0) {
         setAiPool(shuffle(deckCards).slice(0, 15));
@@ -43,7 +49,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       }
       setAiPoolLoaded(true);
     })();
-  }, [difficulty]);
+  }, [difficulty, aiPoolOverride]);
   const [playerPool, setPlayerPool] = useState(() => shuffle(playerCards));
   const [round, setRound] = useState(1);
   const [score, setScore] = useState({ player: 0, ai: 0 });
@@ -135,6 +141,11 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     async (winner, finalScore) => {
       setPhase("matchEnd");
       setMatchResult(winner);
+      if (skipRewards) {
+        setCoinsBreakdown(null);
+        if (onMatchEnd) onMatchEnd(winner);
+        return;
+      }
       const cardsUsed = playerCards.filter((c) => statsRef.current[c.id]).map((c) => c.name);
       const updates = [];
       let milestoneCoins = 0;
@@ -217,7 +228,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       });
       if (onMatchEnd) onMatchEnd(winner);
     },
-    [playerCards, onMatchEnd, opponentName, difficulty]
+    [playerCards, onMatchEnd, opponentName, difficulty, skipRewards]
   );
 
   const finishRound = useCallback(
@@ -1026,6 +1037,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   }, [phase, playerCard, aiCard, rpsDone, turn]);
 
   const forfeitMatch = useCallback(async () => {
+    if (skipRewards) return;
     const me = await base44.auth.me();
     await base44.auth.updateMe({ losses: (me.losses || 0) + 1, gamesPlayed: (me.gamesPlayed || 0) + 1, currentWinStreak: 0 });
     await base44.entities.BattleHistory.create({
@@ -1041,7 +1053,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       distinctTypesUsed: matchTypesRef.current.size,
       durationSeconds: Math.round((Date.now() - matchStartRef.current) / 1000),
     });
-  }, [opponentName, score]);
+  }, [opponentName, score, skipRewards]);
 
   const pickRps = useCallback(
     (choice) => {

@@ -1,0 +1,52 @@
+{
+  "name": "StoryProgress",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "currentStage": {
+      "type": "number",
+      "default": 1
+    },
+    "currentMatch": {
+      "type": "number",
+      "default": 1
+    },
+    "completedMatches": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "stageCompleted": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": []
+    },
+    "storyCompleted": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "userId"
+  ],
+  "rls": {
+    "create": {
+      "data.userId": "{{user.id}}"
+    },
+    "read": {
+      "data.userId": "{{user.id}}"
+    },
+    "update": {
+      "data.userId": "{{user.id}}"
+    },
+    "delete": {
+      "data.userId": "{{user.id}}"
+    }
+  }
+}

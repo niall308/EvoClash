@@ -20,7 +20,7 @@ import { Swords, Flag, Play, Zap, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useBattleMatch from "@/hooks/useBattleMatch";
 
-export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
+export default function BattleScreen({ playerCards, onMatchEnd, difficulty, options, matchEnd }) {
   const navigate = useNavigate();
   const {
     round,
@@ -69,7 +69,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
     forfeitMatch,
     pendingHybridCard,
     chooseHybridType,
-  } = useBattleMatch(playerCards, onMatchEnd, difficulty);
+  } = useBattleMatch(playerCards, onMatchEnd, difficulty, options);
 
   const playerLives = Math.max(0, 3 - score.ai);
   const aiLives = Math.max(0, 3 - score.player);
@@ -107,9 +107,12 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
         <LivesIndicator lives={aiLives} />
         <AnimatePresence mode="wait">
           {aiCard && (
-            <motion.div key={(aiCard.id || aiCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-              <GameCard card={aiCard} size="md" glow={matchResult && phase === "matchEnd"} faceDown={faceDown} statusEffects={aiEffects} hpRatio={aiHpRatio} />
-            </motion.div>
+            <>
+              <motion.div key={(aiCard.id || aiCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }} className={options?.isBoss ? "ring-2 ring-amber-400 rounded-2xl" : ""}>
+                <GameCard card={aiCard} size="md" glow={matchResult && phase === "matchEnd"} faceDown={faceDown} statusEffects={aiEffects} hpRatio={aiHpRatio} />
+              </motion.div>
+              {options?.isBoss && <span className="text-amber-400 text-[10px] font-black tracking-widest">BOSS</span>}
+            </>
           )}
         </AnimatePresence>
         {aiCard && (
@@ -223,12 +226,12 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty }) {
         />
       )}
       {pendingHybridCard && <TypeChoiceModal onChoose={chooseHybridType} />}
-      {phase === "matchEnd" && <MatchEndModal won={matchResult === "player"} coinsBreakdown={coinsBreakdown} />}
+      {phase === "matchEnd" && (matchEnd || <MatchEndModal won={matchResult === "player"} coinsBreakdown={coinsBreakdown} />)}
       {showForfeitModal && (
         <ForfeitModal
           onConfirm={async () => {
             await forfeitMatch();
-            navigate("/");
+            navigate(options?.forfeitTo || "/");
           }}
           onCancel={() => setShowForfeitModal(false)}
         />
