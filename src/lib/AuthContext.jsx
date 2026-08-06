@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
-        setAppPublicSettings(publicSettings);
+        setAppPublicSettings({ id: publicSettings.data?.id, public_settings: publicSettings.data?.public_settings });
 
         // If we got the app public settings successfully, check if user is authenticated
         if (appParams.token) {
