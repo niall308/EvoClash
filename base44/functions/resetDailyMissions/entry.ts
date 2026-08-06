@@ -5,6 +5,8 @@ import { getEstDateString } from '../../shared/dailyRewards.ts';
 const MISSION_METRICS = ['wins', 'creaturesEvolved', 'gamesPlayed'];
 
 // Resets every user's daily mission progress. Runs on a schedule at midnight EST.
+// Uses per-user update() (not bulkUpdate) because the built-in User entity rejects
+// bulkUpdate via asServiceRole — see notifyDailyRewardReady for the same pattern.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -21,21 +23,25 @@ Deno.serve(async (req) => {
     const today = getEstDateString();
     const allUsers = await base44.asServiceRole.entities.User.list();
 
-    const updates = allUsers.map((u) => {
+    let resetCount = 0;
+    for (const u of allUsers) {
       const baseline = {};
       MISSION_METRICS.forEach((metric) => {
         baseline[metric] = u[metric] || 0;
       });
-      return { id: u.id, dailyMissionsDate: today, dailyMissionsBaseline: baseline, dailyMissionsClaimed: [] };
-    });
-
-    if (updates.length) {
-      await base44.asServiceRole.entities.User.bulkUpdate(updates);
+      await base44.asServiceRole.entities.User.update(u.id, {
+        dailyMissionsDate: today,
+        dailyMissionsBaseline: baseline,
+        dailyMissionsClaimed: [],
+      });
+      resetCount++;
     }
 
-    return Response.json({ resetCount: updates.length });
+    return Response.json({ resetCount, date: today });
   } catch (error) {
     console.error('resetDailyMissions error', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    const raw = error?.message ?? error?.error ?? error;
+    const msg = typeof raw === 'string' ? raw : JSON.stringify(raw);
+    return Response.json({ error: msg }, { status: 500 });
   }
 });

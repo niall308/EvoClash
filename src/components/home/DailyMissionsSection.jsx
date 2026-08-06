@@ -8,15 +8,21 @@ import { DAILY_MISSIONS } from "@/lib/gameConstants";
 export default function DailyMissionsSection({ user, onUserUpdate }) {
   const [claimingId, setClaimingId] = useState(null);
 
+  // Self-heal: reset the daily baseline + claimed list whenever the stored
+  // date isn't today (EST). This covers brand-new users (no date) AND users
+  // whose app session crossed midnight before the scheduled cron reset ran,
+  // so completed missions show their Claim button again right away.
   useEffect(() => {
-    if (!user || user.dailyMissionsDate) return;
+    if (!user) return;
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+    if (user.dailyMissionsDate === today) return;
     const baseline = {};
     DAILY_MISSIONS.forEach((m) => {
       baseline[m.metric] = user[m.metric] || 0;
     });
     base44.auth
       .updateMe({
-        dailyMissionsDate: new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()),
+        dailyMissionsDate: today,
         dailyMissionsBaseline: baseline,
         dailyMissionsClaimed: [],
       })
