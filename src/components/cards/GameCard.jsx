@@ -51,8 +51,10 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
   const glowClass = glow || isMaxedT4 ? "shadow-[0_0_25px_6px_rgba(255,215,0,0.85)] animate-pulse" : "";
 
   // Scaled wrapper: footprint box + absolutely-positioned master-size inner.
+  // shrink-0 keeps the card's true aspect footprint inside flex/modal parents
+  // that would otherwise compress it and let the art layer spill onto siblings.
   const Wrap = ({ children, className = "", style = {} }) => (
-    <div className="relative" style={{ width: w, height: h }}>
+    <div className="relative shrink-0" style={{ width: w, height: h }}>
       <div
         className={`absolute left-0 top-0 ${className}`}
         style={{ width: DESIGN_W, height: DESIGN_H, transform: `scale(${scale})`, transformOrigin: "top left", ...style }}
