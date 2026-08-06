@@ -71,21 +71,21 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
       >
         {/* Tier badge — top-left */}
         <div
-          className={`absolute top-1 left-1 z-20 w-7 h-7 rounded-full flex items-center justify-center font-serif font-black ${
+          className={`absolute top-1 left-1 z-20 w-5 h-5 rounded-full flex items-center justify-center font-serif font-black ${
             boost?.tier ? "ring-2 ring-yellow-300 animate-pulse" : ""
           }`}
           style={{ background: "linear-gradient(160deg, #5E4A2E 0%, #4E3E26 100%)", boxShadow: "inset 0 0 0 1.5px #C5A059" }}
         >
-          <span style={{ color: "#E8C97A", fontSize: "11px", textShadow: "0 1px 1px rgba(0,0,0,0.6)" }}>T{effectiveTier}</span>
+          <span style={{ color: "#E8C97A", fontSize: "9px", textShadow: "0 1px 1px rgba(0,0,0,0.6)" }}>T{effectiveTier}</span>
         </div>
 
         {/* Type / delete stack — top-right */}
         <div className="absolute top-1 right-1 z-20 flex flex-col items-end gap-1">
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center"
+            className="w-5 h-5 rounded-full flex items-center justify-center"
             style={{ background: "linear-gradient(160deg, #5E4A2E 0%, #4E3E26 100%)", boxShadow: "inset 0 0 0 1.5px #C5A059" }}
           >
-            <Icon className="w-4 h-4" style={{ color: typeColor }} />
+            <Icon className="w-3 h-3" style={{ color: typeColor }} />
           </div>
           {onDelete && (
             <button
@@ -175,18 +175,6 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
           </div>
         </div>
 
-        {/* Glowing orb — bottom-right (bonus / hybrid power) */}
-        {hasOrb && (
-          <div
-            className="absolute bottom-1 right-1 z-20 w-6 h-6 rounded-full flex items-center justify-center"
-            style={{
-              background: "radial-gradient(circle at 35% 35%, #B79BFF 0%, #7B3FE4 55%, #3B1E70 100%)",
-              boxShadow: "0 0 8px 2px rgba(123,63,228,0.9), inset 0 0 4px rgba(255,255,255,0.5)",
-            }}
-          >
-            <Sparkles className="w-3 h-3 text-white/90" />
-          </div>
-        )}
       </div>
     </div>
   );
