@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { createContext, useState, useReducer, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -6,14 +6,46 @@ import { ADMIN_UNLIMITED_COINS } from '@/lib/gameConstants';
 
 const AuthContext = createContext();
 
+// Single reducer for all auth-related state so a logical transition (e.g. user
+// loaded, app settings fetched) is one dispatch + one render instead of several
+// sequential setState calls each triggering a re-render.
+const initialState = {
+  user: null,
+  isAuthenticated: false,
+  isLoadingAuth: true,
+  isLoadingPublicSettings: true,
+  authError: null,
+  authChecked: false,
+  appPublicSettings: null // Contains only { id, public_settings }
+};
+
+function authReducer(state, action) {
+  switch (action.type) {
+    case 'AUTH_LOADING':
+      return { ...state, isLoadingAuth: true };
+    case 'AUTH_SUCCESS':
+      return { ...state, user: action.user, isAuthenticated: true, isLoadingAuth: false, authChecked: true, authError: null };
+    case 'AUTH_FAILURE':
+      return { ...state, isLoadingAuth: false, isAuthenticated: false, authChecked: true, authError: action.authError };
+    case 'APP_LOADING':
+      return { ...state, isLoadingPublicSettings: true, authError: null };
+    case 'APP_SETTINGS_SUCCESS':
+      return { ...state, appPublicSettings: action.appPublicSettings, isLoadingPublicSettings: false };
+    case 'APP_NO_TOKEN':
+      return { ...state, appPublicSettings: action.appPublicSettings, isLoadingPublicSettings: false, isLoadingAuth: false, isAuthenticated: false, authChecked: true };
+    case 'APP_ERROR':
+      return { ...state, authError: action.authError, isLoadingPublicSettings: false, isLoadingAuth: false };
+    case 'SET_USER':
+      return { ...state, user: action.user };
+    case 'LOGOUT':
+      return { ...state, user: null, isAuthenticated: false };
+    default:
+      return state;
+  }
+}
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
-  const [authError, setAuthError] = useState(null);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
+  const [state, dispatch] = useReducer(authReducer, initialState);
 
   // Guard against concurrent/repeated auth + startup calls so multiple mounts
   // (e.g. StrictMode double-invoke or remounts) only trigger one network round-trip.
@@ -24,29 +56,20 @@ export const AuthProvider = ({ children }) => {
     if (authCheckRef.current) return;
     authCheckRef.current = true;
     try {
-      // Now check if the user is authenticated
-      setIsLoadingAuth(true);
+      dispatch({ type: 'AUTH_LOADING' });
       let currentUser = await base44.auth.me();
       if (currentUser.role === 'admin' && (currentUser.coins || 0) < ADMIN_UNLIMITED_COINS) {
         currentUser = await base44.auth.updateMe({ coins: ADMIN_UNLIMITED_COINS });
       }
-      setUser(currentUser);
-      setIsAuthenticated(true);
-      setIsLoadingAuth(false);
-      setAuthChecked(true);
+      dispatch({ type: 'AUTH_SUCCESS', user: currentUser });
     } catch (error) {
       console.error('User auth check failed:', error);
-      setIsLoadingAuth(false);
-      setIsAuthenticated(false);
-      setAuthChecked(true);
-
       // If user auth fails, it might be an expired token
-      if (error.status === 401 || error.status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
-      }
+      const authError =
+        error.status === 401 || error.status === 403
+          ? { type: 'auth_required', message: 'Authentication required' }
+          : null;
+      dispatch({ type: 'AUTH_FAILURE', authError });
     } finally {
       authCheckRef.current = false;
     }
@@ -56,8 +79,7 @@ export const AuthProvider = ({ children }) => {
     if (appStateCheckRef.current) return;
     appStateCheckRef.current = true;
     try {
-      setIsLoadingPublicSettings(true);
-      setAuthError(null);
+      dispatch({ type: 'APP_LOADING' });
 
       // First, check app public settings (with token if available)
       // This will tell us if auth is required, user not registered, etc.
@@ -72,56 +94,37 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
-        setAppPublicSettings({ id: publicSettings.data?.id, public_settings: publicSettings.data?.public_settings });
+        const appPublicSettings = { id: publicSettings.data?.id, public_settings: publicSettings.data?.public_settings };
 
         // If we got the app public settings successfully, check if user is authenticated
         if (appParams.token) {
+          dispatch({ type: 'APP_SETTINGS_SUCCESS', appPublicSettings });
           await checkUserAuth();
         } else {
-          setIsLoadingAuth(false);
-          setIsAuthenticated(false);
-          setAuthChecked(true);
+          dispatch({ type: 'APP_NO_TOKEN', appPublicSettings });
         }
-        setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);
 
+        let authError;
         // Handle app-level errors
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
           const reason = appError.data.extra_data.reason;
           if (reason === 'auth_required') {
-            setAuthError({
-              type: 'auth_required',
-              message: 'Authentication required'
-            });
+            authError = { type: 'auth_required', message: 'Authentication required' };
           } else if (reason === 'user_not_registered') {
-            setAuthError({
-              type: 'user_not_registered',
-              message: 'User not registered for this app'
-            });
+            authError = { type: 'user_not_registered', message: 'User not registered for this app' };
           } else {
-            setAuthError({
-              type: reason,
-              message: appError.message
-            });
+            authError = { type: reason, message: appError.message };
           }
         } else {
-          setAuthError({
-            type: 'unknown',
-            message: appError.message || 'Failed to load app'
-          });
+          authError = { type: 'unknown', message: appError.message || 'Failed to load app' };
         }
-        setIsLoadingPublicSettings(false);
-        setIsLoadingAuth(false);
+        dispatch({ type: 'APP_ERROR', authError });
       }
     } catch (error) {
       console.error('Unexpected error:', error);
-      setAuthError({
-        type: 'unknown',
-        message: error.message || 'An unexpected error occurred'
-      });
-      setIsLoadingPublicSettings(false);
-      setIsLoadingAuth(false);
+      dispatch({ type: 'APP_ERROR', authError: { type: 'unknown', message: error.message || 'An unexpected error occurred' } });
     } finally {
       appStateCheckRef.current = false;
     }
@@ -132,12 +135,11 @@ export const AuthProvider = ({ children }) => {
   }, [checkAppState]);
 
   const updateUser = useCallback((updatedUser) => {
-    setUser(updatedUser);
+    dispatch({ type: 'SET_USER', user: updatedUser });
   }, []);
 
   const logout = useCallback((shouldRedirect = true) => {
-    setUser(null);
-    setIsAuthenticated(false);
+    dispatch({ type: 'LOGOUT' });
 
     if (shouldRedirect) {
       // Use the SDK's logout method which handles token cleanup and redirect
@@ -154,19 +156,19 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const value = useMemo(() => ({
-    user,
-    isAuthenticated,
-    isLoadingAuth,
-    isLoadingPublicSettings,
-    authError,
-    appPublicSettings,
-    authChecked,
+    user: state.user,
+    isAuthenticated: state.isAuthenticated,
+    isLoadingAuth: state.isLoadingAuth,
+    isLoadingPublicSettings: state.isLoadingPublicSettings,
+    authError: state.authError,
+    appPublicSettings: state.appPublicSettings,
+    authChecked: state.authChecked,
     logout,
     updateUser,
     navigateToLogin,
     checkUserAuth,
     checkAppState
-  }), [user, isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError, appPublicSettings, authChecked, logout, updateUser, navigateToLogin, checkUserAuth, checkAppState]);
+  }), [state, logout, updateUser, navigateToLogin, checkUserAuth, checkAppState]);
 
   return (
     <AuthContext.Provider value={value}>
