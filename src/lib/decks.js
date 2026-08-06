@@ -10,15 +10,20 @@ export async function ensureActiveDeck(userId) {
     const deck = await base44.entities.Deck.create({ name: "Deck 1", isActive: true });
     decks = [deck];
     active = deck;
-    const cards = await base44.entities.Card.filter({ ownerId: userId });
-    const orphans = cards.filter((c) => !c.deckId);
-    if (orphans.length) {
-      await base44.entities.Card.bulkUpdate(orphans.map((c) => ({ id: c.id, deckId: deck.id })));
-    }
   } else if (!active) {
     active = decks[0];
     await base44.entities.Deck.update(active.id, { isActive: true });
     active = { ...active, isActive: true };
+  }
+
+  // Reassign any cards whose deckId is empty or points to a deck that no
+  // longer exists, so cards never vanish from the visible deck after a deck
+  // is deleted or its id goes stale.
+  const deckIds = new Set(decks.map((d) => d.id));
+  const cards = await base44.entities.Card.filter({ ownerId: userId });
+  const orphans = cards.filter((c) => !c.deckId || !deckIds.has(c.deckId));
+  if (orphans.length) {
+    await base44.entities.Card.bulkUpdate(orphans.map((c) => ({ id: c.id, deckId: active.id })));
   }
 
   return { decks, active };
