@@ -12,10 +12,10 @@ const EFFECT_OVERLAY_CLASS = {
 };
 
 // Gold / accent colors taken from the card-front template.
-const GOLD = "#d4af37";
-const ATTACK_COLOR = "#d9855b";
-const DEFENSE_COLOR = "#8ab5d0";
-const FOOTER_BG = "#100a06";
+const GOLD = "#c5a059";
+const ATTACK_COLOR = "#c97d53";
+const DEFENSE_COLOR = "#8eb5c5";
+const FOOTER_BG = "#1a1a24";
 const TEXT_SHADOW = "0 1px 2px rgba(0,0,0,0.9)";
 
 export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1, boost = null }) {
@@ -52,8 +52,8 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
       {/* Template frame (base layer) */}
       <img src={CARD_FRONT_TEMPLATE_URL} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
 
-      {/* Creature art inside the template's white art box (~4%–72%) */}
-      <div className="absolute top-[4%] left-[6%] right-[6%] bottom-[28%] overflow-hidden">
+      {/* Creature art inside the template's white art box (measured 4.1%–72.36% / 5.33%–93.87%) */}
+      <div className="absolute top-[4.1%] left-[5.3%] right-[6.1%] bottom-[27.6%] overflow-hidden">
         {card.imageUrl ? (
           <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover" />
         ) : (
@@ -96,41 +96,55 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
         </button>
       )}
 
-      {/* Footer: name + stats — aligned to the template's dark footer (~72%–97%),
-          styled to match the baked placeholder text (gold serif Name, orange A, pale-blue D, gold +) */}
-      <div
-        className="absolute left-[6%] right-[6%] top-[72%] bottom-[3%] flex flex-col items-center justify-center gap-0.5 text-center"
-        style={{ background: FOOTER_BG }}
-      >
-        <div className="w-[70%] h-px bg-[#7a5a2b]/70 mb-0.5" />
-        <p
-          className="font-serif font-bold leading-tight truncate w-[92%]"
-          style={{ color: GOLD, fontSize: "12px", textShadow: TEXT_SHADOW }}
-        >
-          {card.name}
-        </p>
-        <div className="w-[70%] h-px bg-[#7a5a2b]/70 my-0.5" />
-        <div className="flex items-center justify-center gap-1.5 font-serif font-bold" style={{ fontSize: "13px", textShadow: TEXT_SHADOW }}>
-          <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: typeColor }} />
-          <span className={boost?.attack ? "ring-1 ring-amber-400 rounded px-0.5" : ""} style={{ color: ATTACK_COLOR }}>
-            A{boost?.attack ?? card.attack}
-          </span>
-          <span className={boost?.defense ? "ring-1 ring-amber-400 rounded px-0.5" : ""} style={{ color: DEFENSE_COLOR }}>
-            D{boost?.defense ?? card.defense}
+      {/* Footer text layer — the template's own ornate footer (filigree, dividers, corner
+          badges, tier ornaments) stays fully visible; we only overprint the baked
+          placeholder text ("Name" / "A0" / "D0" / "+0") with the real values, each on a
+          small footer-colored pill that masks the placeholder behind it. No opaque
+          full-footer box — the template IS the layout. */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Name */}
+        <div className="absolute left-0 right-0 flex justify-center" style={{ top: "78.6%" }}>
+          <span
+            className="font-serif font-bold text-center px-3 py-0.5 rounded max-w-[88%] truncate"
+            style={{ background: FOOTER_BG, color: GOLD, fontSize: "12px", textShadow: TEXT_SHADOW }}
+          >
+            {card.name}
           </span>
         </div>
-        <div className="w-[70%] h-px bg-[#7a5a2b]/70 mt-0.5" />
+
+        {/* Attack / Defense */}
+        <div
+          className="absolute left-0 right-0 flex justify-center items-center font-serif font-bold"
+          style={{ top: "84.3%", fontSize: "13px" }}
+        >
+          <span className="flex items-center gap-1.5 px-3 py-0.5 rounded" style={{ background: FOOTER_BG, textShadow: TEXT_SHADOW }}>
+            <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: typeColor }} />
+            <span className={boost?.attack ? "ring-1 ring-amber-400 rounded px-0.5" : ""} style={{ color: ATTACK_COLOR }}>
+              A{boost?.attack ?? card.attack}
+            </span>
+            <span className={boost?.defense ? "ring-1 ring-amber-400 rounded px-0.5" : ""} style={{ color: DEFENSE_COLOR }}>
+              D{boost?.defense ?? card.defense}
+            </span>
+          </span>
+        </div>
+
+        {/* Bonus damage */}
         {card.bonusDamage > 0 && (
-          <div className="flex items-center justify-center gap-0.5 font-serif font-bold" style={{ color: GOLD, fontSize: "12px", textShadow: TEXT_SHADOW }}>
-            <span>+{card.bonusDamage}</span>
-            {isHybrid ? (
-              <HelpCircle className="w-2.5 h-2.5" style={{ color: "#FFD700" }} />
-            ) : (
-              (TYPE_ADVANTAGES[card.type] || []).map((t) => {
-                const TIcon = TYPE_ICONS[t];
-                return <TIcon key={t} className="w-2.5 h-2.5" style={{ color: TYPE_COLORS[t] }} />;
-              })
-            )}
+          <div className="absolute left-0 right-0 flex justify-center" style={{ top: "87.2%" }}>
+            <span
+              className="flex items-center justify-center gap-0.5 px-3 py-0.5 rounded font-serif font-bold"
+              style={{ background: FOOTER_BG, color: GOLD, fontSize: "12px", textShadow: TEXT_SHADOW }}
+            >
+              <span>+{card.bonusDamage}</span>
+              {isHybrid ? (
+                <HelpCircle className="w-2.5 h-2.5" style={{ color: "#FFD700" }} />
+              ) : (
+                (TYPE_ADVANTAGES[card.type] || []).map((t) => {
+                  const TIcon = TYPE_ICONS[t];
+                  return <TIcon key={t} className="w-2.5 h-2.5" style={{ color: TYPE_COLORS[t] }} />;
+                })
+              )}
+            </span>
           </div>
         )}
       </div>
