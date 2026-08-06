@@ -20,13 +20,19 @@ export default function ScrollToTop() {
 
     if (hash) {
       const id = getHashId(hash);
-      const timer = window.setTimeout(() => {
+      // Schedule the scroll on the next frame instead of an arbitrary 50ms
+      // timer so the browser paints the new route and then smooth-scrolls in
+      // a single frame cycle, avoiding extra layout work.
+      const rafId = window.requestAnimationFrame(() => {
         document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-      }, 50);
-      return () => window.clearTimeout(timer);
+      });
+      return () => window.cancelAnimationFrame(rafId);
     }
 
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    // Instant (auto) jump for non-anchor navigations — smooth scrolling a
+    // large layout to the top on every route change is expensive and rarely
+    // desirable for programmatic navigation.
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [pathname, hash, navigationType]);
 
   return null;
