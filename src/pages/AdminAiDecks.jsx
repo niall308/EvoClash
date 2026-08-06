@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
@@ -22,14 +22,19 @@ export default function AdminAiDecks() {
     setViewingCards(cards);
   };
 
-  useEffect(() => {
-    (async () => {
-      const all = await Promise.all(DIFFICULTIES.map((d) => base44.entities.AiDeckCard.filter({ difficulty: d })));
-      const next = {};
-      DIFFICULTIES.forEach((d, i) => (next[d] = all[i].length));
-      setCounts(next);
-    })();
+  const refreshCounts = useCallback(async () => {
+    const all = await Promise.all(DIFFICULTIES.map((d) => base44.entities.AiDeckCard.filter({ difficulty: d })));
+    const next = {};
+    DIFFICULTIES.forEach((d, i) => (next[d] = all[i].length));
+    setCounts(next);
   }, []);
+
+  useEffect(() => {
+    refreshCounts();
+    const onFocus = () => refreshCounts();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [refreshCounts]);
 
   const generateDeck = async (difficulty) => {
     setGenerating(difficulty);
@@ -58,7 +63,7 @@ export default function AdminAiDecks() {
       await base44.entities.AiDeckCard.deleteMany({ difficulty });
     }
     await base44.entities.AiDeckCard.bulkCreate(finished);
-    setCounts((c) => ({ ...c, [difficulty]: finished.length }));
+    await refreshCounts();
     setGenerating(null);
   };
 
