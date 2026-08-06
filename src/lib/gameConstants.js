@@ -133,6 +133,10 @@ export const TIER_RANGES = {
 export const UPGRADE_REQUIREMENT = { cardsDestroyed: 100, gamesPlayed: 200, matchWins: 50 };
 
 export const CARD_BACK_URL = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/c758e901f_EvoClashCardBack.png";
+// Front-side card template: a finished frame (border, ornaments, stat footer).
+// GameCard renders this as the base layer and overlays the generated creature art
+// in the white header box + name/stats in the dark footer.
+export const CARD_FRONT_TEMPLATE_URL = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/ca8f7e129_CardFrontTemp.png";
 export const TURN_TIME_LIMIT_SECONDS = 300;
 export const MAX_CONSECUTIVE_TURN_TIMEOUTS = 3;
 export const STYLE_REFERENCE_URL = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/636b60708_Style.png";

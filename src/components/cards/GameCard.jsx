@@ -1,6 +1,6 @@
 import React from "react";
-import { Flame, Zap, Droplet, Snowflake, Mountain, Wind, Sprout, Sparkles, Trash2, HelpCircle } from "lucide-react";
-import { TYPE_COLORS, TYPE_ADVANTAGES, CARD_BACK_URL, TYPE_EFFECT_GROUP, MAX_STAT_UPGRADES_PER_TIER } from "@/lib/gameConstants";
+import { Flame, Zap, Droplet, Snowflake, Mountain, Wind, Sprout, Sparkles, HelpCircle, Trash2 } from "lucide-react";
+import { TYPE_COLORS, TYPE_ADVANTAGES, CARD_BACK_URL, CARD_FRONT_TEMPLATE_URL, TYPE_EFFECT_GROUP, MAX_STAT_UPGRADES_PER_TIER } from "@/lib/gameConstants";
 
 const TYPE_ICONS = { Fire: Flame, Lava: Zap, Water: Droplet, Ice: Snowflake, Rock: Mountain, Wind: Wind, Earth: Sprout, Magic: Sparkles };
 
@@ -11,10 +11,15 @@ const EFFECT_OVERLAY_CLASS = {
   dissolve: "bg-gradient-to-br from-blue-900/40 via-transparent to-blue-900/60",
 };
 
+// Gold / accent colors taken from the card-front template.
+const GOLD = "#d4b47e";
+const ATTACK_COLOR = "#d18a59";
+const DEFENSE_COLOR = "#86a3b5";
+
 export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1, boost = null }) {
   const isHybrid = card.isHybrid;
   const Icon = isHybrid ? HelpCircle : TYPE_ICONS[card.type] || Sparkles;
-  const color = isHybrid ? "#FFD700" : TYPE_COLORS[card.type];
+  const typeColor = isHybrid ? "#FFD700" : TYPE_COLORS[card.type];
   const sizes = { xs: "w-14 h-20", hand: "w-24 h-36", sm: "w-20 h-28", md: "w-32 h-44", lg: "w-40 h-56" };
   const intensity = Math.min(0.85, 0.3 + (1 - hpRatio) * 0.55);
   const effectGroups = [...new Set(statusEffects.map((t) => TYPE_EFFECT_GROUP[t]).filter(Boolean))];
@@ -37,69 +42,89 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
 
   const cardBody = (
     <div
-      className={`relative ${isHybrid ? "w-full h-full" : sizes[size]} rounded-2xl ${isHybrid ? "" : "border-2"} shadow-xl flex flex-col overflow-hidden transition-all ${
+      className={`relative w-full h-full rounded-xl overflow-hidden shadow-xl transition-all ${
         glow || isMaxedT4 ? "shadow-[0_0_25px_6px_rgba(255,215,0,0.85)] animate-pulse" : ""
       }`}
-      style={{
-        borderColor: isMaxedT4 ? "#FFD700" : color,
-        background: "linear-gradient(160deg, #0D1B2A 0%, #1A2E45 100%)",
-        opacity: cardOpacity,
-      }}
+      style={{ opacity: cardOpacity }}
     >
-      <div
-        className={`absolute top-1 left-1 z-10 text-[11px] font-bold px-1.5 py-0.5 rounded-full text-white ${
-          boost?.tier ? "ring-2 ring-yellow-300 animate-pulse" : ""
-        }`}
-        style={{ background: boost?.tier ? "#FFD700" : color }}
-      >
-        T{boost?.tier || card.tier}
-      </div>
-      <div className="absolute top-1 right-1 z-10 flex flex-col items-end gap-1">
-        <div className="p-1 rounded-full bg-black/50">
-          <Icon className="w-3 h-3" style={{ color }} />
-        </div>
-        {onDelete && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(card.id);
-            }}
-            className="p-1 rounded-full bg-black/50 text-red-400 hover:text-red-300"
-          >
-            <Trash2 className="w-3 h-3" />
-          </button>
-        )}
-      </div>
-      <div className="flex-1 relative flex items-center justify-center">
+      {/* Template frame (base layer) */}
+      <img src={CARD_FRONT_TEMPLATE_URL} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+
+      {/* Creature art inside the white header box */}
+      <div className="absolute top-[7%] left-[8%] right-[8%] bottom-[40%] overflow-hidden">
         {card.imageUrl ? (
           <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover" />
         ) : (
-          <Icon className="w-8 h-8" style={{ color }} />
+          <div className="w-full h-full flex items-center justify-center">
+            <Icon className="w-7 h-7" style={{ color: typeColor, opacity: 0.6 }} />
+          </div>
         )}
         {effectGroups.map((g) => (
           <div key={g} className={`absolute inset-0 pointer-events-none ${EFFECT_OVERLAY_CLASS[g]}`} style={{ opacity: intensity }} />
         ))}
       </div>
-      <div className="px-1.5 pb-1.5 text-center">
-        <p className="text-white font-bold text-[11px] leading-tight truncate">{card.name}</p>
-        <div className="flex items-center justify-center gap-1 mt-1 text-[11px] font-semibold">
-          <Icon className="w-2.5 h-2.5" style={{ color }} />
-          <span className={boost?.attack ? "text-yellow-300 animate-pulse ring-1 ring-amber-400 rounded px-1" : "text-orange-300"}>A{boost?.attack || card.attack}</span>
-          <span className={boost?.defense ? "text-yellow-300 animate-pulse ring-1 ring-amber-400 rounded px-1" : "text-blue-300"}>D{boost?.defense || card.defense}</span>
+
+      {/* Tier badge (overlays the baked T1 ornament so the correct tier shows) */}
+      <div
+        className={`absolute z-10 flex items-center justify-center rounded-full font-serif font-bold text-white ${boost?.tier ? "ring-2 ring-yellow-300 animate-pulse" : ""}`}
+        style={{
+          top: "2.5%",
+          left: "4.5%",
+          width: "15%",
+          aspectRatio: "1 / 1",
+          background: "rgba(10,10,16,0.85)",
+          border: `2px solid ${boost?.tier ? "#FFD700" : GOLD}`,
+          color: boost?.tier ? "#FFD700" : GOLD,
+          fontSize: "11px",
+        }}
+      >
+        T{boost?.tier || card.tier}
+      </div>
+
+      {/* Delete control */}
+      {onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(card.id);
+          }}
+          className="absolute z-10 top-1 right-1 p-1 rounded-full bg-black/60 text-red-400 hover:text-red-300"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      )}
+
+      {/* Footer: name + stats — opaque backdrop masks the template's baked placeholder text */}
+      <div
+        className="absolute left-[7%] right-[7%] top-[59%] bottom-[6%] flex flex-col items-center justify-center gap-0.5 text-center rounded-md"
+        style={{ background: "#15151c" }}
+      >
+        <p
+          className="font-serif font-bold leading-tight truncate w-full"
+          style={{ color: GOLD, fontSize: "11px" }}
+        >
+          {card.name}
+        </p>
+        <div className="flex items-center justify-center gap-1.5 font-serif font-bold" style={{ fontSize: "11px" }}>
+          <Icon className="w-3 h-3 shrink-0" style={{ color: typeColor }} />
+          <span className={boost?.attack ? "ring-1 ring-amber-400 rounded px-0.5" : ""} style={{ color: ATTACK_COLOR }}>
+            A{boost?.attack ?? card.attack}
+          </span>
+          <span className={boost?.defense ? "ring-1 ring-amber-400 rounded px-0.5" : ""} style={{ color: DEFENSE_COLOR }}>
+            D{boost?.defense ?? card.defense}
+          </span>
         </div>
         {card.bonusDamage > 0 && (
-          <div className="flex items-center justify-center gap-1 text-[11px] text-yellow-300">
+          <div className="flex items-center justify-center gap-0.5 font-serif font-bold" style={{ color: GOLD, fontSize: "11px" }}>
             <span>+{card.bonusDamage}</span>
-            <span className="flex gap-0.5">
-              {isHybrid ? (
-                <HelpCircle className="w-2 h-2" style={{ color: "#FFD700" }} />
-              ) : (
-                (TYPE_ADVANTAGES[card.type] || []).map((t) => {
-                  const TIcon = TYPE_ICONS[t];
-                  return <TIcon key={t} className="w-2 h-2" style={{ color: TYPE_COLORS[t] }} />;
-                })
-              )}
-            </span>
+            {isHybrid ? (
+              <HelpCircle className="w-2.5 h-2.5" style={{ color: "#FFD700" }} />
+            ) : (
+              (TYPE_ADVANTAGES[card.type] || []).map((t) => {
+                const TIcon = TYPE_ICONS[t];
+                return <TIcon key={t} className="w-2.5 h-2.5" style={{ color: TYPE_COLORS[t] }} />;
+              })
+            )}
           </div>
         )}
       </div>
@@ -109,13 +134,13 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
   if (isHybrid) {
     return (
       <div
-        className={`${sizes[size]} rounded-2xl p-[3px] ${glow || isMaxedT4 ? "animate-pulse" : ""}`}
+        className={`${sizes[size]} rounded-xl p-[3px] ${glow || isMaxedT4 ? "animate-pulse" : ""}`}
         style={{ background: "conic-gradient(from 180deg, #ff0000, #ff9900, #ffee00, #33ff00, #00ffee, #0066ff, #9900ff, #ff0000)" }}
       >
-        {cardBody}
+        <div className="w-full h-full rounded-[7px] overflow-hidden">{cardBody}</div>
       </div>
     );
   }
 
-  return cardBody;
+  return <div className={sizes[size]}>{cardBody}</div>;
 }
