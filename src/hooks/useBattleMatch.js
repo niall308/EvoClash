@@ -749,11 +749,12 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     if (phase !== "battle" || turn !== "player" || !playerCard) return;
     activatePower("maxHPBoostPowerUsedAt", () => {
       const extra = Math.round(maxHealth(playerCard) * 0.25);
+      const newMax = maxHealth(playerCard) + (pfx.maxHPBonus || 0) + extra;
       patchPfx((p) => ({ ...p, maxHPBonus: (p.maxHPBonus || 0) + extra }));
-      setPlayerHP((hp) => hp + extra);
-      setLog("Max HP increased by 25% for this battle!");
+      setPlayerHP(newMax);
+      setLog("Max HP increased by 25% and fully restored for this battle!");
     });
-  }, [activatePower, phase, turn, playerCard, patchPfx]);
+  }, [activatePower, phase, turn, playerCard, pfx.maxHPBonus, patchPfx]);
 
   const restoreOnDefeatPower = useCallback(() => {
     if (phase !== "battle" || turn !== "player") return;
