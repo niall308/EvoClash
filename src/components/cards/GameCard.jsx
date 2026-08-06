@@ -12,9 +12,11 @@ const EFFECT_OVERLAY_CLASS = {
 };
 
 // Gold / accent colors taken from the card-front template.
-const GOLD = "#d4b47e";
-const ATTACK_COLOR = "#d18a59";
-const DEFENSE_COLOR = "#86a3b5";
+const GOLD = "#d4af37";
+const ATTACK_COLOR = "#d9855b";
+const DEFENSE_COLOR = "#8ab5d0";
+const FOOTER_BG = "#100a06";
+const TEXT_SHADOW = "0 1px 2px rgba(0,0,0,0.9)";
 
 export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1, boost = null }) {
   const isHybrid = card.isHybrid;
@@ -50,8 +52,8 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
       {/* Template frame (base layer) */}
       <img src={CARD_FRONT_TEMPLATE_URL} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
 
-      {/* Creature art inside the white header box */}
-      <div className="absolute top-[7%] left-[8%] right-[8%] bottom-[40%] overflow-hidden">
+      {/* Creature art inside the template's white art box (~4%–72%) */}
+      <div className="absolute top-[4%] left-[6%] right-[6%] bottom-[28%] overflow-hidden">
         {card.imageUrl ? (
           <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover" />
         ) : (
@@ -94,19 +96,22 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
         </button>
       )}
 
-      {/* Footer: name + stats — opaque backdrop masks the template's baked placeholder text */}
+      {/* Footer: name + stats — aligned to the template's dark footer (~72%–97%),
+          styled to match the baked placeholder text (gold serif Name, orange A, pale-blue D, gold +) */}
       <div
-        className="absolute left-[7%] right-[7%] top-[59%] bottom-[6%] flex flex-col items-center justify-center gap-0.5 text-center rounded-md"
-        style={{ background: "#15151c" }}
+        className="absolute left-[6%] right-[6%] top-[72%] bottom-[3%] flex flex-col items-center justify-center gap-0.5 text-center"
+        style={{ background: FOOTER_BG }}
       >
+        <div className="w-[70%] h-px bg-[#7a5a2b]/70 mb-0.5" />
         <p
-          className="font-serif font-bold leading-tight truncate w-full"
-          style={{ color: GOLD, fontSize: "11px" }}
+          className="font-serif font-bold leading-tight truncate w-[92%]"
+          style={{ color: GOLD, fontSize: "12px", textShadow: TEXT_SHADOW }}
         >
           {card.name}
         </p>
-        <div className="flex items-center justify-center gap-1.5 font-serif font-bold" style={{ fontSize: "11px" }}>
-          <Icon className="w-3 h-3 shrink-0" style={{ color: typeColor }} />
+        <div className="w-[70%] h-px bg-[#7a5a2b]/70 my-0.5" />
+        <div className="flex items-center justify-center gap-1.5 font-serif font-bold" style={{ fontSize: "13px", textShadow: TEXT_SHADOW }}>
+          <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: typeColor }} />
           <span className={boost?.attack ? "ring-1 ring-amber-400 rounded px-0.5" : ""} style={{ color: ATTACK_COLOR }}>
             A{boost?.attack ?? card.attack}
           </span>
@@ -114,8 +119,9 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
             D{boost?.defense ?? card.defense}
           </span>
         </div>
+        <div className="w-[70%] h-px bg-[#7a5a2b]/70 mt-0.5" />
         {card.bonusDamage > 0 && (
-          <div className="flex items-center justify-center gap-0.5 font-serif font-bold" style={{ color: GOLD, fontSize: "11px" }}>
+          <div className="flex items-center justify-center gap-0.5 font-serif font-bold" style={{ color: GOLD, fontSize: "12px", textShadow: TEXT_SHADOW }}>
             <span>+{card.bonusDamage}</span>
             {isHybrid ? (
               <HelpCircle className="w-2.5 h-2.5" style={{ color: "#FFD700" }} />
