@@ -1,13 +1,12 @@
 import { STAT_UPGRADES, TIER_STAT_UPGRADE_COST, MAX_STAT_UPGRADES_PER_TIER } from "@/lib/gameConstants";
 
-// Tier 1: base cost for the 1st use, doubled for the 2nd use (max 2 uses).
-// Tiers 2-4: flat cost per tier, single use only.
+// Every tier allows 2 uses per stat; the 2nd use costs double the 1st.
+// Tier 1 base = STAT_UPGRADES.cost; Tiers 2-4 base = flat TIER_STAT_UPGRADE_COST.
 export function getStatUpgradeCost(tier, key, usesInTier) {
-  if (tier === 1) {
-    const base = STAT_UPGRADES.find((u) => u.key === key).cost;
-    return usesInTier === 0 ? base : base * 2;
-  }
-  return TIER_STAT_UPGRADE_COST[tier];
+  const base = tier === 1
+    ? STAT_UPGRADES.find((u) => u.key === key).cost
+    : TIER_STAT_UPGRADE_COST[tier];
+  return usesInTier === 0 ? base : base * 2;
 }
 
 export function getStatUpgradeMaxUses(tier) {

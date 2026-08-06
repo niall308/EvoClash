@@ -187,15 +187,15 @@ export const CARD_MILESTONES = [
 ];
 
 // Coin-purchasable stat upgrades on the Card Upgrade screen.
-// Tier 1: each stat can be upgraded twice (cost doubles on the 2nd use, uses "cost" below).
-// Tiers 2-4: each stat can be upgraded once, at a flat cost per tier (see TIER_STAT_UPGRADE_COST).
+// Every tier: each stat can be upgraded twice (cost doubles on the 2nd use).
+// Tier 1 uses STAT_UPGRADES.cost; Tiers 2-4 use the flat per-tier cost below.
 export const STAT_UPGRADES = [
   { key: "attack", label: "Attack", cost: 5000, percent: 10 },
   { key: "defense", label: "Defense", cost: 5000, percent: 10 },
   { key: "bonusDamage", label: "Bonus Damage", cost: 3000, percent: 15 },
 ];
 
-export const MAX_STAT_UPGRADES_PER_TIER = { 1: 2, 2: 1, 3: 1, 4: 1 };
+export const MAX_STAT_UPGRADES_PER_TIER = { 1: 2, 2: 2, 3: 2, 4: 2 };
 export const TIER_STAT_UPGRADE_COST = { 2: 20000, 3: 35000, 4: 50000 };
 
 export const TIER_UPGRADE_COST = 150000;
