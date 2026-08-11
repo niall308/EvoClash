@@ -33,7 +33,23 @@
         "fastWins",
         "comebackWins",
         "defeatedHigherTierOpponent",
-        "maxWinStreak"
+        "maxWinStreak",
+        "pvpWins",
+        "rankPoints",
+        "decksBuilt",
+        "powerUpsUsed",
+        "tradesCompleted",
+        "hybridCardsOwned",
+        "winsAllElements",
+        "defeatedHigherRankedPlayers",
+        "highestStoryStage",
+        "storyMatchesWon",
+        "bossFightsWon",
+        "bossFlawlessWins",
+        "stagesCompletedNoPowerUps",
+        "maxStagesNoLossStreak",
+        "bossFirstAttemptWins",
+        "finalBossDefeated"
       ]
     },
     "target": {

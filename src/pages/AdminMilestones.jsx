@@ -27,6 +27,22 @@ const METRIC_LABELS = {
   comebackWins: "Comeback Wins",
   defeatedHigherTierOpponent: "Higher-Tier Defeats",
   maxWinStreak: "Win Streak",
+  pvpWins: "PvP Wins",
+  rankPoints: "Rank Points",
+  decksBuilt: "Decks Built",
+  powerUpsUsed: "Power-Ups Used",
+  tradesCompleted: "Cards Traded",
+  hybridCardsOwned: "Hybrid Cards Owned",
+  winsAllElements: "All-Element Wins",
+  defeatedHigherRankedPlayers: "Higher-Ranked Defeats",
+  highestStoryStage: "Story Stage Reached",
+  storyMatchesWon: "Story Matches Won",
+  bossFightsWon: "Bosses Defeated",
+  bossFlawlessWins: "Flawless Boss Wins",
+  stagesCompletedNoPowerUps: "Stages Cleared (No Power-Ups)",
+  maxStagesNoLossStreak: "Stages Cleared In A Row",
+  bossFirstAttemptWins: "Bosses Beat First Try",
+  finalBossDefeated: "Final Boss Defeated",
 };
 
 export default function AdminMilestones() {
