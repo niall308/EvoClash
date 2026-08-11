@@ -17,7 +17,7 @@ export default function ActiveMilestonesSummary({ user }) {
   const [milestones, setMilestones] = useState(null);
 
   useEffect(() => {
-    base44.entities.Milestone.list("-created_date").then(setMilestones);
+    base44.entities.Milestone.list("-created_date", 200).then(setMilestones);
   }, []);
 
   if (!milestones) return null;
