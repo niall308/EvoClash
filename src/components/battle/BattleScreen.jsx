@@ -124,7 +124,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
 
       <div className="flex-1 relative flex flex-col items-center justify-center px-4">
         <AttackArrow
-          direction={(effect?.recoil ? effect.side === "player" : effect.side === "ai") ? "down" : "up"}
+          direction={effect?.recoil ? (effect.side === "player" ? "down" : "up") : (effect?.side === "ai" ? "down" : "up")}
           color={effect?.side === "player" ? "#FF4500" : "#00BFFF"}
           trigger={effect?.key}
         />
