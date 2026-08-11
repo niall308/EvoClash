@@ -123,7 +123,11 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
       </div>
 
       <div className="flex-1 relative flex flex-col items-center justify-center px-4">
-        <AttackArrow direction={effect?.side === "player" ? "up" : "down"} color={effect?.side === "player" ? "#FF4500" : "#00BFFF"} trigger={effect?.key} />
+        <AttackArrow
+          direction={(effect?.recoil ? effect.side === "player" : effect.side === "ai") ? "down" : "up"}
+          color={effect?.side === "player" ? "#FF4500" : "#00BFFF"}
+          trigger={effect?.key}
+        />
         <DamageNumber value={effect?.value} blocked={effect?.blocked} tie={effect?.tie} crit={effect?.crit} trigger={effect?.key} />
         <p className="text-center text-sm text-white/70 max-w-xs">{log}</p>
         {phase === "draw" && round === 1 && playerHand.length === 0 && !playerCard && (
