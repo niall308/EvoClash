@@ -1,4 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import {
+  getBotsForWinsLeaderboard,
+  getBotsForStreakLeaderboard,
+  getBotsForWeeklyLeaderboard,
+} from '../../shared/leaderboardBots.ts';
 
 // All three leaderboards are PvP-only (online + offline matches) — AI battle
 // stats never feed into them.
@@ -13,13 +18,12 @@ Deno.serve(async (req) => {
 
     if (type === 'streak') {
       const users = await base44.asServiceRole.entities.User.list('-maxPvpWinStreak', 200);
-      const leaderboard = users
+      const real = users
         .filter((u) => u.role !== 'admin')
-        .slice(0, 50)
-        .map((u) => ({
-          full_name: u.username || u.full_name || 'Anonymous',
-          streak: u.maxPvpWinStreak || 0,
-        }));
+        .map((u) => ({ full_name: u.username || u.full_name || 'Anonymous', streak: u.maxPvpWinStreak || 0 }));
+      const leaderboard = [...real, ...getBotsForStreakLeaderboard()]
+        .sort((a, b) => b.streak - a.streak)
+        .slice(0, 50);
       return Response.json({ leaderboard });
     }
 
@@ -40,23 +44,27 @@ Deno.serve(async (req) => {
       const candidateUsers = await Promise.all(
         candidateUserIds.map(([userId]) => base44.asServiceRole.entities.User.filter({ id: userId }, undefined, 1))
       );
-      const leaderboard = candidateUserIds
+      const real = candidateUserIds
         .map(([userId, wins], i) => ({ user: candidateUsers[i]?.[0], wins }))
         .filter(({ user }) => user?.role !== 'admin')
-        .slice(0, 50)
         .map(({ user, wins }) => ({ full_name: user?.username || user?.full_name || 'Anonymous', wins }));
+      const leaderboard = [...real, ...getBotsForWeeklyLeaderboard()]
+        .sort((a, b) => b.wins - a.wins)
+        .slice(0, 50);
       return Response.json({ leaderboard });
     }
 
     const users = await base44.asServiceRole.entities.User.list('-pvpWins', 200);
-    const leaderboard = users
+    const real = users
       .filter((u) => u.role !== 'admin')
-      .slice(0, 50)
       .map((u) => ({
         full_name: u.username || u.full_name || 'Anonymous',
         wins: u.pvpWins || 0,
         losses: u.pvpLosses || 0,
       }));
+    const leaderboard = [...real, ...getBotsForWinsLeaderboard()]
+      .sort((a, b) => b.wins - a.wins)
+      .slice(0, 50);
     return Response.json({ leaderboard });
   } catch (error) {
     console.error('getLeaderboard error', error);
