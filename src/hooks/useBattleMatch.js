@@ -94,6 +94,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const matchHigherTierDefeatRef = useRef(false);
   const summonCountRef = useRef(0);
   const finalWinHPRef = useRef(null);
+  const matchPowerUsedRef = useRef(false);
 
   // Extra tactical power-up state (all the powers beyond the original 9), grouped in one object
   // so battle logic can read/consume any of them without a state variable per power.
@@ -143,7 +144,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       setMatchResult(winner);
       if (skipRewards) {
         setCoinsBreakdown(null);
-        if (onMatchEnd) onMatchEnd(winner);
+        if (onMatchEnd) onMatchEnd(winner, { flawless: winner === "player" && finalScore.ai === 0, powerUpsUsed: matchPowerUsedRef.current, score: finalScore });
         return;
       }
       const cardsUsed = playerCards.filter((c) => statsRef.current[c.id]).map((c) => c.name);
@@ -467,6 +468,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       const updatedUser = await base44.auth.updateMe({ [field]: now });
       setUser(updatedUser);
       setPowerUsedThisTurn(true);
+      matchPowerUsedRef.current = true;
       effectFn();
     },
     [user, powerUsedThisTurn]
@@ -479,6 +481,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       const updatedUser = await base44.auth.updateMe({ [field]: now });
       setUser(updatedUser);
       setPowerUsedThisTurn(true);
+      matchPowerUsedRef.current = true;
       effectFn();
     },
     [user, powerUsedThisTurn]
@@ -493,6 +496,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       const updatedUser = await base44.auth.updateMe({ [usesField]: newUses, [resetField]: newResetAt });
       setUser(updatedUser);
       setPowerUsedThisTurn(true);
+      matchPowerUsedRef.current = true;
       effectFn();
     },
     [user, powerUsedThisTurn]
@@ -504,6 +508,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       const updatedUser = await base44.auth.updateMe({ [field]: false });
       setUser(updatedUser);
       setPowerUsedThisTurn(true);
+      matchPowerUsedRef.current = true;
       effectFn();
     },
     [user, powerUsedThisTurn]

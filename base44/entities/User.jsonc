@@ -238,6 +238,52 @@
       "default": 0,
       "description": "Longest consecutive PvP (online + offline) win streak ever reached. Used for the win-streak leaderboard \u2014 never affected by AI battles."
     },
+    "highestStoryStage": {
+      "type": "number",
+      "default": 0,
+      "description": "Highest Story Mode stage number the player has completed (cleared the boss)."
+    },
+    "storyMatchesWon": {
+      "type": "number",
+      "default": 0
+    },
+    "bossFightsWon": {
+      "type": "number",
+      "default": 0
+    },
+    "bossFlawlessWins": {
+      "type": "number",
+      "default": 0
+    },
+    "stagesCompletedNoPowerUps": {
+      "type": "number",
+      "default": 0
+    },
+    "maxStagesNoLossStreak": {
+      "type": "number",
+      "default": 0,
+      "description": "Longest run of consecutive Story stages cleared without losing a match."
+    },
+    "currentStagesNoLossStreak": {
+      "type": "number",
+      "default": 0
+    },
+    "bossFirstAttemptWins": {
+      "type": "number",
+      "default": 0
+    },
+    "finalBossDefeated": {
+      "type": "number",
+      "default": 0
+    },
+    "storyBossLostStages": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": [],
+      "description": "Story stage numbers whose boss was lost at least once, so a later win isn't counted as a first-attempt win."
+    },
     "lastDailyRewardClaimedAt": {
       "type": "string",
       "default": "",
