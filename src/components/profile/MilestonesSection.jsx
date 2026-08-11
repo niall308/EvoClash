@@ -72,13 +72,19 @@ export default function MilestonesSection({ user, onUserUpdate }) {
     const earned = timesEarned(m, user);
     const claimed = (user.milestoneClaimCounts || {})[m.id] || 0;
     if (earned <= claimed) return;
-    const coinsGained = (earned - claimed) * m.coinReward;
+    // Capture the click target's position synchronously — React recycles synthetic
+    // events, so e.currentTarget is null after the await below.
     const rect = e.currentTarget.getBoundingClientRect();
+    // Server-authoritative claim: the backend recomputes earned vs. claimed from the
+    // live user doc and grants coins + advances the claim counter in one update, so a
+    // stale cross-device snapshot can no longer double-grant a reward.
+    const res = await base44.functions.invoke("claimMilestone", { milestoneId: m.id });
+    const data = res.data || {};
+    if (!data.coinsGained) return;
+    // Defer the coin-fly animation until the grant is confirmed (Fix 4): never celebrate
+    // a reward that the server rejected (already claimed / not yet eligible).
     setFlyOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, key: Date.now() });
-    const updated = await base44.auth.updateMe({
-      coins: (user.coins || 0) + coinsGained,
-      milestoneClaimCounts: { ...(user.milestoneClaimCounts || {}), [m.id]: earned },
-    });
+    const updated = await base44.auth.me();
     onUserUpdate(updated);
     window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: updated.coins } }));
   };

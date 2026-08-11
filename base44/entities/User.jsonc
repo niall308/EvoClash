@@ -41,13 +41,6 @@
       "type": "number",
       "default": 0
     },
-    "claimedMilestoneIds": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": []
-    },
     "totalCardsCreated": {
       "type": "number",
       "default": 0
