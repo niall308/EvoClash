@@ -60,7 +60,7 @@ export default function MilestonesSection({ user, onUserUpdate }) {
   const [flyOrigin, setFlyOrigin] = useState(null);
 
   const load = async () => {
-    const data = await base44.entities.Milestone.list("-created_date");
+    const data = await base44.entities.Milestone.list("-created_date", 200);
     setMilestones(data);
   };
 
