@@ -2,6 +2,7 @@ import React, { useState, lazy, Suspense } from "react";
 import { Gift } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { canClaimDailyReward, getEstDateString } from "@/lib/dailyRewardsClient";
+import { useToast } from "@/components/ui/use-toast";
 
 // Lazy-load the slot-machine modal so framer-motion (SlotReel / CoinFlyAnimation)
 // and canvas-confetti are only pulled in when a user actually opens a daily
@@ -10,18 +11,21 @@ const SlotMachineModal = lazy(() => import("@/components/layout/SlotMachineModal
 
 export default function DailyRewardsButton() {
   const { user, updateUser } = useAuth();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const eligible = canClaimDailyReward(user);
 
   return (
     <>
       <button
-        onClick={() => eligible && setOpen(true)}
-        disabled={!eligible}
+        onClick={() => {
+          if (eligible) setOpen(true);
+          else toast({ title: "Already claimed", description: "You've already claimed your daily reward today. Come back tomorrow!" });
+        }}
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-transform active:scale-95 ${
           eligible
             ? "bg-amber-400 text-[#0D1B2A] border-amber-400/50"
-            : "bg-white/5 text-white/30 border-white/10 cursor-not-allowed"
+            : "bg-white/5 text-white/30 border-white/10"
         }`}
       >
         <Gift className="w-3.5 h-3.5" />
