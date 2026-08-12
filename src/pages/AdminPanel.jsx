@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Loader2, PawPrint, Sparkles, Layers, Target, Mountain } from "lucide-react";
+import { ArrowLeft, Loader2, PawPrint, Sparkles, Layers, Target, Mountain, Volume2 } from "lucide-react";
 import CardBackManager from "@/components/admin/CardBackManager";
 import CreatureAnimationManager from "@/components/admin/CreatureAnimationManager";
 
@@ -47,6 +47,9 @@ export default function AdminPanel() {
         </Link>
         <Link to="/admin/card-backgrounds" className="flex items-center gap-2 bg-white/5 rounded-xl p-4 font-bold text-sm">
           <Mountain className="w-4 h-4 text-amber-400" /> Card Backgrounds
+        </Link>
+        <Link to="/admin/sounds" className="flex items-center gap-2 bg-white/5 rounded-xl p-4 font-bold text-sm">
+          <Volume2 className="w-4 h-4 text-amber-400" /> Sound Manager
         </Link>
       </div>
 

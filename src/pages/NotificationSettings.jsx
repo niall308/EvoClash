@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Swords, Gift, ArrowLeftRight, Mail, RotateCcw, Users } from "lucide-react";
+import { ArrowLeft, Swords, Gift, ArrowLeftRight, Mail, RotateCcw, Users, Music, Volume2, Zap } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Switch } from "@/components/ui/switch";
@@ -44,6 +44,12 @@ const OPTIONS = [
   },
 ];
 
+const SOUND_OPTIONS = [
+  { key: "menuMusic", icon: Music, title: "Menu Music", description: "Continuous background music in menus" },
+  { key: "inGameMusic", icon: Volume2, title: "In-Game Music", description: "Continuous background music during battles" },
+  { key: "actionSounds", icon: Zap, title: "Action Sounds", description: "Tap, attack, win, and other in-game sound effects" },
+];
+
 export default function NotificationSettings() {
   const { user, updateUser } = useAuth();
   const [saving, setSaving] = useState(null);
@@ -67,6 +73,35 @@ export default function NotificationSettings() {
       <div className="space-y-3">
         {OPTIONS.map(({ key, icon: Icon, title, description }) => {
           const enabled = user[key] === true;
+          return (
+            <div key={key} className="flex items-center justify-between bg-white/5 rounded-xl p-4">
+              <div className="flex items-center gap-3 pr-3">
+                <Icon className="w-5 h-5 text-amber-400 shrink-0" />
+                <div>
+                  <p className="font-semibold text-sm">{title}</p>
+                  <p className="text-white/40 text-xs">{description}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`text-xs font-bold ${enabled ? "text-emerald-400" : "text-white/40"}`}>
+                  {enabled ? "On" : "Off"}
+                </span>
+                <Switch
+                  checked={enabled}
+                  disabled={saving === key}
+                  onCheckedChange={(value) => handleToggle(key, value)}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <h1 className="text-2xl font-black mt-8 mb-2">Sounds</h1>
+      <p className="text-white/40 text-xs mb-4">Toggle background music and action sound effects.</p>
+      <div className="space-y-3">
+        {SOUND_OPTIONS.map(({ key, icon: Icon, title, description }) => {
+          const enabled = user[key] !== false;
           return (
             <div key={key} className="flex items-center justify-between bg-white/5 rounded-xl p-4">
               <div className="flex items-center gap-3 pr-3">

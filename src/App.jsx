@@ -30,6 +30,7 @@ const AdminCreatures = lazy(() => import('@/pages/AdminCreatures'));
 const AdminAiDecks = lazy(() => import('@/pages/AdminAiDecks'));
 const AdminMilestones = lazy(() => import('@/pages/AdminMilestones'));
 const AdminCardBackgrounds = lazy(() => import('@/pages/AdminCardBackgrounds'));
+const AdminSounds = lazy(() => import('@/pages/AdminSounds'));
 const HowToPlay = lazy(() => import('@/pages/HowToPlay'));
 const NotificationSettings = lazy(() => import('@/pages/NotificationSettings'));
 const CardUpgrade = lazy(() => import('@/pages/CardUpgrade'));
@@ -104,6 +105,7 @@ const AuthenticatedApp = () => {
               <Route path="/admin/ai-decks" element={<AdminAiDecks />} />
               <Route path="/admin/milestones" element={<AdminMilestones />} />
               <Route path="/admin/card-backgrounds" element={<AdminCardBackgrounds />} />
+              <Route path="/admin/sounds" element={<AdminSounds />} />
             </Route>
             <Route path="/card-upgrade/:id" element={<CardUpgrade />} />
             <Route path="/leaderboards" element={<Leaderboards />} />

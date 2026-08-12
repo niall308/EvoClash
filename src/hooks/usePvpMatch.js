@@ -3,6 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { computeDamage, maxHealth } from "@/lib/battleEngine";
 import { TIER_RANGES, DEFAULT_ACTIVE_POWERUPS, TURN_TIME_LIMIT_SECONDS, MAX_CONSECUTIVE_TURN_TIMEOUTS } from "@/lib/gameConstants";
 import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
+import { play } from "@/lib/soundEngine";
+import { getRankIndex } from "@/lib/rankSystem";
 
 const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -248,6 +250,7 @@ export default function usePvpMatch(matchCode) {
 
   const attack = useCallback(async (timingMultiplier = 1) => {
     if (!match || match.phase !== "battle" || match.turn !== myRole) return;
+    play("attack");
     let attacker = match[`${myRole}Card`];
     const defender = match[`${oppRole}Card`];
     if (!attacker?.id || !defender?.id) return;
@@ -288,12 +291,14 @@ export default function usePvpMatch(matchCode) {
     if (result.isCrit && !result.recoil) {
       buffUpdates[`${oppRole}Card`] = { ...defender, defense: Math.max(0, Math.round(defender.defense * 0.8)) };
     }
+    if (result.isCrit && !result.recoil) play("critical_hit");
 
     const targetRole = result.recoil ? myRole : oppRole;
     const targetHp = match[`${targetRole}Hp`] || 0;
     const newHp = Math.max(0, targetHp - result.damage);
 
     if (newHp <= 0) {
+      play("card_defeat");
       const roundWinner = targetRole === myRole ? oppRole : myRole;
       const newScoreP1 = match.scoreP1 + (roundWinner === "player1" ? 1 : 0);
       const newScoreP2 = match.scoreP2 + (roundWinner === "player2" ? 1 : 0);
@@ -403,6 +408,13 @@ export default function usePvpMatch(matchCode) {
       aiScore: oppScore || 0,
       durationSeconds: Math.round((Date.now() - new Date(match.created_date).getTime()) / 1000),
     });
+    play(won ? "win" : "lose");
+    if (won) {
+      const preRp = (myRole === "player1" ? match.player1Rp : match.player2Rp) || 0;
+      base44.auth.me().then((fresh) => {
+        if (getRankIndex(fresh.rankPoints || 0) > getRankIndex(preRp)) play("rank_up");
+      }).catch(() => {});
+    }
   }, [match, myRole, oppRole]);
 
   const forfeit = useCallback(async () => {

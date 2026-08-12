@@ -331,6 +331,21 @@
       },
       "default": [],
       "description": "IDs of daily missions already claimed since the last reset."
+    },
+    "menuMusic": {
+      "type": "boolean",
+      "default": true,
+      "description": "Play continuous background music while in menu screens."
+    },
+    "inGameMusic": {
+      "type": "boolean",
+      "default": true,
+      "description": "Play continuous background music while in a battle."
+    },
+    "actionSounds": {
+      "type": "boolean",
+      "default": true,
+      "description": "Play one-shot sound effects for game actions (tap, attack, win, etc.)."
     }
   }
 }

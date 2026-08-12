@@ -12,6 +12,7 @@ import {
 } from "@/lib/gameConstants";
 import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
 import { base44 } from "@/api/base44Client";
+import { play } from "@/lib/soundEngine";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -160,6 +161,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       settledRef.current = true;
       setPhase("matchEnd");
       setMatchResult(winner);
+      play(winner === "player" ? "win" : "lose");
       if (skipRewards) {
         setCoinsBreakdown(null);
         if (onMatchEnd) onMatchEnd(winner, { flawless: winner === "player" && finalScore.ai === 0, powerUpsUsed: matchPowerUsedRef.current, score: finalScore });
@@ -204,7 +206,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         });
         if (data?.user) {
           setUser(data.user);
-          window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: data.user.coins } }));
+          if (winner === "player") window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: data.user.coins } }));
         }
         setCoinsBreakdown(data?.breakdown || null);
       } catch (err) {
@@ -264,6 +266,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     async (attackerSide, timingMultiplier = 1) => {
       if (busyRef.current || phase !== "battle") return;
       busyRef.current = true;
+      play("attack");
       if (attackerSide === "player") consecutiveTimeoutsRef.current = 0;
       let attacker = attackerSide === "player" ? playerCard : aiCard;
       let defender = attackerSide === "player" ? aiCard : playerCard;
@@ -324,6 +327,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         if (attackerSide === "player") setAiCard((c) => ({ ...c, defense: newDefense }));
         else setPlayerCard((c) => ({ ...c, defense: newDefense }));
       }
+      if (result.isCrit && !result.tie) play("critical_hit");
 
       if (result.tie) {
         setEffect({ side: attackerSide, value: 0, tie: true, key: Date.now() });
@@ -406,6 +410,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       await sleep(3000);
       setEffect(null);
       if (newTargetHP <= 0) {
+        play("card_defeat");
         const winnerSide = targetSide === "player" ? "ai" : "player";
         const survivorHP = winnerSide === "player" ? playerHP : aiHP;
         setGraveyardCards((g) => [...g, defender]);
@@ -962,6 +967,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       const finalCard = card.isHybrid ? { ...card, type: hybridChoicesRef.current[card.id] } : card;
       setPlayerCard(finalCard);
       setPlayerHP(maxHealth(finalCard));
+      play("card_flip");
       setPlayerEffects([]);
       summonCountRef.current += 1;
       matchTypesRef.current.add(finalCard.type);
@@ -978,6 +984,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       const finalCard = { ...pendingHybridCard, type };
       setPlayerCard(finalCard);
       setPlayerHP(maxHealth(finalCard));
+      play("card_flip");
       setPlayerEffects([]);
       summonCountRef.current += 1;
       matchTypesRef.current.add(type);
@@ -1028,6 +1035,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const forfeitMatch = useCallback(async () => {
     if (skipRewards || settledRef.current) return;
     settledRef.current = true;
+    play("lose");
     try {
       const { data } = await base44.functions.invoke("finalizeAIBattle", {
         matchId: matchIdRef.current,
@@ -1045,7 +1053,6 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       });
       if (data?.user) {
         setUser(data.user);
-        window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: data.user.coins } }));
       }
     } catch (err) {
       // best-effort: the UI still navigates away after this returns

@@ -10,6 +10,7 @@ import { getStatUpgradeCost, getStatUpgradeMaxUses } from "@/lib/statUpgradeCost
 import { TIER_RANGES, STAT_UPGRADES, TIER_UPGRADE_COST, TYPE_CHANGE_COST, UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { play } from "@/lib/soundEngine";
 
 const USED_FIELD = { attack: "attackUpgradesUsed", defense: "defenseUpgradesUsed", bonusDamage: "bonusDamageUpgradesUsed" };
 
@@ -50,6 +51,7 @@ export default function CardUpgrade() {
       const { data } = await base44.functions.invoke("upgradeCardStat", { cardId: card.id, statKey: upg.key });
       setCard(data.card);
       setUser(data.user);
+      play("card_upgrade");
     } catch (err) {
       toast({ title: "Upgrade failed", description: err?.message || "Something went wrong. Please try again.", variant: "destructive" });
     } finally {
@@ -66,6 +68,7 @@ export default function CardUpgrade() {
       const { data } = await base44.functions.invoke("changeCardType", { cardId: card.id, newType });
       setCard(data.card);
       setUser(data.user);
+      play("card_upgrade");
     } catch (err) {
       toast({ title: "Type change failed", description: err?.message || "Something went wrong. Please try again.", variant: "destructive" });
     } finally {
@@ -82,6 +85,7 @@ export default function CardUpgrade() {
       const { data } = await base44.functions.invoke("evolveCard", { cardId: card.id });
       setCard((c) => ({ ...c, ...data.card }));
       setUser(data.user);
+      play("card_upgrade");
     } finally {
       setEvolving(false);
     }

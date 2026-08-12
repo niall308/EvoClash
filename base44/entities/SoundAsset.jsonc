@@ -1,0 +1,53 @@
+{
+  "name": "SoundAsset",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Fixed sound key this file plays for (menu_bgm, ingame_bgm, attack, etc.)."
+    },
+    "label": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "menu",
+        "ingame",
+        "action"
+      ]
+    },
+    "fileUrl": {
+      "type": "string"
+    },
+    "isLoop": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this audio should loop continuously (background music)."
+    }
+  },
+  "required": [
+    "key",
+    "label",
+    "category",
+    "fileUrl"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

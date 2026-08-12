@@ -11,6 +11,7 @@ import AutoBuildOfferModal from "@/components/generate/AutoBuildOfferModal";
 import { Sparkles, Loader2, PlusCircle, RefreshCw, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
+import { play } from "@/lib/soundEngine";
 
 const AUTO_BUILD_COUNT = 15;
 
@@ -123,6 +124,7 @@ export default function CardGenerate() {
       setPreviewCard(cardData);
       setPreviewForced(!!forced);
       setPreviewCreatureId(matchedCreature?.id || null);
+      play(useHybrid ? "unique_card_gen" : "card_gen");
     } catch (err) {
       toast({ title: "Generation failed", description: "Couldn't generate the card image. Please try again.", variant: "destructive" });
     } finally {
