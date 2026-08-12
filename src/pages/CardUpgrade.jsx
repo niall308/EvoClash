@@ -9,15 +9,13 @@ import { checkUpgradeEligible } from "@/lib/upgradeCheck";
 import { getStatUpgradeCost, getStatUpgradeMaxUses } from "@/lib/statUpgradeCost";
 import { TIER_RANGES, STAT_UPGRADES, TIER_UPGRADE_COST, TYPE_CHANGE_COST, UPGRADE_REQUIREMENT } from "@/lib/gameConstants";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const USED_FIELD = { attack: "attackUpgradesUsed", defense: "defenseUpgradesUsed", bonusDamage: "bonusDamageUpgradesUsed" };
 
-function checkEvolutionLineComplete(card) {
-  return (card.attackUpgradesUsed || 0) >= 1 && (card.defenseUpgradesUsed || 0) >= 1 && (card.bonusDamageUpgradesUsed || 0) >= 1;
-}
-
 export default function CardUpgrade() {
   const { id } = useParams();
+  const { toast } = useToast();
   const [card, setCard] = useState(null);
   const [user, setUser] = useState(null);
   const [purchasing, setPurchasing] = useState(null);
@@ -45,34 +43,15 @@ export default function CardUpgrade() {
 
   const handlePurchase = async (upg) => {
     if (purchasing) return;
-    const usedField = USED_FIELD[upg.key];
-    const usesInTier = card[usedField] || 0;
-    const maxUses = getStatUpgradeMaxUses(card.tier);
-    if (usesInTier >= maxUses) return;
-    const cost = getStatUpgradeCost(card.tier, upg.key, usesInTier);
-    const capValue = upg.key === "bonusDamage" ? range.bonusMax : range.statMax;
-    const currentVal = card[upg.key] || 0;
-    const newVal = Math.min(capValue, Math.round(currentVal * (1 + upg.percent / 100)));
-    if (newVal <= currentVal || user.coins < cost) return;
     setPurchasing(upg.key);
-    const prevCard = card;
-    const prevUser = user;
-    const updatedCard = { ...card, [upg.key]: newVal, [usedField]: usesInTier + 1 };
-    const userUpdate = { coins: user.coins - cost };
-    const completedIds = user.completedEvolutionCardIds || [];
-    if (card.tier === 4 && checkEvolutionLineComplete(updatedCard) && !completedIds.includes(card.id)) {
-      userUpdate.completedEvolutionCardIds = [...completedIds, card.id];
-      userUpdate.creatureEvolutionLinesCompleted = (user.creatureEvolutionLinesCompleted || 0) + 1;
-    }
-    setCard(updatedCard);
-    setUser({ ...user, ...userUpdate });
+    // Ownership, per-tier cap, max-uses, cost, and evolution-line completion are
+    // all re-validated server-side by upgradeCardStat.
     try {
-      await base44.entities.Card.update(card.id, { [upg.key]: newVal, [usedField]: usesInTier + 1 });
-      const updatedUser = await base44.auth.updateMe(userUpdate);
-      setUser(updatedUser);
+      const { data } = await base44.functions.invoke("upgradeCardStat", { cardId: card.id, statKey: upg.key });
+      setCard(data.card);
+      setUser(data.user);
     } catch (err) {
-      setCard(prevCard);
-      setUser(prevUser);
+      toast({ title: "Upgrade failed", description: err?.message || "Something went wrong. Please try again.", variant: "destructive" });
     } finally {
       setPurchasing(null);
     }
@@ -81,11 +60,17 @@ export default function CardUpgrade() {
   const handleChangeType = async (newType) => {
     if (card.typeChanged || user.coins < TYPE_CHANGE_COST || typePurchasing) return;
     setTypePurchasing(newType);
-    await base44.entities.Card.update(card.id, { type: newType, typeChanged: true });
-    const updatedUser = await base44.auth.updateMe({ coins: user.coins - TYPE_CHANGE_COST });
-    setCard((c) => ({ ...c, type: newType, typeChanged: true }));
-    setUser(updatedUser);
-    setTypePurchasing(null);
+    // Ownership, the one-time typeChanged flag, valid type, and cost are all
+    // re-validated server-side by changeCardType.
+    try {
+      const { data } = await base44.functions.invoke("changeCardType", { cardId: card.id, newType });
+      setCard(data.card);
+      setUser(data.user);
+    } catch (err) {
+      toast({ title: "Type change failed", description: err?.message || "Something went wrong. Please try again.", variant: "destructive" });
+    } finally {
+      setTypePurchasing(null);
+    }
   };
 
   const handleEvolve = async () => {

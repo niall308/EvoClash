@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
     const clamp = (v, min, max) => Math.min(max, Math.max(min, Math.round(v)));
     const higherIsAttack = card.attack >= card.defense;
     const higherValue = randomInt(newRange.statMin, newRange.statMax);
-    const lowerValue = Math.round((higherIsAttack ? card.defense : card.attack) * pct);
+    const lowerValue = clamp(Math.round((higherIsAttack ? card.defense : card.attack) * pct), newRange.statMin, newRange.statMax);
 
     const templates = await base44.entities.CardTemplate.filter({ baseName: card.baseName });
     const tierAnimation = templates[0]?.[`tier${newTier}Animation`];

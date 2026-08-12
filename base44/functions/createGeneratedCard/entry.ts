@@ -43,6 +43,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Not enough coins' }, { status: 400 });
     }
 
+    // Validate deckId belongs to the user — never trust the client's deckId,
+    // which could point at another user's deck or an arbitrary string. Deck RLS
+    // (created_by_id === user.id) means a foreign deck returns nothing here.
+    if (!deckId) return Response.json({ error: 'deckId is required' }, { status: 400 });
+    let deck = null;
+    try { deck = await base44.entities.Deck.get(deckId); } catch {}
+    if (!deck) return Response.json({ error: 'Invalid deck' }, { status: 400 });
+
     const card = await base44.entities.Card.create({ ...safeCardData, deckId, ownerId: user.id });
 
     const userUpdate = buildCreationUpdate(user, ownedCards.length);
