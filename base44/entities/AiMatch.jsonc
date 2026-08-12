@@ -1,0 +1,71 @@
+{
+  "name": "AiMatch",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "matchId": {
+      "type": "string",
+      "description": "Client-generated UUID; the idempotency + single-active key for finalizeAIBattle."
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "Easy",
+        "Normal",
+        "Hard",
+        "Extreme"
+      ],
+      "default": "Normal"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "finished",
+        "abandoned"
+      ],
+      "default": "active"
+    },
+    "startedAt": {
+      "type": "string"
+    },
+    "finishedAt": {
+      "type": "string",
+      "default": ""
+    },
+    "winner": {
+      "type": "string",
+      "default": ""
+    },
+    "opponentName": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "required": [
+    "userId",
+    "matchId"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "data.userId": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

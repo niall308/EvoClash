@@ -3,10 +3,6 @@ import { generateRandomCard } from "@/lib/cardGenerator";
 import { computeDamage, maxHealth } from "@/lib/battleEngine";
 import {
   AI_OPPONENT_NAMES,
-  COINS_PER_CARD_DEFEATED,
-  COINS_WIN_AI,
-  COINS_LOSS_AI,
-  AI_DIFFICULTY_WIN_BONUS,
   AI_DIFFICULTY_TIERS,
   STYLE_REFERENCE_URL,
   TIER_RANGES,
@@ -15,7 +11,6 @@ import {
   MAX_CONSECUTIVE_TURN_TIMEOUTS,
 } from "@/lib/gameConstants";
 import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
-import { checkCardMilestones } from "@/lib/coinRewards";
 import { base44 } from "@/api/base44Client";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
@@ -95,6 +90,8 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const summonCountRef = useRef(0);
   const finalWinHPRef = useRef(null);
   const matchPowerUsedRef = useRef(false);
+  const matchIdRef = useRef(null);
+  const settledRef = useRef(false);
 
   // Extra tactical power-up state (all the powers beyond the original 9), grouped in one object
   // so battle logic can read/consume any of them without a state variable per power.
@@ -107,6 +104,25 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       setUser(me);
     })();
   }, []);
+
+  // Start a server-side AI match session (single-active per user). The session is
+  // the idempotency + concurrency key for finalizeAIBattle — only one AI match can
+  // be active at a time, and each matchId is finalized exactly once.
+  useEffect(() => {
+    if (skipRewards) return; // story mode manages its own rewards separately
+    let cancelled = false;
+    (async () => {
+      try {
+        const id = crypto.randomUUID();
+        matchIdRef.current = id;
+        await base44.functions.invoke("startAiMatch", { matchId: id, difficulty, opponentName });
+      } catch (e) {
+        // best-effort: match continues; finalize becomes a no-op if start failed
+      }
+      cancelled = true;
+    })();
+    return () => { cancelled = true; };
+  }, [difficulty, opponentName, skipRewards]);
 
   // give every AI-drawn card a generated creature picture (once it becomes the active card)
   useEffect(() => {
@@ -140,6 +156,8 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
 
   const applyProgression = useCallback(
     async (winner, finalScore) => {
+      if (settledRef.current) return; // idempotent: only one progression per match
+      settledRef.current = true;
       setPhase("matchEnd");
       setMatchResult(winner);
       if (skipRewards) {
@@ -147,86 +165,51 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         if (onMatchEnd) onMatchEnd(winner, { flawless: winner === "player" && finalScore.ai === 0, powerUpsUsed: matchPowerUsedRef.current, score: finalScore });
         return;
       }
-      const cardsUsed = playerCards.filter((c) => statsRef.current[c.id]).map((c) => c.name);
-      const updates = [];
-      let milestoneCoins = 0;
+      // Build per-card stat deltas for the server to apply. finalizeAIBattle
+      // re-validates ownership, recomputes the coin reward, grants card milestones,
+      // and writes User/Card/BattleHistory atomically — the client no longer writes
+      // any of those directly (closes coin-mint, lost-update, double-count).
+      const cardDeltas = [];
+      const cardsUsed = [];
       for (const card of playerCards) {
-        const delta = statsRef.current[card.id];
-        if (!delta) continue;
-        const merged = {
-          ...card,
-          winsVsBonus: card.winsVsBonus + delta.winsVsBonus,
-          winsVsNonBonus: card.winsVsNonBonus + delta.winsVsNonBonus,
-          gamesPlayed: card.gamesPlayed + delta.gamesPlayed,
-          totalWins: (card.totalWins || 0) + delta.totalWins,
-          totalGames: (card.totalGames || 0) + delta.gamesPlayed,
-          matchWins: (card.matchWins || 0) + (winner === "player" ? 1 : 0),
-        };
-        const { coins, claimedCardMilestones } = checkCardMilestones(merged);
-        merged.claimedCardMilestones = claimedCardMilestones;
-        milestoneCoins += coins;
-        updates.push(merged);
+        const d = statsRef.current[card.id];
+        if (!d) continue;
+        cardsUsed.push(card.name);
+        cardDeltas.push({
+          cardId: card.id,
+          winsVsBonus: d.winsVsBonus,
+          winsVsNonBonus: d.winsVsNonBonus,
+          gamesPlayed: d.gamesPlayed,
+          totalWins: d.totalWins,
+          matchWin: winner === "player",
+        });
       }
-      if (updates.length) {
-        await Promise.all(updates.map(({ id, ...rest }) => base44.entities.Card.update(id, rest)));
+      try {
+        const { data } = await base44.functions.invoke("finalizeAIBattle", {
+          matchId: matchIdRef.current,
+          winner,
+          difficulty,
+          score: finalScore,
+          cardsDefeated: defeatedCountRef.current,
+          damageDealt: matchDamageRef.current,
+          blocksUsed: matchBlocksRef.current,
+          distinctTypes: matchTypesRef.current.size,
+          durationSeconds: Math.round((Date.now() - matchStartRef.current) / 1000),
+          summonCount: summonCountRef.current,
+          finalWinHP: finalWinHPRef.current,
+          comeback: matchComebackRef.current,
+          higherTierDefeat: matchHigherTierDefeatRef.current,
+          cardDeltas,
+          forfeited: false,
+        });
+        if (data?.user) {
+          setUser(data.user);
+          window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: data.user.coins } }));
+        }
+        setCoinsBreakdown(data?.breakdown || null);
+      } catch (err) {
+        setCoinsBreakdown(null);
       }
-      const me = await base44.auth.me();
-      const isWin = winner === "player";
-      const base = isWin ? COINS_WIN_AI : COINS_LOSS_AI;
-      const difficultyBonus = isWin ? AI_DIFFICULTY_WIN_BONUS[difficulty] || 0 : 0;
-      const cardsDefeatedCoins = defeatedCountRef.current * COINS_PER_CARD_DEFEATED;
-      const coinsEarned = cardsDefeatedCoins + base + difficultyBonus + milestoneCoins;
-      setCoinsBreakdown({
-        isWin,
-        base,
-        difficultyBonus,
-        difficulty,
-        cardsDefeated: defeatedCountRef.current,
-        cardsDefeatedCoins,
-        milestoneCoins,
-        total: coinsEarned,
-      });
-      const newStreak = isWin ? (me.currentWinStreak || 0) + 1 : 0;
-      const newMaxStreak = Math.max(me.maxWinStreak || 0, newStreak);
-      const distinctTypesUsed = matchTypesRef.current.size;
-      const isFastWin = isWin && Date.now() - matchStartRef.current < 180000;
-      const isFlawlessWin = isWin && finalScore.ai === 0;
-      const isMonoElementWin = isWin && distinctTypesUsed === 1;
-      const isComebackWin = isWin && matchComebackRef.current;
-      const isHigherTierDefeat = isWin && matchHigherTierDefeatRef.current;
-      const isWinUnder100HP = isWin && finalWinHPRef.current != null && finalWinHPRef.current < 100;
-      await base44.auth.updateMe({
-        wins: (me.wins || 0) + (winner === "player" ? 1 : 0),
-        losses: (me.losses || 0) + (winner === "ai" ? 1 : 0),
-        gamesPlayed: (me.gamesPlayed || 0) + 1,
-        aiGamesPlayed: (me.aiGamesPlayed || 0) + 1,
-        coins: (me.coins || 0) + coinsEarned,
-        creaturesSummoned: (me.creaturesSummoned || 0) + summonCountRef.current,
-        totalDamageDealt: (me.totalDamageDealt || 0) + matchDamageRef.current,
-        successfulBlocks: (me.successfulBlocks || 0) + matchBlocksRef.current,
-        threeElementMatches: (me.threeElementMatches || 0) + (distinctTypesUsed >= 3 ? 1 : 0),
-        winsUnder100HP: (me.winsUnder100HP || 0) + (isWinUnder100HP ? 1 : 0),
-        flawlessWins: (me.flawlessWins || 0) + (isFlawlessWin ? 1 : 0),
-        monoElementWins: (me.monoElementWins || 0) + (isMonoElementWin ? 1 : 0),
-        fastWins: (me.fastWins || 0) + (isFastWin ? 1 : 0),
-        comebackWins: (me.comebackWins || 0) + (isComebackWin ? 1 : 0),
-        defeatedHigherTierOpponent: (me.defeatedHigherTierOpponent || 0) + (isHigherTierDefeat ? 1 : 0),
-        currentWinStreak: newStreak,
-        maxWinStreak: newMaxStreak,
-      });
-      await base44.entities.BattleHistory.create({
-        opponentName,
-        outcome: winner === "player" ? "win" : "loss",
-        source: "ai",
-        cardsUsed,
-        playerScore: finalScore.player,
-        aiScore: finalScore.ai,
-        cardsDestroyed: defeatedCountRef.current,
-        damageDealt: matchDamageRef.current,
-        blocksUsed: matchBlocksRef.current,
-        distinctTypesUsed: matchTypesRef.current.size,
-        durationSeconds: Math.round((Date.now() - matchStartRef.current) / 1000),
-      });
       if (onMatchEnd) onMatchEnd(winner);
     },
     [playerCards, onMatchEnd, opponentName, difficulty, skipRewards]
@@ -1043,23 +1026,31 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   }, [phase, playerCard, aiCard, rpsDone, turn]);
 
   const forfeitMatch = useCallback(async () => {
-    if (skipRewards) return;
-    const me = await base44.auth.me();
-    await base44.auth.updateMe({ losses: (me.losses || 0) + 1, gamesPlayed: (me.gamesPlayed || 0) + 1, currentWinStreak: 0 });
-    await base44.entities.BattleHistory.create({
-      opponentName,
-      outcome: "loss",
-      source: "ai",
-      cardsUsed: [],
-      playerScore: score.player,
-      aiScore: score.ai,
-      cardsDestroyed: defeatedCountRef.current,
-      damageDealt: matchDamageRef.current,
-      blocksUsed: matchBlocksRef.current,
-      distinctTypesUsed: matchTypesRef.current.size,
-      durationSeconds: Math.round((Date.now() - matchStartRef.current) / 1000),
-    });
-  }, [opponentName, score, skipRewards]);
+    if (skipRewards || settledRef.current) return;
+    settledRef.current = true;
+    try {
+      const { data } = await base44.functions.invoke("finalizeAIBattle", {
+        matchId: matchIdRef.current,
+        winner: "ai",
+        forfeited: true,
+        difficulty,
+        score,
+        cardsDefeated: defeatedCountRef.current,
+        damageDealt: matchDamageRef.current,
+        blocksUsed: matchBlocksRef.current,
+        distinctTypes: matchTypesRef.current.size,
+        durationSeconds: Math.round((Date.now() - matchStartRef.current) / 1000),
+        summonCount: summonCountRef.current,
+        cardDeltas: [],
+      });
+      if (data?.user) {
+        setUser(data.user);
+        window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: data.user.coins } }));
+      }
+    } catch (err) {
+      // best-effort: the UI still navigates away after this returns
+    }
+  }, [skipRewards, difficulty, score]);
 
   const pickRps = useCallback(
     (choice) => {
