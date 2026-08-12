@@ -1,13 +1,14 @@
 import React, { useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { loadSoundAssets, playFileUrl } from "@/lib/soundEngine";
-import { Play, Trash2, Upload, Loader2 } from "lucide-react";
+import { Play, Square as Stop, Trash2, Upload, Loader2 } from "lucide-react";
 
 // One row in the Sound Manager: upload/replace the audio file, preview it, toggle
 // loop, and delete. Reloading the in-memory sound assets after any change keeps
 // the live app in sync without a page refresh.
 export default function SoundRow({ sound, asset, onChanged }) {
   const fileRef = useRef(null);
+  const audioRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [loop, setLoop] = useState(asset?.isLoop ?? sound.isLoop ?? false);
 
@@ -63,6 +64,23 @@ export default function SoundRow({ sound, asset, onChanged }) {
     }
   };
 
+  const handlePlay = () => {
+    if (!asset) return;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    audioRef.current = playFileUrl(asset.fileUrl, loop);
+  };
+
+  const handleStop = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+  };
+
   return (
     <div className="bg-white/5 rounded-xl p-4">
       <div className="flex items-center justify-between gap-3 mb-3">
@@ -72,11 +90,18 @@ export default function SoundRow({ sound, asset, onChanged }) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={() => asset && playFileUrl(asset.fileUrl, loop)}
+            onClick={handlePlay}
             disabled={!asset}
             className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center active:scale-95 disabled:opacity-30"
           >
             <Play className="w-4 h-4 text-white" />
+          </button>
+          <button
+            onClick={handleStop}
+            disabled={!asset}
+            className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center active:scale-95 disabled:opacity-30"
+          >
+            <Stop className="w-4 h-4 text-white" />
           </button>
           <button
             onClick={handleDelete}

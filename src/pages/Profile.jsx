@@ -109,7 +109,7 @@ export default function Profile() {
 
       <Link to="/notification-settings" className="flex items-center justify-between bg-white/5 rounded-xl p-4 mb-8">
         <span className="flex items-center gap-2 font-semibold text-sm">
-          <Bell className="w-4 h-4 text-amber-400" /> Notifications
+          <Bell className="w-4 h-4 text-amber-400" /> Audio and Notifications
         </span>
         <span className="text-white/40 text-xs">View →</span>
       </Link>
