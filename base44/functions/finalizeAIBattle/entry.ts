@@ -62,8 +62,16 @@ Deno.serve(async (req) => {
       const defeatedCount = Math.min(MAX_AI_CARDS, Math.max(0, Number(cardsDefeated) || 0));
       cardsDefeatedCoins = defeatedCount * COINS_PER_CARD_DEFEATED;
 
-      for (const d of (Array.isArray(cardDeltas) ? cardDeltas : [])) {
-        const card = await base44.asServiceRole.entities.Card.get(d.cardId);
+      // Parallelize: fetch all cards in one round, then update all in one round.
+      // Was 30 sequential awaits (get+update per card) per match; now 2 parallel rounds.
+      const deltas = Array.isArray(cardDeltas) ? cardDeltas : [];
+      const fetched = await Promise.all(
+        deltas.map((d) => base44.asServiceRole.entities.Card.get(d.cardId).catch(() => null))
+      );
+      const pendingUpdates = [];
+      for (let i = 0; i < deltas.length; i++) {
+        const card = fetched[i];
+        const d = deltas[i];
         if (!card || card.ownerId !== user.id) continue;
         cardsUsed.push(card.name);
         const merged = {
@@ -85,8 +93,9 @@ Deno.serve(async (req) => {
           }
         }
         merged.claimedCardMilestones = [...claimed, ...newlyClaimed];
-        await base44.asServiceRole.entities.Card.update(d.cardId, merged);
+        pendingUpdates.push(base44.asServiceRole.entities.Card.update(d.cardId, merged));
       }
+      if (pendingUpdates.length) await Promise.all(pendingUpdates);
     }
 
     const coinsEarned = base + difficultyBonus + cardsDefeatedCoins + milestoneCoins;

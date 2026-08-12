@@ -17,7 +17,9 @@ Deno.serve(async (req) => {
     const type = body?.type || 'wins';
 
     if (type === 'streak') {
-      const users = await base44.asServiceRole.entities.User.list('-maxPvpWinStreak', 200);
+      // Cap raised 200 -> 1000 so real players ranked >200 still appear (they'd
+      // otherwise be invisible behind injected bot entries).
+      const users = await base44.asServiceRole.entities.User.list('-maxPvpWinStreak', 1000);
       const real = users
         .filter((u) => u.role !== 'admin')
         .map((u) => ({ full_name: u.username || u.full_name || 'Anonymous', streak: u.maxPvpWinStreak || 0 }));
@@ -29,22 +31,25 @@ Deno.serve(async (req) => {
 
     if (type === 'weekly') {
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      // Scan raised 5000 -> 20000 to avoid truncating a busy week's wins.
       const recentPvpWins = await base44.asServiceRole.entities.BattleHistory.filter(
         { source: 'pvp', outcome: 'win', created_date: { $gte: oneWeekAgo } },
         '-created_date',
-        5000
+        20000
       );
 
       const winsByUser = {};
       for (const record of recentPvpWins) {
         winsByUser[record.created_by_id] = (winsByUser[record.created_by_id] || 0) + 1;
       }
-      const candidateUserIds = Object.entries(winsByUser).sort((a, b) => b[1] - a[1]);
-
+      // Bound the per-user fan-out: only resolve the top candidates that could
+      // place in the top 50 (was one User.fetch per distinct user — up to thousands
+      // of parallel DB calls on a busy week).
+      const topCandidates = Object.entries(winsByUser).sort((a, b) => b[1] - a[1]).slice(0, 200);
       const candidateUsers = await Promise.all(
-        candidateUserIds.map(([userId]) => base44.asServiceRole.entities.User.filter({ id: userId }, undefined, 1))
+        topCandidates.map(([userId]) => base44.asServiceRole.entities.User.filter({ id: userId }, undefined, 1))
       );
-      const real = candidateUserIds
+      const real = topCandidates
         .map(([userId, wins], i) => ({ user: candidateUsers[i]?.[0], wins }))
         .filter(({ user }) => user?.role !== 'admin')
         .map(({ user, wins }) => ({ full_name: user?.username || user?.full_name || 'Anonymous', wins }));
@@ -54,7 +59,8 @@ Deno.serve(async (req) => {
       return Response.json({ leaderboard });
     }
 
-    const users = await base44.asServiceRole.entities.User.list('-pvpWins', 200);
+    // Cap raised 200 -> 1000 so real players ranked >200 still appear.
+    const users = await base44.asServiceRole.entities.User.list('-pvpWins', 1000);
     const real = users
       .filter((u) => u.role !== 'admin')
       .map((u) => ({

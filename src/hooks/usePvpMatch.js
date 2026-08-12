@@ -30,6 +30,7 @@ export default function usePvpMatch(matchCode) {
   const [reshuffleModalOpen, setReshuffleModalOpen] = useState(false);
   const [effect, setEffect] = useState(null);
   const prevHpRef = useRef({ my: null, opp: null, round: null });
+  const finalizedRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -85,6 +86,19 @@ export default function usePvpMatch(matchCode) {
     setMatch((prev) => (prev && prev.id === matchId ? { ...prev, ...updates } : prev));
     return base44.entities.PvpMatch.update(matchId, updates);
   }, []);
+
+  // A single client may only finalize a match once per session — guards against a
+  // double-tap or a retried invoke double-granting rewards. The server also gates on
+  // PvpMatch.status; this prevents the redundant call entirely.
+  const finalizeOnce = useCallback(async () => {
+    if (finalizedRef.current) return;
+    finalizedRef.current = true;
+    try {
+      await base44.functions.invoke("finishPvpMatch", { matchCode });
+    } catch (e) {
+      finalizedRef.current = false;
+    }
+  }, [matchCode]);
 
   const myRole = match && myId ? (match.player1Id === myId ? "player1" : "player2") : null;
   const oppRole = myRole === "player1" ? "player2" : "player1";
@@ -165,7 +179,7 @@ export default function usePvpMatch(matchCode) {
     if (!match || !myRole || match.status !== "active" || match.phase !== "draw") return;
     if (myCard?.id || pendingHybrid?.id || myHand.length > 0 || myPool.length > 0) return;
     base44.entities.PvpMatch.update(match.id, { phase: "matchEnd", log: "Ran out of cards!" }).then(() => {
-      base44.functions.invoke("finishPvpMatch", { matchCode: match.code });
+      finalizeOnce();
     });
   }, [match, myRole, myCard, myHand, myPool, pendingHybrid]);
 
@@ -297,7 +311,7 @@ export default function usePvpMatch(matchCode) {
 
       if (matchOver) {
         await updateMatch(match.id, { scoreP1: newScoreP1, scoreP2: newScoreP2, phase: "matchEnd" });
-        await base44.functions.invoke("finishPvpMatch", { matchCode: match.code });
+        await finalizeOnce();
         return;
       }
 
@@ -352,7 +366,7 @@ export default function usePvpMatch(matchCode) {
           base44.entities.PvpMatch.update(match.id, {
             phase: "matchEnd",
             log: "You ran out of time 3 times in a row — you forfeit the match!",
-          }).then(() => base44.functions.invoke("finishPvpMatch", { matchCode: match.code }));
+          }).then(() => finalizeOnce());
         } else {
           base44.entities.PvpMatch.update(match.id, {
             turn: oppRole,
@@ -394,7 +408,7 @@ export default function usePvpMatch(matchCode) {
   const forfeit = useCallback(async () => {
     if (!match || !myRole) return;
     await updateMatch(match.id, { phase: "matchEnd", log: "Your opponent forfeited!" });
-    await base44.functions.invoke("finishPvpMatch", { matchCode: match.code });
+    await finalizeOnce();
   }, [match, myRole, updateMatch]);
 
   // ---- Power-ups (shared user cooldown fields, same as AI battles) ----

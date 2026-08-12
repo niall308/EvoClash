@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { getStoryMatch, buildStoryAiPool, getOrCreateStoryProgress, advanceStoryProgress } from "@/lib/storyConfig";
+import { getStoryMatch, buildStoryAiPool, getOrCreateStoryProgress } from "@/lib/storyConfig";
 import { ensureActiveDeck } from "@/lib/decks";
 import BattleScreen from "@/components/battle/BattleScreen";
 import StoryMatchEnd from "@/components/story/StoryMatchEnd";
@@ -55,70 +55,33 @@ export default function StoryBattle() {
     async (winner, details = {}) => {
       if (!ready) return;
       const matchData = ready.matchData;
-      const opponentName = matchData.isBoss
-        ? matchData.bossName
-        : `Stage ${matchData.stageNumber} Match ${matchData.matchNumber}`;
-      if (winner === "player") {
-        const me = await base44.auth.me();
-        let coins = matchData.reward;
-        const stageDone = matchData.matchNumber === 8;
-        if (stageDone) coins += 1000;
-        const allDone = stageDone && matchData.stageNumber === 10;
-        if (allDone) coins += 50000;
-
-        // Story Mode milestone tracking. Per-match signals come from the battle hook:
-        // flawless = AI scored 0 rounds; powerUpsUsed = any tactical power activated this match.
-        const flawless = !!details.flawless;
-        const noPowerUps = !details.powerUpsUsed;
-        const userUpdate = { coins: (me.coins || 0) + coins };
-        userUpdate.storyMatchesWon = (me.storyMatchesWon || 0) + 1;
-        if (matchData.isBoss) {
-          userUpdate.bossFightsWon = (me.bossFightsWon || 0) + 1;
-          userUpdate.highestStoryStage = Math.max(me.highestStoryStage || 0, matchData.stageNumber);
-          if (flawless) userUpdate.bossFlawlessWins = (me.bossFlawlessWins || 0) + 1;
-          if (noPowerUps) userUpdate.stagesCompletedNoPowerUps = (me.stagesCompletedNoPowerUps || 0) + 1;
-          const lostStages = me.storyBossLostStages || [];
-          if (!lostStages.includes(matchData.stageNumber)) {
-            userUpdate.bossFirstAttemptWins = (me.bossFirstAttemptWins || 0) + 1;
-          }
-          if (matchData.stageNumber === 10) userUpdate.finalBossDefeated = 1;
-          const cur = (me.currentStagesNoLossStreak || 0) + 1;
-          userUpdate.currentStagesNoLossStreak = cur;
-          userUpdate.maxStagesNoLossStreak = Math.max(me.maxStagesNoLossStreak || 0, cur);
-        }
-        await base44.auth.updateMe(userUpdate);
-
-        await advanceStoryProgress(matchData.stageNumber, matchData.matchNumber);
-        await base44.entities.BattleHistory.create({
-          opponentName,
-          outcome: "win",
-          source: "ai",
-          cardsUsed: [],
+      // Server-authoritative settlement: coins, story counters, progress, and
+      // battle history are all written by finalizeStoryBattle (idempotent on the
+      // stage-match key) — the client can no longer mint story rewards or skip stages.
+      try {
+        const { data } = await base44.functions.invoke("finalizeStoryBattle", {
+          stage: matchData.stageNumber,
+          match: matchData.matchNumber,
+          win: winner === "player",
+          flawless: !!details.flawless,
+          noPowerUps: !details.powerUpsUsed,
           playerScore: details.score?.player ?? 0,
           aiScore: details.score?.ai ?? 0,
         });
-        setEndState({ win: true, coins, stageDone, allDone, bossName: matchData.bossName });
-      } else {
-        // A loss breaks the no-loss stage streak; losing a boss marks that stage so a
-        // later win doesn't count as a first-attempt victory.
-        const me = await base44.auth.me();
-        const userUpdate = { currentStagesNoLossStreak: 0 };
-        if (matchData.isBoss) {
-          const lostStages = me.storyBossLostStages || [];
-          if (!lostStages.includes(matchData.stageNumber)) {
-            userUpdate.storyBossLostStages = [...lostStages, matchData.stageNumber];
-          }
+        if (data?.alreadySettled) return;
+        if (winner === "player" && data) {
+          setEndState({
+            win: true,
+            coins: data.coins,
+            stageDone: data.stageDone,
+            allDone: data.allDone,
+            bossName: matchData.bossName,
+          });
+        } else {
+          setEndState({ win: false, bossName: matchData.bossName });
         }
-        await base44.auth.updateMe(userUpdate);
-        await base44.entities.BattleHistory.create({
-          opponentName,
-          outcome: "loss",
-          source: "ai",
-          cardsUsed: [],
-          playerScore: details.score?.player ?? 0,
-          aiScore: details.score?.ai ?? 0,
-        });
-        setEndState({ win: false, bossName: matchData.bossName });
+      } catch (err) {
+        setEndState({ win: winner === "player", bossName: matchData.bossName, coins: 0 });
       }
     },
     [ready]

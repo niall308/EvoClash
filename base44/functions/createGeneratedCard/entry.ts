@@ -37,7 +37,10 @@ Deno.serve(async (req) => {
 
     // Re-verify the free-creation allowance and coin cost against the real,
     // server-counted card total — never trust the client's coin/limit checks.
-    const ownedCards = await base44.entities.Card.filter({ ownerId: user.id });
+    // Explicit high limit: the SDK default cap (~50) would silently truncate a
+    // larger collection, undercounting here and granting free creations beyond the
+    // daily allowance. 1000 is far beyond any realistic collection (5 decks).
+    const ownedCards = await base44.entities.Card.filter({ ownerId: user.id }, undefined, 1000);
     const status = getCreationStatus(user, ownedCards.length);
     if (status.needsPayment && (user.coins || 0) < EXTRA_CREATURE_COST) {
       return Response.json({ error: 'Not enough coins' }, { status: 400 });

@@ -16,6 +16,10 @@
     },
     "newCoinTotal": {
       "type": "number"
+    },
+    "sessionId": {
+      "type": "string",
+      "description": "Idempotency key \u2014 the Stripe session/charge/dispute id. Prevents a replayed webhook from granting (or deducting) coins twice."
     }
   },
   "required": [
