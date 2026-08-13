@@ -1,43 +1,34 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Coins, Loader2, History } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { ArrowLeft, History, Info } from "lucide-react";
 import { COIN_PACKS } from "@/lib/gameConstants";
+import { getIapManager, validateReceiptServerSide } from "@/lib/iapManager";
+import { isNativeApp, shouldUseStripe, nativeBridgeAvailable } from "@/lib/platformDetect";
+import PurchaseButton from "@/components/payments/PurchaseButton";
+import RestorePurchasesButton from "@/components/payments/RestorePurchasesButton";
 
 export default function BuyCoins() {
   const navigate = useNavigate();
   const [loadingId, setLoadingId] = useState(null);
+  const iap = getIapManager();
 
-  const isNativeApp = () => !!(window.webkit?.messageHandlers?.iap || window.jsInterface);
-
-  const handleBuy = async (packId) => {
-    if (isNativeApp()) {
-      setLoadingId(packId);
-      if (window.webkit?.messageHandlers?.iap) {
-        window.webkit.messageHandlers.iap.postMessage({ packId });
-      } else {
-        window.jsInterface.postMessage(JSON.stringify({ packId }));
+  const handleBuy = async (pack) => {
+    setLoadingId(pack.id);
+    try {
+      const res = await iap.buy(pack.id);
+      if (res?.error === "native_iap_bridge_unavailable") {
+        alert("In-app purchases aren't available in this build yet. Purchases will use the App Store / Google Play in the store builds.");
+      } else if (res?.receipt) {
+        // When the Base44 native bridge eventually returns a receipt inline,
+        // forward it to the server for validation + entitlement grant.
+        await validateReceiptServerSide({ platform: res.platform, packId: pack.id, receiptOrToken: res.receipt });
       }
-      setLoadingId(null);
-      return;
-    }
-
-    if (window.self !== window.top) {
-      alert("Checkout only works from the published app, not inside this preview.");
-      return;
-    }
-    setLoadingId(packId);
-    const { data } = await base44.functions.invoke("createCoinCheckout", {
-      packId,
-      successUrl: window.location.origin + "/",
-      cancelUrl: window.location.origin + "/buy-coins",
-    });
-    if (data?.url) {
-      window.location.href = data.url;
-    } else {
+    } finally {
       setLoadingId(null);
     }
   };
+
+  const showBlockedBanner = isNativeApp() && !shouldUseStripe() && !nativeBridgeAvailable();
 
   return (
     <div className="text-white px-4 py-6">
@@ -45,31 +36,32 @@ export default function BuyCoins() {
         <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-white/60 hover:text-white text-sm min-h-[44px] px-1 -ml-1">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <button onClick={() => navigate("/coin-history")} className="flex items-center gap-1.5 bg-white/10 text-xs font-bold px-3 py-2 rounded-full active:scale-95 transition-transform">
-          <History className="w-4 h-4" /> History
-        </button>
+        <div className="flex items-center gap-2">
+          <RestorePurchasesButton />
+          <button onClick={() => navigate("/coin-history")} className="flex items-center gap-1.5 bg-white/10 text-xs font-bold px-3 py-2 rounded-full active:scale-95 transition-transform">
+            <History className="w-4 h-4" /> History
+          </button>
+        </div>
       </div>
       <h1 className="text-2xl font-bold mb-1">Buy Legend Coins</h1>
       <p className="text-white/60 text-sm mb-6">Get more LC to upgrade cards, unlock powers, and generate creatures.</p>
 
+      {showBlockedBanner && (
+        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-400/30 rounded-xl px-4 py-3 mb-4 text-amber-200/90 text-xs">
+          <Info className="w-4 h-4 shrink-0" />
+          <span>Purchases aren't available in this build — they'll use the App Store / Google Play in the store builds.</span>
+        </div>
+      )}
+
       <div className="flex flex-col gap-3">
         {COIN_PACKS.map((pack) => (
-          <button
+          <PurchaseButton
             key={pack.id}
-            onClick={() => handleBuy(pack.id)}
+            pack={pack}
+            loading={loadingId === pack.id}
+            onPurchase={handleBuy}
             disabled={loadingId !== null}
-            className="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl px-5 py-4 active:scale-95 transition-transform disabled:opacity-60"
-          >
-            <div className="flex items-center gap-3">
-              <Coins className="w-6 h-6 text-amber-300" />
-              <span className="font-bold text-lg">{pack.coins.toLocaleString()} LC</span>
-            </div>
-            {loadingId === pack.id ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <span className="font-bold text-emerald-400">${pack.priceUsd}</span>
-            )}
-          </button>
+          />
         ))}
       </div>
     </div>

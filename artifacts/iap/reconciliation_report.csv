@@ -1,0 +1,8 @@
+user_id,stripe_purchases,iap_purchases,status
+# Template. The live report is produced by the `iapReconcileReport` backend
+# function (admin-only). Invoke it from the dashboard or via
+# `base44.functions.invoke('iapReconcileReport', {})` and paste the JSON rows:
+#   stripeOnly[]  -> status "stripe_only"  (has Stripe buys, no platform IAP)
+#   both[]        -> status "both"         (has both — review for duplicate entitlement)
+# After running migrateStripeToIap, stripeOnly users gain migrated_from_stripe
+# IapPurchase rows; their coins are preserved (not re-granted).
