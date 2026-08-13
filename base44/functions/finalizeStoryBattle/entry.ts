@@ -19,7 +19,9 @@ Deno.serve(async (req) => {
     const { stage, match, win, flawless, noPowerUps, playerScore, aiScore } = await req.json().catch(() => ({}));
     const s = Number(stage);
     const m = Number(match);
-    if (!s || !m) return Response.json({ error: 'stage/match required' }, { status: 400 });
+    if (!Number.isInteger(s) || !Number.isInteger(m) || s < 1 || s > 10 || m < 1 || m > 8) {
+      return Response.json({ error: 'invalid stage/match' }, { status: 400 });
+    }
     const isBoss = m === 8;
     const matchKey = `${s}-${m}`;
     const opponentName = isBoss ? BOSS_NAMES[s - 1] : `Stage ${s} Match ${m}`;
@@ -30,6 +32,16 @@ Deno.serve(async (req) => {
     if (!progress) return Response.json({ error: 'no story progress' }, { status: 400 });
     if ((progress.completedMatches || []).includes(matchKey)) {
       return Response.json({ alreadySettled: true });
+    }
+
+    // Position gate: only the user's current, unfinished story match may be
+    // settled. A client can't claim a win for a match it never reached (e.g.
+    // jumping straight to the stage-10 final boss for its 50k reward) — every
+    // settlement must target the server-tracked current position. Win or loss.
+    const curStage = Number(progress.currentStage) || 1;
+    const curMatch = Number(progress.currentMatch) || 1;
+    if (s !== curStage || m !== curMatch) {
+      return Response.json({ error: 'not your current story match' }, { status: 400 });
     }
 
     if (win) {
