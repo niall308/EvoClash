@@ -19,11 +19,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 //   3. client-supplied per-card stat deltas and counter increments are capped
 //      to what a single match can produce, blocking the totalWins:999 injection
 //      that used to dump every card milestone in one call.
-const COINS_WIN_AI = 250;
-const COINS_LOSS_AI = 50;
-const COINS_PER_CARD_DEFEATED = 50;
+const COINS_WIN_AI = 50;
+const COINS_LOSS_AI = 15;
+const COINS_PER_CARD_DEFEATED = 5;
 const COINS_FORFEIT = 0;
-const AI_DIFFICULTY_WIN_BONUS = { Easy: 25, Normal: 50, Hard: 75, Extreme: 125 };
+const AI_DIFFICULTY_WIN_BONUS = { Easy: 15, Normal: 20, Hard: 45, Extreme: 100 };
 const MAX_AI_CARDS = 15;
 // A real 3-round AI battle takes well over this; a sub-20s finalize is treated
 // as a no-play attempt and grants nothing. Legit forfeits are still honored at

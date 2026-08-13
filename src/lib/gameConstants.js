@@ -160,14 +160,14 @@ export const EVOLVE_ARMOR_PROMPTS = {
 };
 
 // Coin economy (LC)
-export const COINS_PER_CARD_DEFEATED = 50;
-export const COINS_WIN_AI = 250;
-export const COINS_LOSS_AI = 50;
+export const COINS_PER_CARD_DEFEATED = 5;
+export const COINS_WIN_AI = 50;
+export const COINS_LOSS_AI = 15;
 export const COINS_FORFEIT = 0;
-export const COINS_WIN_HUMAN = 500;
-export const COINS_LOSS_HUMAN = 150;
+export const COINS_WIN_HUMAN = 250;
+export const COINS_LOSS_HUMAN = 50;
 // Bonus LC added on top of COINS_WIN_AI, based on the AI difficulty beaten
-export const AI_DIFFICULTY_WIN_BONUS = { Easy: 25, Normal: 50, Hard: 75, Extreme: 125 };
+export const AI_DIFFICULTY_WIN_BONUS = { Easy: 15, Normal: 20, Hard: 45, Extreme: 100 };
 
 // Admin accounts are auto-topped-up to this coin balance on login so they never run out.
 export const ADMIN_UNLIMITED_COINS = 100000000;

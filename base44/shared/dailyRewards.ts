@@ -1,29 +1,27 @@
 // Shared daily-reward config used by claimDailyReward.
-// Reward is a 4-digit number formed from independent slot digits:
-// digit 1 (thousands): 0-2, weighted so 0 is common and 2 is rare (jackpot range).
-// digits 2-4 (hundreds/tens/ones): 0-9, uniform.
-const DIGIT_1_WEIGHTS = [
-  { value: 0, weight: 70 },
-  { value: 1, weight: 25 },
-  { value: 2, weight: 5 },
+// Reward is rolled in one of three weighted tiers within the 0–1500 range:
+//   ~70%: 0–500     (common)
+//   ~25%: 501–999   (uncommon)
+//   ~5%:  1000–1500 (jackpot)
+const REWARD_TIERS = [
+  { min: 0, max: 500, weight: 70 },
+  { min: 501, max: 999, weight: 25 },
+  { min: 1000, max: 1500, weight: 5 },
 ];
 
-function pickDigit1() {
-  const totalWeight = DIGIT_1_WEIGHTS.reduce((sum, r) => sum + r.weight, 0);
+function pickTier() {
+  const totalWeight = REWARD_TIERS.reduce((sum, r) => sum + r.weight, 0);
   let roll = Math.random() * totalWeight;
-  for (const entry of DIGIT_1_WEIGHTS) {
+  for (const entry of REWARD_TIERS) {
     roll -= entry.weight;
-    if (roll <= 0) return entry.value;
+    if (roll <= 0) return entry;
   }
-  return DIGIT_1_WEIGHTS[0].value;
+  return REWARD_TIERS[0];
 }
 
 export function pickReward() {
-  const d1 = pickDigit1();
-  const d2 = Math.floor(Math.random() * 10);
-  const d3 = Math.floor(Math.random() * 10);
-  const d4 = Math.floor(Math.random() * 10);
-  return d1 * 1000 + d2 * 100 + d3 * 10 + d4;
+  const tier = pickTier();
+  return Math.floor(Math.random() * (tier.max - tier.min + 1)) + tier.min;
 }
 
 // Returns today's calendar date string (YYYY-MM-DD) in the America/New_York (EST/EDT) timezone.

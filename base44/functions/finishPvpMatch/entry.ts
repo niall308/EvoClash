@@ -1,8 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { calculateRPChange } from '../../shared/rankLogic.ts';
 
-const COINS_WIN_HUMAN = 500;
-const COINS_LOSS_HUMAN = 150;
+const COINS_WIN_HUMAN = 250;
+const COINS_LOSS_HUMAN = 50;
 
 Deno.serve(async (req) => {
   try {

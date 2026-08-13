@@ -6,7 +6,7 @@ import { play } from "@/lib/soundEngine";
 import SlotReel from "@/components/layout/SlotReel";
 import CoinFlyAnimation from "@/components/profile/CoinFlyAnimation";
 
-const REEL_MAX_DIGITS = [2, 9, 9, 9]; // section 1: 0-2, sections 2-4: 0-9
+const REEL_MAX_DIGITS = [1, 9, 9, 9]; // section 1: 0-1 (reward max 1500), sections 2-4: 0-9
 const SPIN_DURATION_MS = 5000;
 const REVEAL_DURATION_MS = 2000;
 
