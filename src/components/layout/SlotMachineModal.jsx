@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { Gift, Coins, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
+import { play } from "@/lib/soundEngine";
 import SlotReel from "@/components/layout/SlotReel";
 import CoinFlyAnimation from "@/components/profile/CoinFlyAnimation";
 
@@ -32,7 +33,12 @@ export default function SlotMachineModal({ onClose, onClaimed }) {
       setPhase("spinning");
 
       setTimeout(() => {
+        // The slot machine is done and the coin reward is decided — play the
+        // reward sound and update the coin badge right here, instead of 2s
+        // later at "done", so the cue lines up with the reels landing.
         setPhase("revealed");
+        play("reward_claim");
+        window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: data.newTotal } }));
         setTimeout(() => {
           const rect = reelsRef.current?.getBoundingClientRect();
           setFlyOrigin({
@@ -40,7 +46,6 @@ export default function SlotMachineModal({ onClose, onClaimed }) {
             y: rect ? rect.top + rect.height / 2 : window.innerHeight / 2,
             key: Date.now(),
           });
-          window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: data.newTotal } }));
           onClaimed?.(data.newTotal);
           setPhase("done");
         }, REVEAL_DURATION_MS);

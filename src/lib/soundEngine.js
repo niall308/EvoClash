@@ -11,6 +11,12 @@ let currentBgmKey = null;
 let loaded = false;
 let lastActionKey = null;
 let lastActionTime = 0;
+// Holds strong refs to in-flight one-shot Audio elements so the browser can't
+// garbage-collect them before the (async) media has loaded/finished. Without
+// this, rarely-fired SFX (card_defeat, win, lose, reward_claim) would get
+// collected mid-load and play silently while hot keys (button_tap, attack)
+// stayed cached and worked.
+const playingPool = new Set();
 
 export function isSoundLoaded() {
   return loaded;
@@ -79,7 +85,11 @@ export function play(key) {
     const a = new Audio(asset.fileUrl);
     a.loop = false;
     a.volume = 0.55;
-    a.play().catch(() => {});
+    playingPool.add(a);
+    const release = () => playingPool.delete(a);
+    a.addEventListener("ended", release, { once: true });
+    a.addEventListener("error", release, { once: true });
+    a.play().catch(release);
   } catch {
     // Audio not available — ignore.
   }
