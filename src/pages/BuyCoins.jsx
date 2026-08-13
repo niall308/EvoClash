@@ -17,7 +17,7 @@ export default function BuyCoins() {
     try {
       const res = await iap.buy(pack.id);
       if (res?.error === "native_iap_bridge_unavailable") {
-        alert("In-app purchases aren't available in this build yet. Purchases will use the App Store / Google Play in the store builds.");
+        alert("In-app purchases aren't available in this build yet. Purchases will be available via the App Store in the store build.");
       } else if (res?.receipt) {
         // When the Base44 native bridge eventually returns a receipt inline,
         // forward it to the server for validation + entitlement grant.
@@ -49,7 +49,7 @@ export default function BuyCoins() {
       {showBlockedBanner && (
         <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-400/30 rounded-xl px-4 py-3 mb-4 text-amber-200/90 text-xs">
           <Info className="w-4 h-4 shrink-0" />
-          <span>Purchases aren't available in this build — they'll use the App Store / Google Play in the store builds.</span>
+          <span>Purchases aren't available in this build — they'll be available via the App Store in the store build.</span>
         </div>
       )}
 

@@ -3,9 +3,9 @@ import { Coins, Loader2 } from "lucide-react";
 import { isNativeApp, shouldUseStripe, nativeBridgeAvailable } from "@/lib/platformDetect";
 
 // Centralized purchase control. On web it renders the buy button (Stripe).
-// Inside the native WebView while the StoreKit/Play bridge is not yet live, it
+// Inside the native iOS WebView while the StoreKit bridge is not yet live, it
 // renders a disabled, compliant row instead of a Stripe buy button — so no
-// Stripe-for-digital-goods flow exists in the iOS/Android build.
+// Stripe-for-digital-goods flow exists in the iOS build. (Apple only.)
 export default function PurchaseButton({ pack, loading, onPurchase, disabled }) {
   const native = isNativeApp();
   const useStripe = shouldUseStripe();
@@ -20,7 +20,7 @@ export default function PurchaseButton({ pack, loading, onPurchase, disabled }) 
           <span className="font-bold text-lg">{pack.coins.toLocaleString()} LC</span>
         </div>
         <span className="text-xs text-white/50 text-right max-w-[55%]">
-          Purchases use the App Store / Google Play in the store builds.
+          Purchases are available via App Store IAP in the store build.
         </span>
       </div>
     );

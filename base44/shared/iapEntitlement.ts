@@ -1,7 +1,7 @@
-// Idempotently records a validated IAP purchase and grants the LC entitlement.
-// Dedup anchor: (userId, platform, transactionId). A replayed validation with
-// the same transaction is a no-op (alreadyValid: true), so coins can never be
-// minted twice from a replayed receipt.
+// Idempotently records a validated Apple IAP purchase and grants the LC
+// entitlement. Dedup anchor: (userId, platform, transactionId). A replayed
+// validation with the same transaction is a no-op (alreadyValid: true), so
+// coins can never be minted twice from a replayed receipt.
 import type { IapProduct } from "./iapProducts.ts";
 
 export interface EntitlementResult {
@@ -14,9 +14,9 @@ export interface EntitlementResult {
 export async function recordIapPurchase(base44: any, opts: {
   userId: string;
   product: IapProduct;
-  platform: "apple" | "google";
+  platform: "apple";
   transactionId: string;
-  purchaseToken?: string;
+  purchaseToken?: string; // raw Apple receipt base64
   purchaseDate?: string;
   expiryDate?: string;
   consumed: boolean;
@@ -39,7 +39,7 @@ export async function recordIapPurchase(base44: any, opts: {
   const purchase = await base44.asServiceRole.entities.IapPurchase.create({
     userId: opts.userId,
     platform: opts.platform,
-    productId: opts.platform === "apple" ? opts.product.appleProductId : opts.product.googleProductId,
+    productId: opts.product.appleProductId,
     packId: opts.product.packId,
     transactionId: opts.transactionId,
     purchaseToken: opts.purchaseToken || "",

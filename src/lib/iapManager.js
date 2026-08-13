@@ -4,16 +4,17 @@ import { isNativeApp, shouldUseStripe } from "@/lib/platformDetect";
 import { catalogByPackId } from "@/lib/iapCatalog";
 
 // IAPManager: a single client-facing abstraction over the two payment
-// backends, selected by platform / feature flag.
+// backends, selected by platform / feature flag. APPLE ONLY — there is no
+// Android/Google Play backend.
 //
 // - StripeBackend: existing web checkout (createCoinCheckout). Used on web and
 //   on a hybrid native build where VITE_USE_STRIPE_IN_NATIVE=true.
-// - NativeIAPBackend: talks to the Base44 native billing bridge
-//   (window.webkit.messageHandlers.iap / window.jsInterface) that will be
-//   populated once Base44 ships their StoreKit/Google Play Billing integration.
-//   Until that bridge exists, native calls return 'native_iap_bridge_unavailable'
-//   so the UI can show the not-available-in-this-build message. When the bridge
-//   lands, only _bridge() + the receipt-handling callback need wiring.
+// - NativeIAPBackend: talks to the Base44 native StoreKit bridge
+//   (window.webkit.messageHandlers.iap) that will be populated once Base44
+//   ships their iOS billing integration. Until that bridge exists, native
+//   calls return 'native_iap_bridge_unavailable' so the UI can show the
+//   not-available-in-this-build message. When the bridge lands, only _bridge()
+//   + the receipt-handling callback need wiring.
 
 class StripeBackend {
   async getProducts() {
@@ -46,9 +47,6 @@ class NativeIAPBackend {
     if (window.webkit?.messageHandlers?.iap) {
       return { type: "apple", post: (m) => window.webkit.messageHandlers.iap.postMessage(m) };
     }
-    if (typeof window.jsInterface !== "undefined" && window.jsInterface) {
-      return { type: "google", post: (m) => window.jsInterface.postMessage(JSON.stringify(m)) };
-    }
     return null;
   }
   async getProducts() {
@@ -57,11 +55,12 @@ class NativeIAPBackend {
   async buy(packId) {
     const bridge = this._bridge();
     if (!bridge) return { error: "native_iap_bridge_unavailable" };
-    // Ask the native layer to start the purchase. When it returns a receipt
-    // the bridge should call window.__base44_iap_onPurchase(payload), which
-    // iapManager wires to validateReceiptServerSide. (Wired when bridge lands.)
+    // Ask the native layer to start the StoreKit purchase. When it returns a
+    // receipt the bridge should call window.__base44_iap_onPurchase(payload),
+    // which iapManager wires to validateReceiptServerSide. (Wired when bridge
+    // lands.)
     bridge.post({ op: "purchase", packId });
-    return { pending: true, platform: bridge.type };
+    return { pending: true, platform: "apple" };
   }
   async restorePurchases() {
     const bridge = this._bridge();
@@ -85,16 +84,16 @@ export function getIapManager() {
   return backend;
 }
 
-// Server-side receipt validation — called immediately after a native purchase
-// (once the bridge is live) so the server grants entitlement idempotently.
-export async function validateReceiptServerSide({ platform, packId, receiptOrToken }) {
+// Server-side Apple receipt validation — called immediately after a native
+// StoreKit purchase (once the bridge is live) so the server grants the
+// entitlement idempotently.
+export async function validateReceiptServerSide({ packId, receipt }) {
   const catalog = catalogByPackId(packId);
   if (!catalog) throw new Error("unknown pack");
-  const productId = platform === "apple" ? catalog.appleProductId : catalog.googleProductId;
-  const { data } = await base44.functions.invoke("validateIapReceipt", { platform, productId, receiptOrToken });
-  if (data?.valid !== false && platform === "google") {
-    // Consumables must be consumed to allow repurchase.
-    try { await base44.functions.invoke("acknowledgeIapPurchase", { platform, productId, purchaseToken: receiptOrToken }); } catch {}
-  }
+  const { data } = await base44.functions.invoke("validateIapReceipt", {
+    platform: "apple",
+    productId: catalog.appleProductId,
+    receipt,
+  });
   return data;
 }

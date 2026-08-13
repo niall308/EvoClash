@@ -9,30 +9,29 @@
       "type": "string",
       "enum": [
         "apple",
-        "google",
         "stripe",
         "migrated_from_stripe"
       ],
-      "description": "Which billing platform produced this purchase. 'migrated_from_stripe' marks records copied from the legacy Stripe CoinTransaction ledger."
+      "description": "Which billing platform produced this purchase. Apple = a validated StoreKit receipt; 'migrated_from_stripe' = a record copied from the legacy Stripe CoinTransaction ledger."
     },
     "productId": {
       "type": "string",
-      "description": "Platform store product id (Apple: com.evoclash.*; Google: coin_pack_*). For migrated Stripe records this holds the internal packId."
+      "description": "Apple product id (com.primallegends.coin_pack_*). For migrated Stripe records this holds the internal packId."
     },
     "packId": {
       "type": "string",
       "default": "",
-      "description": "Internal pack id shared with COIN_PACKS, so a single catalog maps Stripe/Apple/Google products."
+      "description": "Internal pack id shared with COIN_PACKS, so a single catalog maps Stripe + Apple products."
     },
     "transactionId": {
       "type": "string",
       "default": "",
-      "description": "Idempotency anchor. Apple transaction_id, Google purchaseToken, or 'stripe:<sessionId>' for migrated records. A replayed validation with the same transaction is a no-op."
+      "description": "Idempotency anchor. Apple transaction_id, or 'stripe:<sessionId>' for migrated records. A replayed validation with the same transaction is a no-op."
     },
     "purchaseToken": {
       "type": "string",
       "default": "",
-      "description": "Raw purchase token / receipt (Google purchaseToken; Apple receipt base64) retained for acknowledge/consume + restore."
+      "description": "Raw Apple receipt base64 retained for restore / server-side re-validation."
     },
     "purchaseDate": {
       "type": "string",
@@ -68,7 +67,7 @@
     "rawResponse": {
       "type": "object",
       "default": {},
-      "description": "Raw validated response from Apple/Google, or the source CoinTransaction snapshot for migrated records."
+      "description": "Raw validated response from Apple, or the source CoinTransaction snapshot for migrated records."
     }
   },
   "required": [

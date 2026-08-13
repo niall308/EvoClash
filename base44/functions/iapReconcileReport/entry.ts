@@ -17,7 +17,7 @@ export default async function(req) {
     const stripeByUser = new Map<string, number>();
     for (const t of fulfilled) stripeByUser.set(t.created_by_id, (stripeByUser.get(t.created_by_id) || 0) + 1);
 
-    const platformIap = iap.filter((p: any) => p.platform === 'apple' || p.platform === 'google');
+    const platformIap = iap.filter((p: any) => p.platform === 'apple');
     const iapByUser = new Map<string, number>();
     for (const p of platformIap) iapByUser.set(p.userId, (iapByUser.get(p.userId) || 0) + 1);
 
