@@ -26,7 +26,7 @@ export default async function(req) {
       for (const tx of batch) {
         // Only fulfilled purchases migrate — skip refunds/deductions entirely.
         if ((tx.coinsAdded || 0) <= 0) { skipped++; continue; }
-        const dedup = `stripe:${tx.sessionId}`;
+        const dedup = `stripe:${tx.sessionId || tx.id}`;
         const existing = await base44.asServiceRole.entities.IapPurchase.filter({ userId: tx.created_by_id, transactionId: dedup });
         if (existing.length) { skipped++; continue; }
         await base44.asServiceRole.entities.IapPurchase.create({
