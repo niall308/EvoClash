@@ -1,0 +1,99 @@
+{
+  "name": "IapPurchase",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "apple",
+        "google",
+        "stripe",
+        "migrated_from_stripe"
+      ],
+      "description": "Which billing platform produced this purchase. 'migrated_from_stripe' marks records copied from the legacy Stripe CoinTransaction ledger."
+    },
+    "productId": {
+      "type": "string",
+      "description": "Platform store product id (Apple: com.evoclash.*; Google: coin_pack_*). For migrated Stripe records this holds the internal packId."
+    },
+    "packId": {
+      "type": "string",
+      "default": "",
+      "description": "Internal pack id shared with COIN_PACKS, so a single catalog maps Stripe/Apple/Google products."
+    },
+    "transactionId": {
+      "type": "string",
+      "default": "",
+      "description": "Idempotency anchor. Apple transaction_id, Google purchaseToken, or 'stripe:<sessionId>' for migrated records. A replayed validation with the same transaction is a no-op."
+    },
+    "purchaseToken": {
+      "type": "string",
+      "default": "",
+      "description": "Raw purchase token / receipt (Google purchaseToken; Apple receipt base64) retained for acknowledge/consume + restore."
+    },
+    "purchaseDate": {
+      "type": "string",
+      "default": ""
+    },
+    "expiryDate": {
+      "type": "string",
+      "default": "",
+      "description": "Subscriptions only. Empty for consumable coin packs."
+    },
+    "coins": {
+      "type": "number",
+      "default": 0,
+      "description": "LC granted for this purchase. 0 for migrated Stripe records (coins were already granted by the Stripe webhook)."
+    },
+    "priceUsd": {
+      "type": "number",
+      "default": 0
+    },
+    "consumed": {
+      "type": "boolean",
+      "default": false
+    },
+    "acknowledged": {
+      "type": "boolean",
+      "default": false
+    },
+    "migratedFrom": {
+      "type": "string",
+      "default": "",
+      "description": "Set to 'stripe' for records copied from CoinTransaction during the one-off migration."
+    },
+    "rawResponse": {
+      "type": "object",
+      "default": {},
+      "description": "Raw validated response from Apple/Google, or the source CoinTransaction snapshot for migrated records."
+    }
+  },
+  "required": [
+    "userId",
+    "platform",
+    "productId"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "data.userId": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
