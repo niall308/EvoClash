@@ -1,8 +1,8 @@
-# Privacy Policy — Primal Legends
+# Privacy Policy — EvoClash
 
 Effective date: 2026-08-14
 
-This Privacy Policy explains how Primal Legends (the “App”), maintained in the repository niall308/primal-legends, collects, uses, and shares information when you use the App or related services. The App is owned and operated by the app owner (contact: privacy@primallegends.test). If you have questions about privacy or want to request data access or deletion, contact that email.
+This Privacy Policy explains how EvoClash (the “App”), collects, uses, and shares information when you use the App or related services. The App is owned and operated by the app owner (contact: evo.clash1916@gmail.com). If you have questions about privacy or want to request data access or deletion, contact that email.
 
 ## 1. Information we collect
 
@@ -54,7 +54,7 @@ We retain account and purchase records for as long as needed to provide the serv
 
 ## 7. Your rights
 
-Depending on your jurisdiction, you may have the right to access, correct, or delete your personal data or to restrict or object to processing. To exercise these rights, contact privacy@primallegends.test. We will respond according to applicable law.
+Depending on your jurisdiction, you may have the right to access, correct, or delete your personal data or to restrict or object to processing. To exercise these rights, contact evo.clash1916@gmail.com. We will respond according to applicable law.
 
 ## 8. Children
 
@@ -74,9 +74,6 @@ We may update this privacy policy; we will post the updated policy at the same l
 
 ## 12. Contact
 
-If you have questions about this policy or requests concerning your data, contact: privacy@primallegends.test
+If you have questions about this policy or requests concerning your data, contact: evo.clash1916@gmail.com
 
 
----
-
-Notes for owners: to publish this policy via GitHub Pages, enable Pages in repo Settings → Pages and select the branch (e.g., main) and the /docs folder. The policy will be available at: https://niall308.github.io/primal-legends/privacy.md (or .html) once Pages is enabled.
