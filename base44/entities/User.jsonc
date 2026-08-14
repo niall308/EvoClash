@@ -5,6 +5,11 @@
     "username": {
       "type": "string"
     },
+    "isDemo": {
+      "type": "boolean",
+      "default": false,
+      "description": "Marks a pre-seeded demo/reviewer account that skips the usual onboarding flows."
+    },
     "profilePictureUrl": {
       "type": "string",
       "default": ""
