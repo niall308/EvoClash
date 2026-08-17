@@ -8,6 +8,15 @@ const isPublicRefUrl = (url) => !!url && !url.includes("base44.app/api/apps/");
 // Shared AI-art prompt builder used by both the player card generator and the
 // admin AI-deck generator, so both produce consistent, on-model artwork that
 // respects admin-configured type backgrounds.
+// The shared style-reference image is the ORIGINAL Tyrannosaurus Rex card art.
+// Passing it as an img2img reference for EVERY creature biases the model toward
+// a T-Rex body/head (the known "T-Rex leakage" bug), so it is only supplied when
+// the creature being drawn actually IS a Tyrannosaurus Rex. For any other
+// creature the art style is conveyed in prose, so the T-Rex subject cannot
+// leak into the output.
+const isStyleReferenceSubject = (baseName, isHybrid) =>
+  !isHybrid && (baseName || "").toLowerCase() === "tyrannosaurus rex";
+
 export function buildCardImagePrompt(cardData, { typeBackgrounds = [], creatureDescription = "", referenceImageUrl = "" } = {}) {
   const stance = CREATURE_STANCES[Math.floor(Math.random() * CREATURE_STANCES.length)];
   const palette = CREATURE_COLOR_PALETTES[Math.floor(Math.random() * CREATURE_COLOR_PALETTES.length)];
@@ -21,11 +30,21 @@ export function buildCardImagePrompt(cardData, { typeBackgrounds = [], creatureD
     ? ` An admin-approved reference image of this exact creature is also provided — match its head shape, body structure, and anatomy precisely; only vary its pose and color scheme as instructed above, and ignore its background.`
     : "";
 
-  const prompt = cardData.isHybrid
-    ? `A hybrid creature combining two creatures into one, robot-style, design guide: ${cardData.baseName} — ${creatureDescription}. Pose: ${stance}. Give the creature its own distinct color scheme of ${palette}. Dynamic full-body illustration true to this exact hybrid description and anatomy. CRITICAL: Match ONLY the art style, lighting, and mystical trading-card aesthetic of the reference image — its actual creature, colors, face, head shape, and pose must be completely ignored and NOT copied.${referenceInstruction} ${backgroundInstruction} The creature must remain the clear, sharply rendered focal point standing out from the background. No text, no border, no frame`
-    : `A ${cardData.type}-type ${cardData.baseName}. Its head, face, and full body must look EXACTLY like this: ${creatureDescription || CREATURE_ANATOMY[cardData.baseName] || `a creature true to a real ${cardData.baseName}`}. Pose: ${stance}. Give the creature its own distinct color scheme of ${palette}. Dynamic full-body creature illustration, anatomically true to this exact creature. CRITICAL: Do NOT give it a Tyrannosaurus Rex or generic dinosaur face/head unless it is actually a Tyrannosaurus Rex — the head shape above must be followed precisely.${referenceInstruction} Use the style reference image ONLY for its art style, lighting, and mystical trading-card aesthetic — its actual creature, colors, face, head shape, and pose must be completely ignored and NOT copied. ${backgroundInstruction} The creature must remain the clear, sharply rendered focal point standing out from the background. No text, no border, no frame`;
+  // Only the Tyrannosaurus Rex creature pairs with the T-Rex style reference
+  // image — for every other creature it leaks T-Rex anatomy into the output.
+  const includeStyleRef = isStyleReferenceSubject(cardData.baseName, cardData.isHybrid);
+  const styleInstruction = includeStyleRef
+    ? `Use the style reference image ONLY for its art style, lighting, and mystical trading-card aesthetic — its actual creature, colors, face, head shape, and pose must be completely ignored and NOT copied.`
+    : `Render in a mystical fantasy trading-card art style: rich painterly saturated colors, dramatic rim lighting, full-body digital-painting creature illustration with clean, sharp separation from the background. Do NOT incorporate any subject, pose, head shape, or body plan from any creature other than the one described above.`;
 
-  const existingImageUrls = [STYLE_REFERENCE_URL];
+  const noTRexInstruction = ` Do NOT give it a Tyrannosaurus Rex or generic dinosaur face, head, or body unless it is actually a Tyrannosaurus Rex — the head and body shape described above must be followed precisely.`;
+
+  const prompt = cardData.isHybrid
+    ? `A hybrid creature combining two creatures into one, robot-style, design guide: ${cardData.baseName} — ${creatureDescription}. Pose: ${stance}. Give the creature its own distinct color scheme of ${palette}. Dynamic full-body illustration true to this exact hybrid description and anatomy. CRITICAL:${noTRexInstruction}${referenceInstruction} ${styleInstruction} ${backgroundInstruction} The creature must remain the clear, sharply rendered focal point standing out from the background. No text, no border, no frame`
+    : `A ${cardData.type}-type ${cardData.baseName}. Its head, face, and full body must look EXACTLY like this: ${creatureDescription || CREATURE_ANATOMY[cardData.baseName] || `a creature true to a real ${cardData.baseName}`}. Pose: ${stance}. Give the creature its own distinct color scheme of ${palette}. Dynamic full-body creature illustration, anatomically true to this exact creature.${noTRexInstruction}${referenceInstruction} ${styleInstruction} ${backgroundInstruction} The creature must remain the clear, sharply rendered focal point standing out from the background. No text, no border, no frame`;
+
+  const existingImageUrls = [];
+  if (includeStyleRef) existingImageUrls.push(STYLE_REFERENCE_URL);
   if (bgRef) existingImageUrls.push(bgRef.imageUrl);
   if (publicReferenceUrl) existingImageUrls.push(publicReferenceUrl);
   return { prompt, existingImageUrls };

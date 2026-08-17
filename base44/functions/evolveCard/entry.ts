@@ -12,10 +12,16 @@ const UPGRADE_REQUIREMENT = { cardsDestroyed: 100, gamesPlayed: 200, matchWins: 
 const TIER_UPGRADE_COST = 150000;
 const TIER4_PREFIXES = ["Mega", "Prime", "Ultimate", "Dreaded", "Devastating"];
 const STYLE_REFERENCE_URL = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/636b60708_Style.png";
+// The style-reference image is the ORIGINAL Tyrannosaurus Rex card art. Passing
+// it for every evolution leaks T-Rex anatomy into non-T-Rex creatures (the
+// known "T-Rex leakage" bug), so it is only supplied when the card being evolved
+// IS a Tyrannosaurus Rex. The prompts refer to the "source card image" (the
+// card's own prior art) rather than "the reference image", so they stay correct
+// whether or not the T-Rex style reference is included.
 const EVOLVE_ARMOR_PROMPTS = {
-  2: "The same creature, now wearing bronze age armor plating, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image. Keep the exact same background environment as shown in the reference image, unchanged — the creature must remain the clear, sharply rendered focal point standing out from it. No text, no border, no frame",
-  3: "The same creature, now wearing gleaming silver metal armor plating that fully replaces any previous bronze armor, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image. Keep the exact same background environment as shown in the reference image, unchanged — the creature must remain the clear, sharply rendered focal point standing out from it. No text, no border, no frame",
-  4: "The same creature, with all previous armor removed, now fully transformed into a robotic being made of silver and gold metal plating, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image. Keep the exact same background environment as shown in the reference image, unchanged — the creature must remain the clear, sharply rendered focal point standing out from it. No text, no border, no frame",
+  2: "The same creature as the source card image, now wearing bronze age armor plating, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the source card image. Keep the exact same background environment as shown in the source card image, unchanged — the creature must remain the clear, sharply rendered focal point standing out from it. Do NOT redraw the creature as a Tyrannosaurus Rex or a generic dinosaur. No text, no border, no frame",
+  3: "The same creature as the source card image, now wearing gleaming silver metal armor plating that fully replaces any previous bronze armor, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the source card image. Keep the exact same background environment as shown in the source card image, unchanged — the creature must remain the clear, sharply rendered focal point standing out from it. Do NOT redraw the creature as a Tyrannosaurus Rex or a generic dinosaur. No text, no border, no frame",
+  4: "The same creature as the source card image, with all previous armor removed, now fully transformed into a robotic being made of silver and gold metal plating that follows its existing anatomy, dynamic full-body illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the source card image. Keep the exact same background environment as shown in the source card image, unchanged — the creature must remain the clear, sharply rendered focal point standing out from it. Do NOT redraw the creature as a Tyrannosaurus Rex or a generic dinosaur. No text, no border, no frame",
 };
 const TIER_UPGRADE_FIELD = { 2: "tier2Upgrades", 3: "tier3Upgrades", 4: "tier4Upgrades" };
 
@@ -81,7 +87,10 @@ Deno.serve(async (req) => {
 
     const templates = await base44.entities.CardTemplate.filter({ baseName: card.baseName });
     const tierAnimation = templates[0]?.[`tier${newTier}Animation`];
-    const referenceImages = [card.imageUrl, STYLE_REFERENCE_URL];
+    // Only include the T-Rex style reference when evolving a T-Rex — otherwise it
+    // leaks T-Rex anatomy into the evolved form of unrelated creatures.
+    const referenceImages = [card.imageUrl];
+    if (card.baseName === "Tyrannosaurus Rex") referenceImages.push(STYLE_REFERENCE_URL);
     if (tierAnimation) referenceImages.push(tierAnimation);
     const { url } = await base44.integrations.Core.GenerateImage({
       prompt: EVOLVE_ARMOR_PROMPTS[newTier],
