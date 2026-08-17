@@ -5,9 +5,9 @@ import { Swords } from "lucide-react";
 const SEGMENTS = [
   { start: 0, end: 15, color: "#ef4444", multiplier: 0.8 },
   { start: 15, end: 35, color: "#eab308", multiplier: 1.0 },
-  { start: 35, end: 45, color: "#22c55e", multiplier: 1.2 },
-  { start: 45, end: 55, color: "#3b82f6", multiplier: 2.0 },
-  { start: 55, end: 65, color: "#22c55e", multiplier: 1.2 },
+  { start: 35, end: 47, color: "#22c55e", multiplier: 1.2 },
+  { start: 47, end: 53, color: "#3b82f6", multiplier: 2.0 },
+  { start: 53, end: 65, color: "#22c55e", multiplier: 1.2 },
   { start: 65, end: 85, color: "#eab308", multiplier: 1.0 },
   { start: 85, end: 100, color: "#ef4444", multiplier: 0.8 },
 ];
