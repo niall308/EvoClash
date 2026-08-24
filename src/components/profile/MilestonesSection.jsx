@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Target, Plus } from "lucide-react";
+import { Target, Plus, CheckCheck } from "lucide-react";
 import CoinFlyAnimation from "@/components/profile/CoinFlyAnimation";
 import DrawerPicker from "@/components/common/DrawerPicker";
+import { play } from "@/lib/soundEngine";
 
 const METRIC_LABELS = {
   gamesPlayed: "Games Played",
@@ -89,6 +90,30 @@ export default function MilestonesSection({ user, onUserUpdate }) {
     window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: updated.coins } }));
   };
 
+  // Claim every milestone that's currently claimable in one tap. Claims run
+  // sequentially (the backend re-reads the live user for each), so a single tap
+  // can't race itself.
+  const handleClaimAll = async (e) => {
+    if (!milestones) return;
+    const claimable = milestones.filter(
+      (m) => timesEarned(m, user) > ((user.milestoneClaimCounts || {})[m.id] || 0)
+    );
+    if (claimable.length === 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    play("reward_claim");
+    let anyGained = false;
+    for (const m of claimable) {
+      const res = await base44.functions.invoke("claimMilestone", { milestoneId: m.id });
+      if ((res.data || {}).coinsGained) anyGained = true;
+    }
+    if (anyGained) {
+      setFlyOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, key: Date.now() });
+      const updated = await base44.auth.me();
+      onUserUpdate(updated);
+      window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: updated.coins } }));
+    }
+  };
+
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.title || !form.target || !form.coinReward) return;
@@ -113,11 +138,21 @@ export default function MilestonesSection({ user, onUserUpdate }) {
     <div className="mb-8">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-bold">Milestones</h2>
-        {user.isAdmin && (
-          <button onClick={() => setShowForm((s) => !s)} className="text-amber-400 text-xs flex items-center gap-1">
-            <Plus className="w-3.5 h-3.5" /> Add
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {milestones && milestones.some((m) => timesEarned(m, user) > ((user.milestoneClaimCounts || {})[m.id] || 0)) && (
+            <button
+              onClick={handleClaimAll}
+              className="text-xs font-bold text-black bg-amber-400 px-3 py-1 rounded-full flex items-center gap-1 animate-pulse"
+            >
+              <CheckCheck className="w-3.5 h-3.5" /> Claim All
+            </button>
+          )}
+          {user.isAdmin && (
+            <button onClick={() => setShowForm((s) => !s)} className="text-amber-400 text-xs flex items-center gap-1">
+              <Plus className="w-3.5 h-3.5" /> Add
+            </button>
+          )}
+        </div>
       </div>
 
       {showForm && (
