@@ -10,7 +10,12 @@ export default function ReplaceCardModal({ choices, onPick }) {
       </h2>
       <p className="text-white/60 text-sm mb-4">Choose a replacement</p>
       {choices.length === 0 ? (
-        <p className="text-white/50 text-sm mb-6">No cards left to reinforce!</p>
+        <>
+          <p className="text-white/50 text-sm mb-6">No cards left to reinforce!</p>
+          <button onClick={() => onPick(null)} className="bg-white/10 font-bold px-6 py-3 rounded-full active:scale-95 transition-transform">
+            Continue
+          </button>
+        </>
       ) : (
         <div className="flex gap-3 mb-6">
           {choices.map((c) => (

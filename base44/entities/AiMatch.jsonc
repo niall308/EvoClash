@@ -42,6 +42,15 @@
     "opponentName": {
       "type": "string",
       "default": ""
+    },
+    "gameMode": {
+      "type": "string",
+      "enum": [
+        "1v1",
+        "3v3"
+      ],
+      "default": "1v1",
+      "description": "Which battle mode this match was played in. Drives the 3v3 reward bonus in finalizeAIBattle."
     }
   },
   "required": [

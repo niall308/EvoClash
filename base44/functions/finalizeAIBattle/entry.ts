@@ -62,6 +62,8 @@ Deno.serve(async (req) => {
 
     // Server-stored difficulty — do NOT trust the client-supplied difficulty.
     const serverDifficulty = session.difficulty || 'Normal';
+    // Server-stored game mode (1v1 vs 3v3) — not the client-supplied value.
+    const gameMode = session.gameMode === '3v3' ? '3v3' : '1v1';
     const startedAt = session.startedAt ? new Date(session.startedAt).getTime() : 0;
     const tooFast = startedAt > 0 && Date.now() - startedAt < MIN_BATTLE_MS;
     const isForfeit = !!forfeited;
@@ -127,6 +129,9 @@ Deno.serve(async (req) => {
 
     const base = isWin ? COINS_WIN_AI : COINS_LOSS_AI;
     const difficultyBonus = isWin ? (AI_DIFFICULTY_WIN_BONUS[serverDifficulty] || 0) : 0;
+    // 3v3 grants slightly higher rewards: +100 for a win, +15 for a loss on top
+    // of the standard payout. Read from the trusted session, never the request body.
+    const modeBonus = gameMode === '3v3' ? (isWin ? 100 : 15) : 0;
     const defeatedCount = clamp(cardsDefeated, MAX_AI_CARDS);
     const cardsDefeatedCoins = defeatedCount * COINS_PER_CARD_DEFEATED;
     let milestoneCoins = 0;
@@ -173,7 +178,7 @@ Deno.serve(async (req) => {
     }
     if (pendingUpdates.length) await Promise.all(pendingUpdates);
 
-    const coinsEarned = base + difficultyBonus + cardsDefeatedCoins + milestoneCoins;
+    const coinsEarned = base + difficultyBonus + modeBonus + cardsDefeatedCoins + milestoneCoins;
     const newStreak = isWin ? (user.currentWinStreak || 0) + 1 : 0;
     const newMaxStreak = Math.max(user.maxWinStreak || 0, newStreak);
 
@@ -228,6 +233,8 @@ Deno.serve(async (req) => {
         base,
         difficultyBonus,
         difficulty: serverDifficulty,
+        gameMode,
+        modeBonus,
         cardsDefeated: defeatedCount,
         cardsDefeatedCoins,
         milestoneCoins,

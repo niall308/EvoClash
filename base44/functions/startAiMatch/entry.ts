@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { matchId, difficulty, opponentName } = await req.json().catch(() => ({}));
+    const { matchId, difficulty, opponentName, gameMode } = await req.json().catch(() => ({}));
     if (!matchId) return Response.json({ error: 'matchId required' }, { status: 400 });
 
     const existing = await base44.asServiceRole.entities.AiMatch.filter({ matchId });
@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
       status: 'active',
       startedAt: now,
       opponentName: opponentName || 'AI',
+      gameMode: gameMode === '3v3' ? '3v3' : '1v1',
     });
 
     return Response.json({ matchId, opponentName: opponentName || 'AI' });

@@ -65,6 +65,8 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
   const [powerUsedThisTurn, setPowerUsedThisTurn] = useState(false);
 
   const busyRef = useRef(false);
+  const playerPoolRef = useRef([]);
+  useEffect(() => { playerPoolRef.current = playerPool; }, [playerPool]);
   const matchIdRef = useRef(null);
   const settledRef = useRef(false);
   const consecutiveTimeoutsRef = useRef(0);
@@ -111,8 +113,8 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
   const dealInitialHands = (playerFull, aiFull) => {
     setSelectionHand(playerFull.slice(0, INITIAL_HAND));
     setPlayerPool(playerFull.slice(INITIAL_HAND));
-    // AI picks 3 of its first 5 at random once the player confirms; just keep pool
-    setAiPool(aiFull.slice(INITIAL_HAND));
+    // Keep the full 15-card AI deck; 5 are dealt and 3 chosen when the player confirms.
+    setAiPool(aiFull);
     setAiSlots([null, null, null]);
   };
 
@@ -164,13 +166,14 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
     summonCountRef.current = ACTIVE_SLOTS;
     chosen.forEach((c) => matchTypesRef.current.add(c.type));
 
-    // AI picks 3 of its first 5 at random
-    const aiHand = aiPoolOverride
-      ? shuffle(aiPoolOverride).slice(0, INITIAL_HAND)
-      : shuffle(aiPool).slice(0, INITIAL_HAND); // aiPool currently holds post-hand remainder; re-grab first 5 from a fresh shuffle below
-    // Recompute from a full 15 pool: we kept only the tail; instead just take 3 from whatever we have.
-    const aiThree = aiHand.slice(0, ACTIVE_SLOTS).map(makeHp);
+    // AI picks 3 of its first 5 at random; the 2 un-chosen return to its pool so they
+    // are not duplicated as replacements later.
+    const aiHand = aiPool.slice(0, INITIAL_HAND);
+    const aiChosen = shuffle(aiHand).slice(0, ACTIVE_SLOTS);
+    const aiReturned = aiHand.filter((c) => !aiChosen.includes(c));
+    const aiThree = aiChosen.map(makeHp);
     setAiSlots(aiThree);
+    setAiPool([...aiReturned, ...aiPool.slice(INITIAL_HAND)]);
 
     const first = Math.random() < 0.5 ? "player" : "ai";
     setTurn(first);
@@ -413,6 +416,12 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
           });
           const ended = playerLives - 1 <= 0;
           if (!ended) {
+            // Offer replacement choices now (from the ref) so the modal is populated
+            // the moment it appears — avoids an effect race that skipped the picker.
+            const pool = playerPoolRef.current || [];
+            const choices = shuffle(pool).slice(0, 3);
+            setPlayerPool(pool.filter((c) => !choices.includes(c)));
+            setReplaceChoices(choices);
             setReplaceSlotIdx(defeatedSlotIdx);
             setPhase("replace");
             setLog("A card was defeated — choose a replacement!");
@@ -451,46 +460,25 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
   );
 
   // ---- Replacement picker (player) ----
-  const offerReplacement = useCallback(() => {
-    if (replaceSlotIdx === null) return;
-    setPlayerPool((pool) => {
-      const choices = shuffle(pool).slice(0, 3);
-      setReplaceChoices(choices);
-      return pool.filter((c) => !choices.includes(c));
-    });
-  }, [replaceSlotIdx]);
-
-  useEffect(() => {
-    if (phase === "replace" && replaceSlotIdx !== null) offerReplacement();
-  }, [phase, replaceSlotIdx, offerReplacement]);
-
   const pickReplacement = useCallback(
     (card) => {
       setPlayerSlots((slots) => {
         const next = [...slots];
-        next[replaceSlotIdx] = makeHp(card);
+        if (card) next[replaceSlotIdx] = makeHp(card);
         return next;
       });
-      matchTypesRef.current.add(card.type);
-      summonCountRef.current += 1;
+      if (card) {
+        matchTypesRef.current.add(card.type);
+        summonCountRef.current += 1;
+      }
       setReplaceSlotIdx(null);
       setReplaceChoices([]);
       setPhase("battle");
       setTurn("player");
-      setLog("Replacement deployed! Your turn — attack!");
+      setLog(card ? "Replacement deployed! Your turn — attack!" : "No reinforcements left — your turn!");
     },
     [replaceSlotIdx]
   );
-
-  // If replacement pool is empty, auto-skip after offering nothing
-  useEffect(() => {
-    if (phase === "replace" && replaceChoices.length === 0 && replaceSlotIdx !== null) {
-      // no cards to replace with — end the player's resistance
-      setPhase("battle");
-      setTurn("player");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, replaceChoices, replaceSlotIdx]);
 
   // ---- AI turn driver ----
   useEffect(() => {
@@ -676,6 +664,7 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
     phase, turn, log, effect,
     selectionHand, selectedIds, toggleSelect, confirmSelect3,
     playerSlots, aiSlots, playerLives, aiLives,
+    playerBuffs, aiDebuffs,
     attackerIdx, targetIdx, selectAttacker, selectTarget,
     playerAttack, aiThinking,
     matchResult, coinsBreakdown,
