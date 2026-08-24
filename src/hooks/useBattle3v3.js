@@ -203,7 +203,11 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
       settledRef.current = true;
       setPhase("matchEnd");
       setMatchResult(winner);
-      play(winner === "player" ? "win" : "lose");
+      // Win/lose SFX is played by the shared MatchEndModal when it mounts, so the
+      // sound lines up with the popup appearing (and stays consistent across
+      // 1v1 + 3v3). Story mode (skipRewards, which uses its own end screen, not
+      // MatchEndModal) still gets its audio via the match-end hook for 1v1 story.
+      if (skipRewards) play(winner === "player" ? "win" : "lose");
       if (skipRewards) {
         setCoinsBreakdown(null);
         if (onMatchEnd) onMatchEnd(winner);
@@ -647,9 +651,12 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
     heal20: heal20Power,
   };
 
-  const activeRaw = user?.activePowerUps?.length ? user.activePowerUps : DEFAULT_ACTIVE_POWERUPS;
-  const activePowerUps = activeRaw.filter((k) => SUPPORTED_3V3_POWERS.includes(k));
-  const finalActive = activePowerUps.length ? activePowerUps : SUPPORTED_3V3_POWERS.slice(0, 4);
+  // 3v3 always exposes the full supported power-up set for this mode, independent
+  // of the 4-card loadout the user picked for 1v1 on the Power Ups screen (that
+  // loadout is a 1v1 concept). Each power is still subject to its own daily /
+  // multi-use cooldown via PowerButtons' availability check, so used powers show
+  // disabled & greyed until they reset — matching the enabled/disabled UX in 1v1.
+  const finalActive = [...SUPPORTED_3V3_POWERS];
 
   const noReq = !powerUsedThisTurn && phase === "battle" && turn === "player";
   const canUseMap = {

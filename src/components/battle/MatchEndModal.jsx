@@ -1,15 +1,25 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Coins } from "lucide-react";
 import confetti from "canvas-confetti";
 import CoinFlyAnimation from "@/components/profile/CoinFlyAnimation";
+import { play } from "@/lib/soundEngine";
 
 export default function MatchEndModal({ won, coinsBreakdown }) {
   const navigate = useNavigate();
   const total = coinsBreakdown?.total || 0;
   const [displayTotal, setDisplayTotal] = useState(0);
   const [showCoinFly, setShowCoinFly] = useState(false);
+  // Play win/lose SFX exactly once when the popup appears. A ref guards against
+  // StrictMode double-invoke and any re-render so the SFX never doubles — the
+  // sound aligns with the popup mounting (IMMEDIATELY before the confetti/animation).
+  const sfxPlayedRef = useRef(false);
+  useEffect(() => {
+    if (sfxPlayedRef.current) return;
+    sfxPlayedRef.current = true;
+    play(won ? "win" : "lose");
+  }, []);
 
   useEffect(() => {
     if (!won) return;
@@ -17,6 +27,12 @@ export default function MatchEndModal({ won, coinsBreakdown }) {
     const t = setTimeout(() => setShowCoinFly(true), 350);
     return () => clearTimeout(t);
   }, [won]);
+
+  // Coin collection SFX, synchronized with the coin-fly animation starting.
+  useEffect(() => {
+    if (!showCoinFly) return;
+    play("reward_claim");
+  }, [showCoinFly]);
 
   useEffect(() => {
     if (!total) return;
