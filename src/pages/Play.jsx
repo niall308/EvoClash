@@ -8,6 +8,7 @@ import { ensureActiveDeck } from "@/lib/decks";
 import { useAuth } from "@/lib/AuthContext";
 import useIncomingBattleRequests from "@/hooks/useIncomingBattleRequests";
 import useOfflineMatches, { isMyTurnInMatch } from "@/hooks/useOfflineMatches";
+import AiModePickerModal from "@/components/play/AiModePickerModal";
 
 const DIFFICULTIES = ["Easy", "Normal", "Hard", "Extreme"];
 
@@ -16,6 +17,7 @@ export default function Play() {
   const { user } = useAuth();
   const [count, setCount] = useState(null);
   const [difficulty, setDifficulty] = useState("Normal");
+  const [showAiMode, setShowAiMode] = useState(false);
   const { requests: incomingBattles } = useIncomingBattleRequests();
   const { matches: offlineMatches } = useOfflineMatches();
   const myTurnCount = user ? offlineMatches.filter((m) => isMyTurnInMatch(m, user.id)).length : 0;
@@ -66,7 +68,7 @@ export default function Play() {
 
       <div className="space-y-4">
         <button
-          onClick={() => ready && navigate("/battle", { state: { difficulty } })}
+          onClick={() => ready && setShowAiMode(true)}
           disabled={!ready}
           className="w-full flex items-center gap-4 bg-gradient-to-r from-red-600 to-orange-500 p-5 rounded-2xl font-bold text-left disabled:opacity-40"
         >
@@ -92,6 +94,7 @@ export default function Play() {
         </Link>
       </div>
       {!ready && count !== null && <p className="text-yellow-400 text-sm mt-6">Your active deck needs at least 15 cards. Build it up in the Deck screen.</p>}
+      {showAiMode && <AiModePickerModal difficulty={difficulty} onClose={() => setShowAiMode(false)} />}
     </div>
   );
 }

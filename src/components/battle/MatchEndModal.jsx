@@ -36,6 +36,7 @@ export default function MatchEndModal({ won, coinsBreakdown }) {
         { label: coinsBreakdown.isWin ? "Match Win" : "Match Loss", value: coinsBreakdown.base },
         coinsBreakdown.difficultyBonus > 0 && { label: `${coinsBreakdown.difficulty} Bonus`, value: coinsBreakdown.difficultyBonus },
         coinsBreakdown.cardsDefeated > 0 && { label: `${coinsBreakdown.cardsDefeated} Cards Defeated`, value: coinsBreakdown.cardsDefeatedCoins },
+        coinsBreakdown.modeBonus > 0 && { label: "3v3 Mode Bonus", value: coinsBreakdown.modeBonus },
         coinsBreakdown.milestoneCoins > 0 && { label: "Milestone Bonus", value: coinsBreakdown.milestoneCoins },
       ].filter(Boolean)
     : [];
