@@ -90,24 +90,25 @@ export default function MilestonesSection({ user, onUserUpdate }) {
     window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: updated.coins } }));
   };
 
-  // Claim every milestone that's currently claimable in one tap. Claims run
-  // sequentially (the backend re-reads the live user for each), so a single tap
-  // can't race itself.
+  // Claim every claimable milestone in a single server call (one round trip,
+  // no per-milestone await loop) so the redemption feels instant. The backend
+  // recomputes earned vs. claimed for each milestone from the live user doc and
+  // grants the total in one updateMe — no cross-milestone race.
   const handleClaimAll = async (e) => {
     if (!milestones) return;
-    const claimable = milestones.filter(
-      (m) => timesEarned(m, user) > ((user.milestoneClaimCounts || {})[m.id] || 0)
-    );
-    if (claimable.length === 0) return;
+    const claimableIds = milestones
+      .filter((m) => timesEarned(m, user) > ((user.milestoneClaimCounts || {})[m.id] || 0))
+      .map((m) => m.id);
+    if (claimableIds.length === 0) return;
+    // Button click feedback plays immediately on tap; the coin chime waits for
+    // the animation below so the sound lines up with the visual reward.
+    play("button_tap");
     const rect = e.currentTarget.getBoundingClientRect();
-    play("reward_claim");
-    let anyGained = false;
-    for (const m of claimable) {
-      const res = await base44.functions.invoke("claimMilestone", { milestoneId: m.id });
-      if ((res.data || {}).coinsGained) anyGained = true;
-    }
-    if (anyGained) {
+    const res = await base44.functions.invoke("claimAllMilestones", { milestoneIds: claimableIds });
+    const data = res.data || {};
+    if (data.coinsGained) {
       setFlyOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, key: Date.now() });
+      play("reward_claim");
       const updated = await base44.auth.me();
       onUserUpdate(updated);
       window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: updated.coins } }));
@@ -139,14 +140,20 @@ export default function MilestonesSection({ user, onUserUpdate }) {
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-bold">Milestones</h2>
         <div className="flex items-center gap-3">
-          {milestones && milestones.some((m) => timesEarned(m, user) > ((user.milestoneClaimCounts || {})[m.id] || 0)) && (
-            <button
-              onClick={handleClaimAll}
-              className="text-xs font-bold text-black bg-amber-400 px-3 py-1 rounded-full flex items-center gap-1 animate-pulse"
-            >
-              <CheckCheck className="w-3.5 h-3.5" /> Claim All
-            </button>
-          )}
+          {(() => {
+            const hasClaimable = milestones && milestones.some((m) => timesEarned(m, user) > ((user.milestoneClaimCounts || {})[m.id] || 0));
+            return (
+              <button
+                onClick={handleClaimAll}
+                disabled={!hasClaimable}
+                className={`text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 transition-colors ${
+                  hasClaimable ? "text-black bg-amber-400 animate-pulse" : "text-white/30 bg-white/10 cursor-not-allowed"
+                }`}
+              >
+                <CheckCheck className="w-3.5 h-3.5" /> Claim All
+              </button>
+            );
+          })()}
           {user.isAdmin && (
             <button onClick={() => setShowForm((s) => !s)} className="text-amber-400 text-xs flex items-center gap-1">
               <Plus className="w-3.5 h-3.5" /> Add
