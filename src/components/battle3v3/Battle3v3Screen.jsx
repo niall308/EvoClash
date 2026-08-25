@@ -9,6 +9,7 @@ import ForfeitModal from "@/components/battle/ForfeitModal";
 import PowerButtons from "@/components/battle/PowerButtons";
 import CardSelect3v3Modal from "@/components/battle3v3/CardSelect3v3Modal";
 import ReplaceCardModal from "@/components/battle3v3/ReplaceCardModal";
+import TypeChoiceModal from "@/components/battle/TypeChoiceModal";
 import useBattle3v3 from "@/hooks/useBattle3v3";
 import { Swords, Flag, Clock, Target, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -155,6 +156,8 @@ export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd })
       {v.phase === "replace" && v.replaceSlotIdx !== null && (
         <ReplaceCardModal choices={v.replaceChoices} onPick={v.pickReplacement} />
       )}
+
+      {v.phase === "hybridChoice" && <TypeChoiceModal onChoose={v.chooseHybridType} />}
 
       {v.phase === "matchEnd" && (onMatchEnd ? null : <MatchEndModal won={v.matchResult === "player"} coinsBreakdown={v.coinsBreakdown} />)}
       {showForfeit && (

@@ -52,6 +52,7 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
   const [coinsBreakdown, setCoinsBreakdown] = useState(null);
   const [replaceSlotIdx, setReplaceSlotIdx] = useState(null);
   const [replaceChoices, setReplaceChoices] = useState([]);
+  const [hybridQueue, setHybridQueue] = useState([]);
   const [aiThinking, setAiThinking] = useState(false);
   const [turnTimeLeft, setTurnTimeLeft] = useState(TURN_TIME_LIMIT_SECONDS);
 
@@ -65,6 +66,7 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
   const [powerUsedThisTurn, setPowerUsedThisTurn] = useState(false);
 
   const busyRef = useRef(false);
+  const firstTurnRef = useRef(null);
   const playerPoolRef = useRef([]);
   useEffect(() => { playerPoolRef.current = playerPool; }, [playerPool]);
   const matchIdRef = useRef(null);
@@ -175,12 +177,59 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
     setAiSlots(aiThree);
     setAiPool([...aiReturned, ...aiPool.slice(INITIAL_HAND)]);
 
+    // Hyper Rare (hybrid) cards let the player choose their elemental type once —
+    // locked for the rest of the match. Queue any chosen hybrids before starting.
+    chosen.forEach((c) => { if (!c.isHybrid) matchTypesRef.current.add(c.type); });
+    const hybridIdxs = slots.map((s, i) => (s.card.isHybrid ? i : -1)).filter((i) => i >= 0);
     const first = Math.random() < 0.5 ? "player" : "ai";
-    setTurn(first);
-    setPhase("battle");
-    setLog(first === "player" ? "You strike first! Select a card to attack with." : "AI strikes first...");
+    firstTurnRef.current = first;
+    if (hybridIdxs.length) {
+      setHybridQueue(hybridIdxs);
+      setPhase("hybridChoice");
+      setLog("Choose an elemental type for your Hyper Rare card(s) — locked for the match!");
+    } else {
+      setTurn(first);
+      setPhase("battle");
+      setLog(first === "player" ? "You strike first! Select a card to attack with." : "AI strikes first...");
+    }
     play("card_flip");
   }, [selectedIds, selectionHand, aiPool, aiPoolOverride]);
+
+  // Hyper Rare type picker (3v3): the player picks an element for each deployed
+  // hybrid card before the battle turn starts. Chosen type overrides the card's
+  // element for advantage calculations, exactly like the 1v1 flow.
+  const chooseHybridType = useCallback(
+    (type) => {
+      const idx = hybridQueue[0];
+      if (idx === undefined) return;
+      setPlayerSlots((slots) => {
+        const next = [...slots];
+        if (next[idx]) next[idx] = { ...next[idx], card: { ...next[idx].card, type } };
+        return next;
+      });
+      matchTypesRef.current.add(type);
+      setHybridQueue((q) => q.slice(1));
+      play("card_flip");
+    },
+    [hybridQueue]
+  );
+
+  // Once every queued hybrid type is chosen, resume the battle turn (or start the
+  // first turn if this came right off the opening selection).
+  useEffect(() => {
+    if (phase !== "hybridChoice" || hybridQueue.length > 0) return;
+    setPhase("battle");
+    if (!turn) {
+      const first = firstTurnRef.current || (Math.random() < 0.5 ? "player" : "ai");
+      firstTurnRef.current = first;
+      setTurn(first);
+      setLog(first === "player" ? "You strike first! Select a card to attack with." : "AI strikes first...");
+    } else {
+      setTurn("player");
+      setLog("Hyper Rare type locked — your turn, attack!");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, hybridQueue, turn]);
 
   // ---- Targeting ----
   const selectAttacker = useCallback((idx) => {
@@ -472,11 +521,17 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
         return next;
       });
       if (card) {
-        matchTypesRef.current.add(card.type);
+        if (!card.isHybrid) matchTypesRef.current.add(card.type);
         summonCountRef.current += 1;
       }
       setReplaceSlotIdx(null);
       setReplaceChoices([]);
+      if (card?.isHybrid) {
+        setHybridQueue([replaceSlotIdx]);
+        setPhase("hybridChoice");
+        setLog("Choose an elemental type for this Hyper Rare card!");
+        return;
+      }
       setPhase("battle");
       setTurn("player");
       setLog(card ? "Replacement deployed! Your turn — attack!" : "No reinforcements left — your turn!");
@@ -679,6 +734,7 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
     powerUsedThisTurn, doubleAttackActive,
     replaceSlotIdx, replaceChoices, pickReplacement,
     turnTimeLeft, forfeitMatch, opponentName,
+    chooseHybridType, hybridQueue,
     playerRemaining: playerPool.length,
   };
 }
