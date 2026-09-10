@@ -24,7 +24,9 @@ export default async function(req) {
     const product = findIapProductByAppleId(productId);
     if (!product) return Response.json({ error: 'unknown product' }, { status: 400 });
 
-    const owner = userId || user.id;
+    // Only admins may credit a purchase to a different account; everyone else
+    // is pinned to their own identity so coins/entitlements can't be redirected.
+    const owner = (userId && user.role === 'admin') ? userId : user.id;
 
     if (mockEnabled()) {
       const mockTx = `mock_apple_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
