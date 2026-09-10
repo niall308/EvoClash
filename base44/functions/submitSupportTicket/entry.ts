@@ -22,7 +22,7 @@ User ID: ${user.id}
 Issue Description:
 ${description}`;
 
-    await base44.integrations.Core.SendEmail({
+    await base44.asServiceRole.integrations.Core.SendEmail({
       to: 'evo.clash1916@gmail.com',
       subject: `EvoClash Support ${title}`,
       body,

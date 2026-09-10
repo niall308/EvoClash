@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { generateRandomCard, generateHybridCard } from "@/lib/cardGenerator";
-import { buildCardImagePrompt } from "@/lib/cardImagePrompt";
 import { STYLE_REFERENCE_URL, HYBRID_CHANCE } from "@/lib/gameConstants";
 import { getCreationStatus, EXTRA_CREATURE_COST } from "@/lib/cardCreationLimits";
 import { ensureActiveDeck } from "@/lib/decks";
@@ -20,7 +19,6 @@ export default function CardGenerate() {
   const [user, setUser] = useState(null);
   const [count, setCount] = useState(null);
   const [creatures, setCreatures] = useState([]);
-  const [typeBackgrounds, setTypeBackgrounds] = useState([]);
   const [selectedCreature, setSelectedCreature] = useState(null);
   const [previewCard, setPreviewCard] = useState(null);
   const [previewForced, setPreviewForced] = useState(false);
@@ -41,7 +39,6 @@ export default function CardGenerate() {
       setCount(cards.length);
       const list = await base44.entities.Creature.list();
       setCreatures(list);
-      setTypeBackgrounds(await base44.entities.TypeBackground.list());
       const { active } = await ensureActiveDeck(me.id);
       setActiveDeckId(active.id);
       if (cards.length === 0 && !me.autoBuildOffered) setShowOfferModal(true);
@@ -61,15 +58,13 @@ export default function CardGenerate() {
     const ownedTypes = new Set(user.ownedElementTypesList || []);
     for (let i = 0; i < AUTO_BUILD_COUNT; i++) {
       const cardData = generateRandomCard(1, { creatures });
-      const matchedCreature = creatures.find((c) => c.baseName === cardData.baseName);
-      const { prompt, existingImageUrls } = buildCardImagePrompt(cardData, {
-        typeBackgrounds,
-        creatureDescription: matchedCreature?.description || "",
-        referenceImageUrl: matchedCreature?.referenceImageUrl || "",
-      });
       try {
-        const { url } = await base44.integrations.Core.GenerateImage({ prompt, existing_image_urls: existingImageUrls });
-        cardData.imageUrl = url;
+        const { data } = await base44.functions.invoke("generateCardArt", {
+          baseName: cardData.baseName,
+          type: cardData.type,
+          isHybrid: !!cardData.isHybrid,
+        });
+        cardData.imageUrl = data.url;
         await base44.functions.invoke("createGeneratedCard", { cardData, deckId: activeDeckId, forced: false });
         ownedTypes.add(cardData.type);
         setAutoBuildProgress(i + 1);
@@ -106,21 +101,13 @@ export default function CardGenerate() {
     const matchedCreature = useHybrid
       ? (forcedHybrid ? forced : hybridCreatures.find((c) => c.baseName === cardData.baseName))
       : creatures.find((c) => c.baseName === cardData.baseName);
-    const { prompt, existingImageUrls } = buildCardImagePrompt(
-      { ...cardData, isHybrid: useHybrid },
-      {
-        typeBackgrounds,
-        creatureDescription: matchedCreature?.description || "",
-        referenceImageUrl: matchedCreature?.referenceImageUrl || "",
-      }
-    );
-
     try {
-      const { url } = await base44.integrations.Core.GenerateImage({
-        prompt,
-        existing_image_urls: existingImageUrls,
+      const { data } = await base44.functions.invoke("generateCardArt", {
+        baseName: cardData.baseName,
+        type: cardData.type,
+        isHybrid: useHybrid,
       });
-      cardData.imageUrl = url;
+      cardData.imageUrl = data.url;
       setPreviewCard(cardData);
       setPreviewForced(!!forced);
       setPreviewCreatureId(matchedCreature?.id || null);

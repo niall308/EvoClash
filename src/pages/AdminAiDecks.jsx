@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { buildDeckCards, DECK_COMPOSITIONS } from "@/lib/aiDeckGenerator";
-import { buildCardImagePrompt } from "@/lib/cardImagePrompt";
 import AiDeckCardsModal from "@/components/admin/AiDeckCardsModal";
 
 const DIFFICULTIES = Object.keys(DECK_COMPOSITIONS);
@@ -39,23 +38,17 @@ export default function AdminAiDecks() {
   const generateDeck = async (difficulty) => {
     setGenerating(difficulty);
     setProgress(0);
-    const [creatureList, typeBackgrounds] = await Promise.all([
-      base44.entities.Creature.list(),
-      base44.entities.TypeBackground.list(),
-    ]);
+    const creatureList = await base44.entities.Creature.list();
     const hybridCreatures = creatureList.filter((c) => c.role === "hyper_rare");
     const cards = buildDeckCards(difficulty, creatureList, hybridCreatures.length > 0 ? hybridCreatures : [{ baseName: "Chimera" }]);
     const finished = [];
     for (const card of cards) {
-      const creatureDescription = card.isHybrid
-        ? hybridCreatures.find((c) => c.baseName === card.baseName)?.description || ""
-        : "";
-      const { prompt, existingImageUrls } = buildCardImagePrompt(card, { typeBackgrounds, creatureDescription });
-      const { url } = await base44.integrations.Core.GenerateImage({
-        prompt,
-        existing_image_urls: existingImageUrls,
+      const { data } = await base44.functions.invoke("generateCardArt", {
+        baseName: card.baseName,
+        type: card.type,
+        isHybrid: !!card.isHybrid,
       });
-      finished.push({ ...card, imageUrl: url, difficulty });
+      finished.push({ ...card, imageUrl: data.url, difficulty });
       setProgress(finished.length);
     }
     const existing = await base44.entities.AiDeckCard.filter({ difficulty });

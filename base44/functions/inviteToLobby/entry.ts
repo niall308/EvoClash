@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     if (!recipient) return Response.json({ error: 'Player not found' }, { status: 404 });
 
     // Fixed, server-controlled template — subject/body are never client-supplied.
-    await base44.integrations.Core.SendEmail({
+    await base44.asServiceRole.integrations.Core.SendEmail({
       to: recipient.email,
       subject: "You've been invited to a lobby!",
       body: `You've been invited to join a lobby. Enter this code in the app to join: ${lobby.code}`,

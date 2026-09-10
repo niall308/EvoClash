@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
     const referenceImages = [card.imageUrl];
     if (card.baseName === "Tyrannosaurus Rex") referenceImages.push(STYLE_REFERENCE_URL);
     if (tierAnimation) referenceImages.push(tierAnimation);
-    const { url } = await base44.integrations.Core.GenerateImage({
+    const { url } = await base44.asServiceRole.integrations.Core.GenerateImage({
       prompt: EVOLVE_ARMOR_PROMPTS[newTier],
       existing_image_urls: referenceImages,
     });

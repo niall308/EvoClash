@@ -4,7 +4,6 @@ import { computeDamage, maxHealth } from "@/lib/battleEngine";
 import {
   AI_OPPONENT_NAMES,
   AI_DIFFICULTY_TIERS,
-  STYLE_REFERENCE_URL,
   TIER_RANGES,
   DEFAULT_ACTIVE_POWERUPS,
   TURN_TIME_LIMIT_SECONDS,
@@ -130,11 +129,11 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     if (!aiCard || aiCard.imageUrl || aiImageLoadingRef.current === aiCard) return;
     aiImageLoadingRef.current = aiCard;
     (async () => {
-      const { url } = await base44.integrations.Core.GenerateImage({
-        prompt: `A ${aiCard.type}-type ${aiCard.baseName}, dynamic full-body creature illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`,
-        existing_image_urls: [STYLE_REFERENCE_URL],
+      const { data } = await base44.functions.invoke("generateAiCardArt", {
+        baseName: aiCard.baseName,
+        type: aiCard.type,
       });
-      setAiCard((c) => (c === aiCard ? { ...c, imageUrl: url } : c));
+      setAiCard((c) => (c === aiCard ? { ...c, imageUrl: data.url } : c));
     })();
   }, [aiCard]);
 
