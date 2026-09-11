@@ -13,6 +13,7 @@ import RpsPicker from "@/components/battle/RpsPicker";
 import ForfeitModal from "@/components/battle/ForfeitModal";
 import PowerButtons from "@/components/battle/PowerButtons";
 import UniqueAttackButton from "@/components/battle/UniqueAttackButton";
+import UniqueAttackModal from "@/components/battle/UniqueAttackModal";
 import ReshuffleModal from "@/components/battle/ReshuffleModal";
 import TypeChoiceModal from "@/components/battle/TypeChoiceModal";
 import AttackTimingBar from "@/components/battle/AttackTimingBar";
@@ -178,26 +179,14 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
                 <Zap className="w-3.5 h-3.5" /> Tier Upgrade ready!
               </span>
             )}
-            {pendingUniqueAttack && (
-              <div className="flex flex-col items-center gap-1 bg-purple-900/40 border border-purple-500/50 rounded-xl px-3 py-2 max-w-xs text-center">
-                <span className="text-purple-200 text-xs font-bold flex items-center gap-1">
-                  <Swords className="w-3 h-3" /> {pendingUniqueAttack.name}
-                </span>
-                <span className="text-white/70 text-[10px]">
-                  {pendingUniqueAttack.percent}% • {pendingUniqueAttack.target === "all" ? "All targets" : "Single target"}
-                </span>
-                {pendingUniqueAttack.effect && pendingUniqueAttack.effectType !== "none" && (
-                  <span className="text-white/60 text-[10px]">{pendingUniqueAttack.effect}</span>
-                )}
-                <span className="text-purple-300/70 text-[9px]">Unique Attack — 1 use this game</span>
-              </div>
+            {playerCard && !matchResult && (
+              <UniqueAttackButton card={playerCard} used={uniqueAttackUsed} onClick={() => triggerUniqueAttack()} />
             )}
             {readied ? (
               <AttackTimingBar
                 onLock={(multiplier) => {
                   setReadied(false);
-                  attack("player", multiplier, pendingUniqueAttack ? { uniqueAttack: pendingUniqueAttack } : {});
-                  cancelUniqueAttack();
+                  attack("player", multiplier, {});
                 }}
               />
             ) : (
@@ -234,17 +223,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
               )}
             </AnimatePresence>
           </div>
-          <div className="flex-1 flex flex-col items-end justify-end gap-2">
-            {phase === "battle" && turn === "player" && !readied && !matchResult && playerCard && (
-              <UniqueAttackButton
-                card={playerCard}
-                used={uniqueAttackUsed}
-                onClick={() => {
-                  triggerUniqueAttack();
-                  setReadied(true);
-                }}
-              />
-            )}
+          <div className="flex-1 flex flex-col items-end justify-end">
             <DeckStack remaining={playerRemaining} />
           </div>
         </div>
@@ -263,6 +242,17 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
         />
       )}
       {pendingHybridCard && <TypeChoiceModal onChoose={chooseHybridType} />}
+      {pendingUniqueAttack && (
+        <UniqueAttackModal
+          uniqueAttack={pendingUniqueAttack}
+          onUse={() => {
+            const ua = pendingUniqueAttack;
+            cancelUniqueAttack();
+            attack("player", 1, { uniqueAttack: ua });
+          }}
+          onCancel={cancelUniqueAttack}
+        />
+      )}
       {phase === "matchEnd" && (matchEnd || <MatchEndModal won={matchResult === "player"} coinsBreakdown={coinsBreakdown} />)}
       {showForfeitModal && (
         <ForfeitModal
