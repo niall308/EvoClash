@@ -42,7 +42,10 @@ export function setSoundSettings(s) {
   settings = {
     menuMusic: s.menuMusic !== false,
     inGameMusic: s.inGameMusic !== false,
-    actions: s.actions !== false,
+    // The user field is `actionSounds` (see NotificationSettings). Gate every
+    // one-shot SFX except the win/lose stingers, which ride the in-game music
+    // toggle instead.
+    actions: s.actionSounds !== false,
   };
   refreshBgm();
 }
@@ -74,7 +77,14 @@ export function stopBgm() {
 // Play a one-shot action SFX by key. Throttles the same key to avoid stacking
 // when an event fires rapidly (e.g. quick taps).
 export function play(key) {
-  if (!settings.actions) return;
+  // Win/lose are match-end stingers that belong with the in-game music toggle;
+  // every other one-shot SFX (button taps, attacks, flips, rewards, etc.) is
+  // gated by the action-sounds toggle.
+  if (key === "win" || key === "lose") {
+    if (!settings.inGameMusic) return;
+  } else if (!settings.actions) {
+    return;
+  }
   const asset = assets[key];
   if (!asset) return;
   const now = Date.now();

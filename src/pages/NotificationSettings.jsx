@@ -46,8 +46,8 @@ const OPTIONS = [
 
 const SOUND_OPTIONS = [
   { key: "menuMusic", icon: Music, title: "Menu Music", description: "Continuous background music in menus" },
-  { key: "inGameMusic", icon: Volume2, title: "In-Game Music", description: "Continuous background music during battles" },
-  { key: "actionSounds", icon: Zap, title: "Action Sounds", description: "Tap, attack, win, and other in-game sound effects" },
+  { key: "inGameMusic", icon: Volume2, title: "In-Game Music", description: "Battle background music plus win/lose audio" },
+  { key: "actionSounds", icon: Zap, title: "Action Sounds", description: "Button taps, attacks, and all other in-game sound effects" },
 ];
 
 export default function NotificationSettings() {
