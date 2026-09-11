@@ -11,6 +11,7 @@ import {
 import { isTimestampReady, DAY_MS } from "@/lib/powerUps";
 import { base44 } from "@/api/base44Client";
 import { play } from "@/lib/soundEngine";
+import { cardUniqueAttack, clampPercent } from "@/lib/uniqueAttacks";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -64,6 +65,16 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
   const [aiDebuffs, setAiDebuffs] = useState([{}, {}, {}]);
 
   const [powerUsedThisTurn, setPowerUsedThisTurn] = useState(false);
+
+  // Unique Attack (3v3): once-per-match per card. `used` is per-match runtime
+  // state (mirrored server-side via recordUniqueAttack on the AiMatch session,
+  // same as 1v1). `pendingUniqueAttack` drives the confirm modal; for single-target
+  // attacks `awaitingUniqueTarget` then waits for the player to pick which enemy
+  // card to hit.
+  const [usedUniqueAttacks, setUsedUniqueAttacks] = useState({});
+  const usedUniqueAttacksRef = useRef({});
+  const [pendingUniqueAttack, setPendingUniqueAttack] = useState(null);
+  const [awaitingUniqueTarget, setAwaitingUniqueTarget] = useState(false);
 
   const busyRef = useRef(false);
   const firstTurnRef = useRef(null);
@@ -233,11 +244,11 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
 
   // ---- Targeting ----
   const selectAttacker = useCallback((idx) => {
-    if (phase !== "battle" || turn !== "player" || busyRef.current) return;
+    if (phase !== "battle" || turn !== "player" || busyRef.current || awaitingUniqueTarget) return;
     if (!playerSlots[idx]) return;
     setAttackerIdx((cur) => (cur === idx ? null : idx));
     setTargetIdx(null);
-  }, [phase, turn, playerSlots]);
+  }, [phase, turn, playerSlots, awaitingUniqueTarget]);
 
   const selectTarget = useCallback((idx) => {
     if (phase !== "battle" || turn !== "player" || busyRef.current) return;
@@ -326,6 +337,153 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
       return pool.filter((_, i) => i !== bestIdx);
     });
   }, []);
+
+  // ---- Unique Attack (3v3) ----
+  // Resolves a unique attack against either one chosen enemy card (single) or every
+  // live enemy card (all). "all" hits each target one-by-one with its own effect
+  // overlay, then effects (heal/debuff) are applied once all damage has landed.
+  const executeUniqueAttack = useCallback(
+    async (def, chosenTargetIdx) => {
+      if (busyRef.current) return;
+      if (attackerIdx === null || !playerSlots[attackerIdx]) return;
+      busyRef.current = true;
+      setAiThinking(false);
+      setAwaitingUniqueTarget(false);
+      setPendingUniqueAttack(null);
+
+      const aIdx = attackerIdx;
+      const aSlot = playerSlots[aIdx];
+      const pct = clampPercent(def.percent);
+      const attacker = { ...aSlot.card, attack: Math.floor(((aSlot.card.attack || 0) * pct) / 100) };
+
+      // mark used locally + record server-side (authoritative reuse guard)
+      usedUniqueAttacksRef.current = { ...usedUniqueAttacksRef.current, [aSlot.card.id]: true };
+      setUsedUniqueAttacks((m) => ({ ...m, [aSlot.card.id]: true }));
+      if (matchIdRef.current) {
+        base44.functions.invoke("recordUniqueAttack", { matchId: matchIdRef.current, cardId: aSlot.card.id }).catch(() => {});
+      }
+      play("attack");
+      recordStat(aSlot.card.id, false);
+
+      const liveAi = aiSlots.map((s, i) => (s ? i : -1)).filter((i) => i >= 0);
+      let targets = [];
+      if (def.target === "all") {
+        targets = liveAi;
+      } else if (chosenTargetIdx != null && aiSlots[chosenTargetIdx]) {
+        targets = [chosenTargetIdx];
+      }
+      if (targets.length === 0) { busyRef.current = false; return; }
+
+      // Deal damage to each target one-by-one (all-target attacks sweep the field).
+      const defeatedSlots = [];
+      for (const tIdx of targets) {
+        const tSlot = aiSlots[tIdx];
+        const result = computeDamage(attacker, tSlot.card, 1, 1, {});
+        const damage = result.damage;
+        setEffect({ from: aIdx, to: tIdx, side: "player", value: damage, blocked: false, crit: result.isCrit, recoil: result.recoil, key: Date.now() });
+        if (damage > 0) matchDamageRef.current += damage;
+        await sleep(600);
+        const newHp = Math.max(0, tSlot.hp - damage);
+        setAiSlots((slots) => {
+          const next = [...slots];
+          if (next[tIdx]) next[tIdx] = { ...next[tIdx], hp: newHp };
+          return next;
+        });
+        await sleep(350);
+        setEffect(null);
+        if (newHp <= 0) defeatedSlots.push(tIdx);
+      }
+
+      // Apply the unique attack's mapped effect after all damage lands.
+      const et = def.effectType;
+      if (et === "healSelf50") {
+        setPlayerSlots((slots) => {
+          const next = [...slots];
+          const s = next[aIdx];
+          if (s) next[aIdx] = { ...s, hp: Math.min(s.maxHp, s.hp + Math.round(s.maxHp * 0.5)) };
+          return next;
+        });
+      } else if (et === "healAll30") {
+        setPlayerSlots((slots) => slots.map((s) => (s ? { ...s, hp: Math.min(s.maxHp, s.hp + Math.round(s.maxHp * 0.3)) } : s)));
+      } else if (et === "halfAttackTarget1" && def.target === "single" && chosenTargetIdx != null && aiSlots[chosenTargetIdx]) {
+        setAiDebuffs((d) => {
+          const next = [...d];
+          next[chosenTargetIdx] = { ...next[chosenTargetIdx], halfAttackTurns: 1 };
+          return next;
+        });
+      }
+
+      // Resolve defeated enemy cards: lose a life, clear the slot, refill from the AI pool.
+      for (const tIdx of defeatedSlots) {
+        play("card_defeat");
+        defeatedCountRef.current += 1;
+        recordStat(aSlot.card.id, true);
+        setAiLives((l) => l - 1);
+        setAiSlots((slots) => {
+          const next = [...slots];
+          next[tIdx] = null;
+          return next;
+        });
+        setAiDebuffs((d) => {
+          const next = [...d];
+          next[tIdx] = {};
+          return next;
+        });
+      }
+      for (const tIdx of defeatedSlots) {
+        await sleep(300);
+        refillAiSlot(tIdx);
+      }
+
+      const aLivesAfter = aiLives - defeatedSlots.length;
+      if (aLivesAfter <= 0) { await applyProgression("player"); busyRef.current = false; return; }
+
+      setAttackerIdx(null);
+      setTargetIdx(null);
+      setTurn("ai");
+      setLog("Unique Attack unleashed! AI's turn...");
+      busyRef.current = false;
+    },
+    [attackerIdx, playerSlots, aiSlots, aiLives, applyProgression, refillAiSlot]
+  );
+
+  const triggerUniqueAttack = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || attackerIdx === null) return null;
+    const slot = playerSlots[attackerIdx];
+    if (!slot || usedUniqueAttacksRef.current[slot.card.id]) return null;
+    const def = cardUniqueAttack(slot.card);
+    if (!def) return null;
+    setPendingUniqueAttack(def);
+    return def;
+  }, [phase, turn, attackerIdx, playerSlots]);
+
+  const cancelUniqueAttack = useCallback(() => {
+    setPendingUniqueAttack(null);
+    setAwaitingUniqueTarget(false);
+  }, []);
+
+  const confirmUniqueAttack = useCallback(() => {
+    if (!pendingUniqueAttack) return;
+    const def = pendingUniqueAttack;
+    if (def.target === "all") {
+      setPendingUniqueAttack(null);
+      executeUniqueAttack(def, null);
+    } else {
+      // Keep pendingUniqueAttack set so selectUniqueTarget can read it; it is
+      // cleared inside executeUniqueAttack once the player picks a target.
+      setAwaitingUniqueTarget(true);
+      setLog("Select an opponent card to target with the Unique Attack!");
+    }
+  }, [pendingUniqueAttack, executeUniqueAttack]);
+
+  const selectUniqueTarget = useCallback(
+    (idx) => {
+      if (!awaitingUniqueTarget || !pendingUniqueAttack) return;
+      if (!aiSlots[idx]) return;
+      executeUniqueAttack(pendingUniqueAttack, idx);
+    },
+    [awaitingUniqueTarget, pendingUniqueAttack, aiSlots, executeUniqueAttack]
+  );
 
   // ---- Core attack resolver ----
   const executeAttack = useCallback(
@@ -554,6 +712,8 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
     if (phase !== "battle" || turn !== "player") return;
     const to = consecutiveTimeoutsRef.current + 1;
     consecutiveTimeoutsRef.current = to;
+    setPendingUniqueAttack(null);
+    setAwaitingUniqueTarget(false);
     if (to >= MAX_CONSECUTIVE_TURN_TIMEOUTS) {
       setLog("You ran out of time 3 times — you forfeit the match!");
       applyProgression("ai");
@@ -736,5 +896,12 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
     turnTimeLeft, forfeitMatch, opponentName,
     chooseHybridType, hybridQueue,
     playerRemaining: playerPool.length,
+    usedUniqueAttacks,
+    pendingUniqueAttack,
+    awaitingUniqueTarget,
+    triggerUniqueAttack,
+    confirmUniqueAttack,
+    cancelUniqueAttack,
+    selectUniqueTarget,
   };
 }

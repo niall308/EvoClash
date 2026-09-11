@@ -10,6 +10,8 @@ import PowerButtons from "@/components/battle/PowerButtons";
 import CardSelect3v3Modal from "@/components/battle3v3/CardSelect3v3Modal";
 import ReplaceCardModal from "@/components/battle3v3/ReplaceCardModal";
 import TypeChoiceModal from "@/components/battle/TypeChoiceModal";
+import UniqueAttackButton from "@/components/battle/UniqueAttackButton";
+import UniqueAttackModal from "@/components/battle/UniqueAttackModal";
 import useBattle3v3 from "@/hooks/useBattle3v3";
 import { Swords, Flag, Clock, Target, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -73,7 +75,7 @@ export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd })
                   isTarget={v.targetIdx === i}
                   attackerSide={v.turn === "player"}
                   selectable={v.turn === "player" && v.attackerIdx !== null && v.phase === "battle"}
-                  onSelect={() => v.selectTarget(i)}
+                  onSelect={() => (v.awaitingUniqueTarget ? v.selectUniqueTarget(i) : v.selectTarget(i))}
                 />
               ))}
             </div>
@@ -90,33 +92,49 @@ export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd })
             {v.aiThinking && <span className="text-white/50 text-xs animate-pulse">AI is thinking...</span>}
             {v.phase === "battle" && v.turn === "player" && (
               <div className="flex flex-col items-center gap-2 mt-2">
-                {v.attackerIdx !== null && v.targetIdx === null && (
-                  <span className="flex items-center gap-1 text-cyan-300 text-xs font-bold">
-                    <Target className="w-3.5 h-3.5" /> Now tap an enemy card to target
+                {v.awaitingUniqueTarget ? (
+                  <span className="flex items-center gap-1 text-purple-300 text-xs font-bold animate-pulse">
+                    <Target className="w-3.5 h-3.5" /> Tap an enemy card to target with the Unique Attack!
                   </span>
-                )}
-                {readied && canAttack ? (
-                  <AttackTimingBar
-                    onLock={(m) => {
-                      setReadied(false);
-                      captureRects();
-                      v.playerAttack(m);
-                    }}
-                  />
                 ) : (
-                  <button
-                    onClick={() => {
-                      if (!canAttack) { setReadied(false); return; }
-                      captureRects();
-                      setReadied(true);
-                    }}
-                    disabled={!canAttack}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform ${
-                      canAttack ? "bg-gradient-to-r from-emerald-500 to-teal-600" : "bg-white/10 text-white/40"
-                    }`}
-                  >
-                    <Swords className="w-5 h-5" /> Attack
-                  </button>
+                  <>
+                    {v.attackerIdx !== null && v.playerSlots[v.attackerIdx] && (
+                      <UniqueAttackButton
+                        card={v.playerSlots[v.attackerIdx].card}
+                        used={!!v.usedUniqueAttacks[v.playerSlots[v.attackerIdx].card.id]}
+                        disabled={readied}
+                        onClick={v.triggerUniqueAttack}
+                      />
+                    )}
+                    {v.attackerIdx !== null && v.targetIdx === null && (
+                      <span className="flex items-center gap-1 text-cyan-300 text-xs font-bold">
+                        <Target className="w-3.5 h-3.5" /> Now tap an enemy card to target
+                      </span>
+                    )}
+                    {readied && canAttack ? (
+                      <AttackTimingBar
+                        onLock={(m) => {
+                          setReadied(false);
+                          captureRects();
+                          v.playerAttack(m);
+                        }}
+                      />
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (!canAttack) { setReadied(false); return; }
+                          captureRects();
+                          setReadied(true);
+                        }}
+                        disabled={!canAttack}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform ${
+                          canAttack ? "bg-gradient-to-r from-emerald-500 to-teal-600" : "bg-white/10 text-white/40"
+                        }`}
+                      >
+                        <Swords className="w-5 h-5" /> Attack
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -158,6 +176,14 @@ export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd })
       )}
 
       {v.phase === "hybridChoice" && <TypeChoiceModal onChoose={v.chooseHybridType} />}
+
+      {v.pendingUniqueAttack && !v.awaitingUniqueTarget && (
+        <UniqueAttackModal
+          uniqueAttack={v.pendingUniqueAttack}
+          onUse={v.confirmUniqueAttack}
+          onCancel={v.cancelUniqueAttack}
+        />
+      )}
 
       {v.phase === "matchEnd" && (onMatchEnd ? null : <MatchEndModal won={v.matchResult === "player"} coinsBreakdown={v.coinsBreakdown} />)}
       {showForfeit && (
