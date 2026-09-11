@@ -12,6 +12,7 @@ import {
 import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
 import { base44 } from "@/api/base44Client";
 import { play } from "@/lib/soundEngine";
+import { cardUniqueAttack } from "@/lib/uniqueAttacks";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -73,6 +74,12 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   const [reshuffleModalOpen, setReshuffleModalOpen] = useState(false);
   const [pendingHybridCard, setPendingHybridCard] = useState(null);
   const hybridChoicesRef = useRef({});
+  // Unique Attack: per-match "used" tracking. The definition is a static lookup by
+  // baseName (src/lib/uniqueAttacks); only the `used` flag is match state. Mirrored
+  // server-side on the AiMatch session via recordUniqueAttack (authoritative guard).
+  const [usedUniqueAttacks, setUsedUniqueAttacks] = useState({});
+  const usedUniqueAttacksRef = useRef({});
+  const [pendingUniqueAttack, setPendingUniqueAttack] = useState(null);
   const [playerEffects, setPlayerEffects] = useState([]);
   const [aiEffects, setAiEffects] = useState([]);
   const statsRef = useRef({});
@@ -262,7 +269,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
   );
 
   const attack = useCallback(
-    async (attackerSide, timingMultiplier = 1) => {
+    async (attackerSide, timingMultiplier = 1, opts = {}) => {
       if (busyRef.current || phase !== "battle") return;
       busyRef.current = true;
       play("attack");
@@ -285,6 +292,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       // player-defending (ai attacking) buffs
       const usingDoubleDefenseTurns = attackerSide === "ai" && (pfx.doubleDefenseTurns || 0) > 0;
       const usingMaximizeDefense = attackerSide === "ai" && !!pfx.maximizeDefenseReady;
+      const usingUniqueAttack = attackerSide === "player" && !!opts.uniqueAttack && !!playerCard && !usedUniqueAttacksRef.current[playerCard.id];
       const usingNegate = attackerSide === "ai" && !!pfx.negateNextAttack;
       const usingReduceDamage = attackerSide === "ai" && (pfx.reduceDamageTurns || 0) > 0;
       const usingReflect = attackerSide === "ai" && !!pfx.reflectNextAttack;
@@ -295,6 +303,17 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       if (usingMaximizeAttack) attacker = { ...attacker, attack: TIER_RANGES[attacker.tier || 1].statMax };
       if (usingDoubleBonusDamage) attacker = { ...attacker, bonusDamage: (attacker.bonusDamage || 0) * 2 };
       if (usingMaximizeDefense) defender = { ...defender, defense: TIER_RANGES[defender.tier || 1].statMax };
+      if (usingUniqueAttack) {
+        const pct = Math.max(1, Math.min(1000, Number(opts.uniqueAttack.percent) || 100));
+        attacker = { ...attacker, attack: Math.floor((attacker.attack * pct) / 100) };
+        // Mark used locally + record server-side (authoritative reuse guard).
+        usedUniqueAttacksRef.current = { ...usedUniqueAttacksRef.current, [playerCard.id]: true };
+        setUsedUniqueAttacks((m) => ({ ...m, [playerCard.id]: true }));
+        setPendingUniqueAttack(null);
+        if (matchIdRef.current) {
+          base44.functions.invoke("recordUniqueAttack", { matchId: matchIdRef.current, cardId: playerCard.id }).catch(() => {});
+        }
+      }
 
       let defenseMultiplier = usingTripleDefense ? 3 : 1;
       if (usingDoubleDefenseTurns) defenseMultiplier *= 2;
@@ -408,6 +427,19 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       if ((usingBlock || usingNegate || usingDivineProtection) && damage === 0) matchBlocksRef.current += 1;
       await sleep(3000);
       setEffect(null);
+      // Apply the unique attack's mapped effect (mechanics that already exist in
+      // the engine). Unmapped ("custom") effects are shown as descriptive text only.
+      if (usingUniqueAttack && opts.uniqueAttack.effectType && opts.uniqueAttack.effectType !== "none") {
+        const et = opts.uniqueAttack.effectType;
+        if (et === "healSelf50" || et === "healAll30") {
+          const frac = et === "healSelf50" ? 0.5 : 0.3;
+          const max = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
+          setPlayerHP((hp) => Math.min(max, hp + Math.round(max * frac)));
+        } else if (et === "halfAttackTarget1" && aiCard) {
+          halfAttackCardRef.current = aiCard;
+          setHalfAttackTurnsLeft(1);
+        }
+      }
       if (newTargetHP <= 0) {
         play("card_defeat");
         const winnerSide = targetSide === "player" ? "ai" : "player";
@@ -1058,6 +1090,17 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     }
   }, [skipRewards, difficulty, score]);
 
+  const triggerUniqueAttack = useCallback(() => {
+    if (phase !== "battle" || turn !== "player" || !playerCard) return null;
+    if (usedUniqueAttacksRef.current[playerCard.id]) return null;
+    const def = cardUniqueAttack(playerCard);
+    if (!def) return null;
+    setPendingUniqueAttack(def);
+    return def;
+  }, [phase, turn, playerCard]);
+
+  const cancelUniqueAttack = useCallback(() => setPendingUniqueAttack(null), []);
+
   const pickRps = useCallback(
     (choice) => {
       if (phase !== "rps") return;
@@ -1216,6 +1259,10 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
     redrawHandPower,
     forceOpponentRedrawPower,
     forfeitMatch,
+    pendingUniqueAttack,
+    triggerUniqueAttack,
+    cancelUniqueAttack,
+    uniqueAttackUsed: playerCard ? !!usedUniqueAttacks[playerCard.id] : false,
     pendingHybridCard,
     chooseHybridType,
   };

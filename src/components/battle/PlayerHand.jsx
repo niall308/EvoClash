@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { X } from "lucide-react";
+import { X, Swords } from "lucide-react";
 import GameCard from "@/components/cards/GameCard";
+import { cardUniqueAttack, UNIQUE_ATTACK_I18N } from "@/lib/uniqueAttacks";
 
 function Row({ label, value }) {
   return (
@@ -15,6 +16,8 @@ export default function PlayerHand({ hand, onSelect }) {
   const [previewCard, setPreviewCard] = useState(null);
 
   if (!hand || hand.length === 0) return null;
+
+  const ua = previewCard ? cardUniqueAttack(previewCard) : null;
 
   return (
     <div className="flex gap-1 justify-center items-end px-2 py-2 w-full flex-wrap">
@@ -42,6 +45,23 @@ export default function PlayerHand({ hand, onSelect }) {
               <Row label="Attack" value={previewCard.attack} />
               <Row label="Defense" value={previewCard.defense} />
               <Row label="Bonus Damage" value={previewCard.bonusDamage || 0} />
+              {ua && (
+                <div className="w-full bg-purple-900/30 border border-purple-500/40 rounded-lg px-3 py-2 space-y-1">
+                  <div className="flex items-center gap-1 text-purple-200 text-xs font-bold">
+                    <Swords className="w-3 h-3" /> Unique Attack: {ua.name}
+                  </div>
+                  <div className="text-white/70 text-xs">
+                    {ua.percent}% • {ua.target === "all" ? UNIQUE_ATTACK_I18N.allTargets : UNIQUE_ATTACK_I18N.singleTarget}
+                  </div>
+                  {ua.effectType === "none" ? (
+                    <div className="text-white/40 text-xs">{UNIQUE_ATTACK_I18N.noEffect}</div>
+                  ) : ua.effectType === "custom" ? (
+                    <div className="text-amber-400 text-xs">{UNIQUE_ATTACK_I18N.customEffect}</div>
+                  ) : (
+                    <div className="text-white/60 text-xs">{ua.effect}</div>
+                  )}
+                </div>
+              )}
             </div>
             <button
               onClick={() => {

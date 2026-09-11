@@ -12,6 +12,7 @@ import GraveyardPile from "@/components/battle/GraveyardPile";
 import RpsPicker from "@/components/battle/RpsPicker";
 import ForfeitModal from "@/components/battle/ForfeitModal";
 import PowerButtons from "@/components/battle/PowerButtons";
+import UniqueAttackButton from "@/components/battle/UniqueAttackButton";
 import ReshuffleModal from "@/components/battle/ReshuffleModal";
 import TypeChoiceModal from "@/components/battle/TypeChoiceModal";
 import AttackTimingBar from "@/components/battle/AttackTimingBar";
@@ -67,6 +68,10 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
     redrawHandPower,
     forceOpponentRedrawPower,
     forfeitMatch,
+    pendingUniqueAttack,
+    triggerUniqueAttack,
+    cancelUniqueAttack,
+    uniqueAttackUsed,
     pendingHybridCard,
     chooseHybridType,
   } = useBattleMatch(playerCards, onMatchEnd, difficulty, options);
@@ -78,8 +83,11 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
   const faceDown = !rpsDone && (phase === "draw" || phase === "rps");
 
   React.useEffect(() => {
-    if (!(phase === "battle" && turn === "player")) setReadied(false);
-  }, [phase, turn]);
+    if (!(phase === "battle" && turn === "player")) {
+      setReadied(false);
+      cancelUniqueAttack();
+    }
+  }, [phase, turn, cancelUniqueAttack]);
 
   return (
     <div className="min-h-screen flex flex-col text-white" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
@@ -170,11 +178,26 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
                 <Zap className="w-3.5 h-3.5" /> Tier Upgrade ready!
               </span>
             )}
+            {pendingUniqueAttack && (
+              <div className="flex flex-col items-center gap-1 bg-purple-900/40 border border-purple-500/50 rounded-xl px-3 py-2 max-w-xs text-center">
+                <span className="text-purple-200 text-xs font-bold flex items-center gap-1">
+                  <Swords className="w-3 h-3" /> {pendingUniqueAttack.name}
+                </span>
+                <span className="text-white/70 text-[10px]">
+                  {pendingUniqueAttack.percent}% • {pendingUniqueAttack.target === "all" ? "All targets" : "Single target"}
+                </span>
+                {pendingUniqueAttack.effect && pendingUniqueAttack.effectType !== "none" && (
+                  <span className="text-white/60 text-[10px]">{pendingUniqueAttack.effect}</span>
+                )}
+                <span className="text-purple-300/70 text-[9px]">Unique Attack — 1 use this game</span>
+              </div>
+            )}
             {readied ? (
               <AttackTimingBar
                 onLock={(multiplier) => {
                   setReadied(false);
-                  attack("player", multiplier);
+                  attack("player", multiplier, pendingUniqueAttack ? { uniqueAttack: pendingUniqueAttack } : {});
+                  cancelUniqueAttack();
                 }}
               />
             ) : (
@@ -206,12 +229,22 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
             <AnimatePresence mode="wait">
               {playerCard && (
                 <motion.div key={(playerCard.id || playerCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-                  <GameCard card={playerCard} size="md" faceDown={faceDown} statusEffects={playerEffects} hpRatio={playerHpRatio} boost={boostPreview} />
+                  <GameCard card={playerCard} size="md" faceDown={faceDown} statusEffects={playerEffects} hpRatio={playerHpRatio} boost={boostPreview} uniqueAttackUsed={uniqueAttackUsed} />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-          <div className="flex-1 flex justify-end">
+          <div className="flex-1 flex flex-col items-end justify-end gap-2">
+            {phase === "battle" && turn === "player" && !readied && !matchResult && playerCard && (
+              <UniqueAttackButton
+                card={playerCard}
+                used={uniqueAttackUsed}
+                onClick={() => {
+                  triggerUniqueAttack();
+                  setReadied(true);
+                }}
+              />
+            )}
             <DeckStack remaining={playerRemaining} />
           </div>
         </div>

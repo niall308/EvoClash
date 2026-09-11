@@ -27,7 +27,7 @@ const OrnateDivider = () => (
   </div>
 );
 
-export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1, boost = null }) {
+export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1, boost = null, uniqueAttackUsed = false }) {
   const isHybrid = card.isHybrid;
   const Icon = isHybrid ? HelpCircle : TYPE_ICONS[card.type] || Sparkles;
   const typeColor = isHybrid ? "#FFD700" : TYPE_COLORS[card.type];
@@ -80,6 +80,11 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
         boxShadow: "inset 0 0 0 1px rgba(197,160,89,0.55)",
       }}
     >
+      {uniqueAttackUsed && (
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-30 px-1.5 py-0.5 rounded-b text-white text-[6px] font-black tracking-wide" style={{ background: "#6A0DAD" }}>
+          USED
+        </div>
+      )}
       {/* Tier badge — top-left */}
       <div
         className={`absolute top-1 left-1 z-20 w-5 h-5 rounded-full flex items-center justify-center font-serif font-black ${

@@ -51,6 +51,14 @@
       ],
       "default": "1v1",
       "description": "Which battle mode this match was played in. Drives the 3v3 reward bonus in finalizeAIBattle."
+    },
+    "usedUniqueAttacks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Card ids whose Unique Attack has been used this match. Authoritative server-side guard against replay/reuse (see recordUniqueAttack)."
     }
   },
   "required": [
