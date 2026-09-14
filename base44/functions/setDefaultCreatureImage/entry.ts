@@ -2,11 +2,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { logCreatureEvent } from '../../shared/creatureImages.ts';
 
 // POST { imageId }
-// Sets a previously-approved image as the creature's default reference image:
-// clears isDefault on every other image for the creature, sets it on this one,
-// and mirrors the url onto Creature.referenceImageUrl. Returns { image, creature }.
+// Sets a previously-approved guide image as the default for its tier: clears
+// isDefaultForTier on every other image for the same (creature, tier), sets it
+// on this one, and mirrors the url onto Creature.referenceImageUrl so the
+// card-art generator uses it as the anatomy reference. Returns { image, creature }.
 //
-// Admin-only. The target image must be approved and have a url.
+// Admin-only. The target image must be an approved guide with a url.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -19,19 +20,24 @@ Deno.serve(async (req) => {
 
     const image = await base44.asServiceRole.entities.CreatureImage.get(imageId).catch(() => null);
     if (!image) return Response.json({ error: 'image not found' }, { status: 404 });
-    if (image.status !== 'approved' || !image.url) {
-      return Response.json({ error: 'only approved images can be set as default' }, { status: 409 });
+    if (image.status !== 'approved' || !image.isGuide || !image.url) {
+      return Response.json({ error: 'only approved guide images can be set as default for a tier' }, { status: 409 });
     }
 
     const all = await base44.asServiceRole.entities.CreatureImage.filter({ creatureId: image.creatureId });
     await Promise.all(
-      all.map((c) =>
-        c.id === imageId
-          ? base44.asServiceRole.entities.CreatureImage.update(c.id, { isDefault: true })
-          : c.isDefault
-          ? base44.asServiceRole.entities.CreatureImage.update(c.id, { isDefault: false })
-          : Promise.resolve()
-      )
+      all.map((c) => {
+        if (c.id === imageId) {
+          return base44.asServiceRole.entities.CreatureImage.update(c.id, { isDefaultForTier: true, isDefault: true });
+        }
+        if (c.tier === image.tier && c.isDefaultForTier) {
+          return base44.asServiceRole.entities.CreatureImage.update(c.id, { isDefaultForTier: false });
+        }
+        if (c.isDefault) {
+          return base44.asServiceRole.entities.CreatureImage.update(c.id, { isDefault: false });
+        }
+        return Promise.resolve();
+      })
     );
     const creature = await base44.asServiceRole.entities.Creature.update(image.creatureId, {
       referenceImageUrl: image.url,
@@ -39,9 +45,10 @@ Deno.serve(async (req) => {
     await logCreatureEvent(base44, {
       creatureId: image.creatureId,
       imageId,
-      action: 'default_changed',
+      action: 'set_default_tier',
       userId: user.id,
       userName: user.fullName || user.email || '',
+      note: `tier ${image.tier}`,
     });
     return Response.json({ image, creature });
   } catch (error) {

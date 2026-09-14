@@ -7,7 +7,7 @@ import { ensureActiveDeck } from "@/lib/decks";
 import GameCard from "@/components/cards/GameCard";
 import CreaturePicker from "@/components/generate/CreaturePicker";
 import AutoBuildOfferModal from "@/components/generate/AutoBuildOfferModal";
-import { Sparkles, Loader2, PlusCircle, RefreshCw, Coins } from "lucide-react";
+import { Sparkles, Loader2, PlusCircle, RefreshCw, Coins, Wand2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
 import { play } from "@/lib/soundEngine";
@@ -30,6 +30,11 @@ export default function CardGenerate() {
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [autoBuilding, setAutoBuilding] = useState(false);
   const [autoBuildProgress, setAutoBuildProgress] = useState(0);
+  // Guide image prefilled via the admin "Use in Card Generator" link
+  // (?guide=<imageId>&creature=<baseName>&tier=<n>). Only applied for admins,
+  // who can force a specific creature so the guide actually matches.
+  const [guideImageId, setGuideImageId] = useState(null);
+  const [guideImage, setGuideImage] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -42,6 +47,25 @@ export default function CardGenerate() {
       const { active } = await ensureActiveDeck(me.id);
       setActiveDeckId(active.id);
       if (cards.length === 0 && !me.autoBuildOffered) setShowOfferModal(true);
+
+      const params = new URLSearchParams(window.location.search);
+      const gId = params.get("guide");
+      const cName = params.get("creature");
+      if (gId && me.role === "admin") {
+        try {
+          const guide = await base44.entities.CreatureImage.get(gId);
+          if (guide && guide.status === "approved" && guide.isGuide && guide.url) {
+            setGuideImageId(guide.id);
+            setGuideImage(guide);
+            if (cName) {
+              const matched = list.find((c) => c.baseName === cName);
+              if (matched) setSelectedCreature(matched);
+            }
+          }
+        } catch {
+          /* stale/invalid guide link — ignore */
+        }
+      }
     })();
   }, []);
 
@@ -106,6 +130,7 @@ export default function CardGenerate() {
         baseName: cardData.baseName,
         type: cardData.type,
         isHybrid: useHybrid,
+        guideImageId: guideImageId || undefined,
       });
       cardData.imageUrl = data.url;
       setPreviewCard(cardData);
@@ -187,6 +212,17 @@ export default function CardGenerate() {
       )}
       <h1 className="text-2xl font-black mb-1 mt-2">AI Generate</h1>
       <p className="text-white/50 text-xs mb-1">{count === null ? "Loading..." : `${count}/50 cards owned`}</p>
+      {guideImage && (
+        <div className="flex items-center gap-2 bg-fuchsia-600/20 border border-fuchsia-500/40 rounded-full px-3 py-1 mb-2 text-xs">
+          <Wand2 className="w-3.5 h-3.5 text-fuchsia-300" />
+          <span className="text-fuchsia-200">Guide: Tier {guideImage.tier} · {guideImage.authorName || "approved"}</span>
+          <button
+            onClick={() => { setGuideImage(null); setGuideImageId(null); }}
+            className="text-fuchsia-300/70 hover:text-white ml-1"
+            aria-label="Clear guide"
+          >×</button>
+        </div>
+      )}
       <p className="text-[11px] mb-8 h-4">
         {status && !isAdmin && status.pastInitialFree && (
           status.needsPayment ? (

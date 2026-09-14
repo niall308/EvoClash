@@ -18,7 +18,11 @@
         "image_uploaded",
         "image_approved",
         "image_rejected",
+        "approve_guide",
+        "reject_image",
         "default_changed",
+        "set_default_tier",
+        "used_in_card_generator",
         "unique_attack_updated"
       ]
     },

@@ -5,12 +5,12 @@ import CreatureImageTile from "./CreatureImageTile";
 import GenerateImagesModal from "./GenerateImagesModal";
 import ImportImageModal from "./ImportImageModal";
 import CreatureAuditFeed from "./CreatureAuditFeed";
-import { CREATURE_IMAGES_I18N } from "@/lib/creatureImages";
+import { CREATURE_IMAGES_I18N, TIERS, TIER_LABELS } from "@/lib/creatureImages";
 
-// Images tab for a creature: generate/import actions + thumbnail gallery +
-// activity feed. Approve/reject/set-default go through their backend functions,
-// then refresh the gallery and notify the parent (creature.referenceImageUrl may
-// have changed).
+// Images tab for a creature: generate/import actions + thumbnail gallery grouped
+// by tier + activity feed. Approve/Reject (as guide) / Set Default for Tier go
+// through their backend functions, then refresh the gallery and notify the parent
+// (creature.referenceImageUrl may have changed).
 export default function CreatureImagesTab({ creature, onCreatureChanged }) {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -90,17 +90,44 @@ export default function CreatureImagesTab({ creature, onCreatureChanged }) {
       ) : images.length === 0 ? (
         <div className="text-white/40 text-xs py-6 text-center">{CREATURE_IMAGES_I18N.noImages}</div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {images.map((img) => (
-            <CreatureImageTile
-              key={img.id}
-              image={img}
-              busy={busyId === img.id}
-              onApprove={(note) => handleApprove(img.id, note)}
-              onReject={(note) => handleReject(img.id, note)}
-              onSetDefault={() => handleSetDefault(img.id)}
-            />
-          ))}
+        <div className="space-y-4">
+          {TIERS.map((t) => {
+            const tierImages = images.filter((img) => (img.tier || 1) === t);
+            if (tierImages.length === 0) return null;
+            return (
+              <div key={t}>
+                <div className="text-white/60 text-xs font-bold mb-2">{TIER_LABELS[t]}</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {tierImages.map((img) => (
+                    <CreatureImageTile
+                      key={img.id}
+                      image={img}
+                      creature={creature}
+                      busy={busyId === img.id}
+                      onApprove={(note) => handleApprove(img.id, note)}
+                      onReject={(note) => handleReject(img.id, note)}
+                      onSetDefault={() => handleSetDefault(img.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          {images.some((img) => ![1, 2, 3, 4].includes(img.tier)) && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {images.filter((img) => ![1, 2, 3, 4].includes(img.tier)).map((img) => (
+                <CreatureImageTile
+                  key={img.id}
+                  image={img}
+                  creature={creature}
+                  busy={busyId === img.id}
+                  onApprove={(note) => handleApprove(img.id, note)}
+                  onReject={(note) => handleReject(img.id, note)}
+                  onSetDefault={() => handleSetDefault(img.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

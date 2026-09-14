@@ -2,10 +2,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { logCreatureEvent } from '../../shared/creatureImages.ts';
 
 // POST { imageId, note }
-// Marks a CreatureImage as rejected. The image is kept in history (not deleted)
-// but is no longer selectable for cards. If the rejected image was the default,
-// clears isDefault and the creature's referenceImageUrl (falls back to no image
-// until another image is approved+set-default). Returns { image, creature }.
+// Rejects a CreatureImage: status=rejected, isGuide=false, isDefaultForTier=
+// false, isDefault=false. The image is kept in history (not deleted) but is no
+// longer a guide for the card generator. If the rejected image was the creature
+// default, clears Creature.referenceImageUrl. Returns { image, creature }.
 //
 // Admin-only.
 Deno.serve(async (req) => {
@@ -24,8 +24,10 @@ Deno.serve(async (req) => {
     const notes = [image.notes, note ? `rejected: ${note}` : 'rejected'].filter(Boolean).join(' | ');
     const updated = await base44.asServiceRole.entities.CreatureImage.update(imageId, {
       status: 'rejected',
-      notes,
+      isGuide: false,
+      isDefaultForTier: false,
       isDefault: false,
+      notes,
     });
 
     let creature = null;
@@ -45,7 +47,7 @@ Deno.serve(async (req) => {
     await logCreatureEvent(base44, {
       creatureId: image.creatureId,
       imageId,
-      action: 'image_rejected',
+      action: 'reject_image',
       userId: user.id,
       userName: user.fullName || user.email || '',
       note: note || '',
