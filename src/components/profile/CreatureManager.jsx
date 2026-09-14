@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import CreatureRow from "@/components/profile/CreatureRow";
 import CreatureForm from "@/components/profile/CreatureForm";
+import DownloadAllImagesButton from "@/components/profile/DownloadAllImagesButton";
 
 export default function CreatureManager() {
   const [creatures, setCreatures] = useState([]);
@@ -30,7 +31,10 @@ export default function CreatureManager() {
 
   return (
     <div className="mb-8">
-      <h2 className="text-lg font-bold mb-3">Manage Creatures</h2>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <h2 className="text-lg font-bold">Manage Creatures</h2>
+        <DownloadAllImagesButton creatures={creatures} />
+      </div>
       <CreatureForm onAdd={handleAdd} />
       <div className="space-y-2 max-h-72 overflow-y-auto">
         {creatures.map((c) => (
