@@ -107,6 +107,7 @@ export default function AdminAiDecks() {
           difficulty={viewingDifficulty}
           cards={viewingCards}
           onClose={() => setViewingDifficulty(null)}
+          onCountChange={refreshCounts}
         />
       )}
     </div>
