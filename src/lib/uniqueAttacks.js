@@ -54,39 +54,6 @@ export function cardUniqueAttack(card) {
   return getUniqueAttackDefinition(card.baseName);
 }
 
-// Resolves a Unique Attack from a Creature record, preferring the admin-managed
-// per-creature fields (uniqueAttackName/Percent/Target/Effects) over the static
-// /data/uniqueAttacks.json table. Returns null when the creature has none.
-// Used by the admin Manage Creatures editor + previews; battle still resolves
-// by baseName via cardUniqueAttack until creature data is loaded into the match.
-export function getCreatureUniqueAttack(creature) {
-  if (!creature) return null;
-  const hasCustom =
-    creature.uniqueAttackName && creature.uniqueAttackName.trim() && creature.uniqueAttackPercent > 0;
-  if (hasCustom) {
-    const pct = clampPercent(creature.uniqueAttackPercent);
-    const effectsArr = Array.isArray(creature.uniqueAttackEffects)
-      ? creature.uniqueAttackEffects.map((e) => String(e).trim()).filter(Boolean)
-      : [];
-    return {
-      name: creature.uniqueAttackName.trim(),
-      percent: pct,
-      target: creature.uniqueAttackTarget === "all" ? "all" : "single",
-      effect: effectsArr.join("; "),
-      effects: effectsArr,
-      effectType: effectsArr.length ? "custom" : "none",
-    };
-  }
-  return getUniqueAttackDefinition(creature.baseName);
-}
-
-// Live-preview damage for a Unique Attack at a given sample base attack.
-// Damage = floor(baseAttack * percent / 100).
-export function previewUniqueAttackDamage(baseAttack, percent) {
-  const pct = clampPercent(percent);
-  return Math.floor((Number(baseAttack) || 0) * pct) / 100;
-}
-
 // Damage for a unique attack = floor(card.attack * percent / 100), then run
 // through the normal computeDamage (defense/crit/bonus still apply). "all" targets
 // each take this same amount; in 1v1 there is a single target so it just applies once.

@@ -31,33 +31,7 @@
     "referenceImageUrl": {
       "type": "string",
       "default": "",
-      "description": "Admin-approved generated image used as an anatomy reference for future AI card art of this creature. Mirrors the default CreatureImage's url; the CreatureImage gallery is the source of truth."
-    },
-    "uniqueAttackName": {
-      "type": "string",
-      "default": "",
-      "description": "Display name of this creature's once-per-game Unique Attack. Empty means no unique attack is defined for this creature."
-    },
-    "uniqueAttackPercent": {
-      "type": "number",
-      "default": 0,
-      "description": "Percent of the card's attack dealt as unique-attack damage. 0 = unset; valid range 1\u20131000 (clamped server-side)."
-    },
-    "uniqueAttackTarget": {
-      "type": "string",
-      "enum": [
-        "single",
-        "all"
-      ],
-      "default": "single"
-    },
-    "uniqueAttackEffects": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": [],
-      "description": "Free-text effect tags for the Unique Attack, e.g. ['bleed:2 turns']. Shown in the card inspector; mapped to mechanics by the battle engine when a known tag is present."
+      "description": "Admin-approved generated image used as an anatomy reference for future AI card art of this creature."
     }
   },
   "required": [
