@@ -1,0 +1,90 @@
+{
+  "name": "CreatureImage",
+  "type": "object",
+  "properties": {
+    "creatureId": {
+      "type": "string",
+      "description": "FK to Creature.id. The creature this generated/uploaded image belongs to."
+    },
+    "url": {
+      "type": "string",
+      "default": "",
+      "description": "Public CDN URL of the image. Empty while a generation is still in progress."
+    },
+    "storageKey": {
+      "type": "string",
+      "default": "",
+      "description": "Opaque storage key for the underlying asset (provider-specific). May be empty when the URL itself is the durable reference."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Approval state. 'pending' = generated/uploaded, awaiting admin review; 'approved' = selectable for cards; 'rejected' = kept in history but not selectable."
+    },
+    "generatedBy": {
+      "type": "string",
+      "default": "",
+      "description": "Provider that produced this image: 'base44-core' (the platform GenerateImage integration) or 'manual' (admin upload)."
+    },
+    "authorId": {
+      "type": "string",
+      "default": "",
+      "description": "User id of the admin who generated/uploaded this image. Mirrors the built-in created_by_id for convenience/querying."
+    },
+    "authorName": {
+      "type": "string",
+      "default": ""
+    },
+    "notes": {
+      "type": "string",
+      "default": "",
+      "description": "Admin note attached on approve/reject (append-only log of decisions)."
+    },
+    "prompt": {
+      "type": "string",
+      "default": "",
+      "description": "The prompt used to generate this image (empty for manual uploads)."
+    },
+    "stylePreset": {
+      "type": "string",
+      "default": "",
+      "description": "Style preset id applied at generation time (e.g. 'semi-realistic')."
+    },
+    "isDefault": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this is the creature's default reference image. At most one approved image per creature should have this set; mirrored onto Creature.referenceImageUrl."
+    },
+    "errorMessage": {
+      "type": "string",
+      "default": "",
+      "description": "Populated when a generation attempt failed for this image; the record is kept for audit."
+    }
+  },
+  "required": [
+    "creatureId"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

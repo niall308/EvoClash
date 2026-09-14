@@ -1,47 +1,37 @@
 import React, { useState } from "react";
-import { Trash2, Pencil, Check } from "lucide-react";
+import { Trash2, ChevronDown, Swords } from "lucide-react";
+import CreatureEditor from "@/components/admin/creatures/CreatureEditor";
+import { getCreatureUniqueAttack } from "@/lib/uniqueAttacks";
 
-export default function CreatureRow({ creature, onDelete, onUpdateDescription }) {
-  const [editing, setEditing] = useState(false);
-  const [description, setDescription] = useState(creature.description || "");
-
-  const save = async () => {
-    await onUpdateDescription(creature.id, description.trim());
-    setEditing(false);
-  };
+// One creature row: summary + delete + expand toggle. Expanding renders the
+// CreatureEditor (Details / Images / Unique Attack). The description inline-edit
+// moved into the Details tab; this row stays a compact summary.
+export default function CreatureRow({ creature, onDelete, onUpdated }) {
+  const [open, setOpen] = useState(false);
+  const ua = getCreatureUniqueAttack(creature);
 
   return (
     <div className="bg-white/5 rounded-lg px-3 py-2">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-semibold">{creature.baseName}</p>
-          <p className="text-[10px] text-white/40">{creature.category} · {creature.role}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setEditing((e) => !e)} className="text-white/50 hover:text-white/80">
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={() => onDelete(creature.id)} className="text-red-400 hover:text-red-300">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
+        <button onClick={() => setOpen((o) => !o)} className="flex-1 flex items-center gap-2 text-left min-h-[36px]">
+          <ChevronDown className={`w-4 h-4 text-white/40 transition-transform ${open ? "rotate-180" : ""}`} />
+          <div>
+            <p className="text-sm font-semibold">{creature.baseName}</p>
+            <p className="text-[10px] text-white/40">
+              {creature.category} · {creature.role}
+              {ua && (
+                <span className="ml-1 inline-flex items-center gap-0.5 text-purple-300">
+                  · <Swords className="w-2.5 h-2.5" /> {ua.name}
+                </span>
+              )}
+            </p>
+          </div>
+        </button>
+        <button onClick={() => onDelete(creature.id)} className="text-red-400 hover:text-red-300 p-1" aria-label={`Delete ${creature.baseName}`}>
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
-      {editing ? (
-        <div className="mt-2 space-y-1.5">
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Anatomy guide for the AI card generator, e.g. 'a winged bird-woman with a human female torso and face, feathered wings instead of arms, and taloned bird feet — never a snake or reptile body'"
-            rows={3}
-            className="w-full bg-white/10 rounded-md px-2.5 py-2 text-xs outline-none resize-none"
-          />
-          <button onClick={save} className="flex items-center gap-1 bg-purple-600 rounded-md px-2.5 py-1.5 text-xs font-semibold">
-            <Check className="w-3.5 h-3.5" /> Save
-          </button>
-        </div>
-      ) : (
-        creature.description && <p className="text-[10px] text-white/30 mt-0.5 max-w-xs">{creature.description}</p>
-      )}
+      {open && <CreatureEditor creature={creature} onUpdated={onUpdated} />}
     </div>
   );
 }
