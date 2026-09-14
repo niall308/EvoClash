@@ -9,6 +9,11 @@
       "type": "string",
       "default": ""
     },
+    "tier": {
+      "type": "number",
+      "default": 0,
+      "description": "Tier associated with the audited action when relevant (generate/approve/set-default). 0 = not applicable."
+    },
     "action": {
       "type": "string",
       "enum": [
@@ -19,7 +24,11 @@
         "image_approved",
         "image_rejected",
         "default_changed",
-        "unique_attack_updated"
+        "unique_attack_updated",
+        "approve_guide",
+        "reject_image",
+        "set_default",
+        "guide_used"
       ]
     },
     "userId": {

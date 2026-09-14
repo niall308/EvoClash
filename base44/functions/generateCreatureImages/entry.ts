@@ -1,22 +1,23 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import {
   getImageProvider,
-  buildCreatureImagePrompt,
+  buildGuideImagePrompt,
   logCreatureEvent,
   MAX_GENERATE_COUNT,
   DEFAULT_STYLE_PRESET,
+  validateTier,
 } from '../../shared/creatureImages.ts';
 
-// POST { creatureId, prompt, count, style }
-// Generates 1–5 images for an existing creature WITHOUT creating any card.
-// Creates a pending CreatureImage record per requested image, calls the image
-// provider, and fills in each record's url. Per-image failures are kept as
-// pending records with errorMessage populated so the admin can see which failed.
-// Returns { images: CreatureImage[] }.
+// POST { creatureId, tier, prompt, count, style }
+// Generates 1–5 tiered upgrade-guide images for an existing creature WITHOUT
+// creating any card. `tier` defaults to 1 (base) and is clamped to 1–4. Creates
+// a pending CreatureImage record per requested image (carrying tier + prompt +
+// style), calls the image provider with a combined guide prompt, and fills in
+// each record's url. Per-image failures are kept as pending records with
+// errorMessage populated so the admin can see which failed. Returns { images }.
 //
-// Admin-only. The generation is synchronous here (the platform GenerateImage
-// integration returns a URL within seconds); records start at status 'pending'
-// so an admin must explicitly approve before an image becomes selectable.
+// Admin-only. Records start at status 'pending' with isGuide=false; an admin must
+// explicitly "Approve as Guide" before an image becomes a card-art guide.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -24,8 +25,11 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { creatureId, prompt, count, style } = await req.json().catch(() => ({}));
+    const { creatureId, tier, prompt, count, style } = await req.json().catch(() => ({}));
     if (!creatureId) return Response.json({ error: 'creatureId is required' }, { status: 400 });
+    const tv = validateTier(tier === undefined ? 1 : tier);
+    if (!tv.ok) return Response.json({ error: tv.error }, { status: 400 });
+    const tierVal = tv.value;
     const promptText = (prompt || '').trim();
     if (!promptText) return Response.json({ error: 'prompt is required' }, { status: 400 });
     const n = Math.max(1, Math.min(MAX_GENERATE_COUNT, Math.round(Number(count) || 1)));
@@ -35,16 +39,19 @@ Deno.serve(async (req) => {
     if (!creature) return Response.json({ error: 'creature not found' }, { status: 404 });
 
     const provider = getImageProvider();
-    const fullPrompt = buildCreatureImagePrompt(creature, promptText, stylePreset);
+    const fullPrompt = buildGuideImagePrompt(creature, promptText, stylePreset, tierVal);
 
     // 1. Create pending records up-front so the admin UI can show them immediately.
     const records = await Promise.all(
       Array.from({ length: n }, () =>
         base44.asServiceRole.entities.CreatureImage.create({
           creatureId,
+          tier: tierVal,
           url: '',
           storageKey: '',
           status: 'pending',
+          isGuide: false,
+          isDefaultForTier: false,
           generatedBy: provider.name,
           authorId: user.id,
           authorName: user.fullName || user.email || '',
@@ -59,7 +66,8 @@ Deno.serve(async (req) => {
       action: 'generate_requested',
       userId: user.id,
       userName: user.fullName || user.email || '',
-      note: `${n} image(s), style=${stylePreset}, provider=${provider.name}`,
+      note: `tier ${tierVal}, ${n} image(s), style=${stylePreset}, provider=${provider.name}`,
+      tier: tierVal,
     });
 
     // 2. Generate each image in parallel and fill its record. A failure marks
@@ -81,6 +89,8 @@ Deno.serve(async (req) => {
               action: 'generate_completed',
               userId: user.id,
               userName: user.fullName || user.email || '',
+              note: `tier ${tierVal}`,
+              tier: tierVal,
             });
           })
           .catch(async (err) => {
@@ -94,6 +104,7 @@ Deno.serve(async (req) => {
               userId: user.id,
               userName: user.fullName || user.email || '',
               note: String(err?.message || err),
+              tier: tierVal,
             });
           })
       )

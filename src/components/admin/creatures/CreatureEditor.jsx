@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import CreatureImagesTab from "./CreatureImagesTab";
 import UniqueAttackPanel from "./UniqueAttackPanel";
+import UpgradeGuidesSection from "./UpgradeGuidesSection";
 import { CREATURE_IMAGES_I18N } from "@/lib/creatureImages";
 
 // Re-fetch the creature after image/default changes so the parent list reflects
@@ -55,6 +56,7 @@ export default function CreatureEditor({ creature, onUpdated }) {
 
       {tab === "details" && (
         <div className="space-y-2">
+          <UpgradeGuidesSection creature={creature} />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
