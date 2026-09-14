@@ -23,7 +23,8 @@
         "default_changed",
         "set_default_tier",
         "used_in_card_generator",
-        "unique_attack_updated"
+        "unique_attack_updated",
+        "image_deleted"
       ]
     },
     "userId": {

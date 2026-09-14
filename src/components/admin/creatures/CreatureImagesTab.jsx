@@ -63,6 +63,16 @@ export default function CreatureImagesTab({ creature, onCreatureChanged }) {
     }
   }, [refresh]);
 
+  const handleDelete = useCallback(async (imageId) => {
+    setBusyId(imageId);
+    try {
+      await base44.functions.invoke("deleteCreatureImage", { imageId });
+      await refresh();
+    } finally {
+      setBusyId(null);
+    }
+  }, [refresh]);
+
   return (
     <div>
       <div className="flex gap-2 mb-3">
@@ -107,6 +117,7 @@ export default function CreatureImagesTab({ creature, onCreatureChanged }) {
                       onApprove={(note) => handleApprove(img.id, note)}
                       onReject={(note) => handleReject(img.id, note)}
                       onSetDefault={() => handleSetDefault(img.id)}
+                      onDelete={() => handleDelete(img.id)}
                     />
                   ))}
                 </div>
@@ -124,6 +135,7 @@ export default function CreatureImagesTab({ creature, onCreatureChanged }) {
                   onApprove={(note) => handleApprove(img.id, note)}
                   onReject={(note) => handleReject(img.id, note)}
                   onSetDefault={() => handleSetDefault(img.id)}
+                  onDelete={() => handleDelete(img.id)}
                 />
               ))}
             </div>

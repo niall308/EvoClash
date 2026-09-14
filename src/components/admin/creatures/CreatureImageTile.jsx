@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Check, X, Star, Download, Wand2 } from "lucide-react";
+import { Check, X, Star, Download, Wand2, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Image } from "@/components/ui/image";
 import { IMAGE_STATUS_META, TIER_LABELS, CREATURE_IMAGES_I18N } from "@/lib/creatureImages";
@@ -18,7 +18,7 @@ function fmtDate(ts) {
 // actions. Approve = "Approve as Guide" (opens a confirm-with-note modal);
 // Reject opens its own confirm. Set Default for Tier and Use in Card Generator
 // act immediately. `pending` images without a url yet show a generating spinner.
-export default function CreatureImageTile({ image, creature, onApprove, onReject, onSetDefault, busy }) {
+export default function CreatureImageTile({ image, creature, onApprove, onReject, onSetDefault, onDelete, busy }) {
   const navigate = useNavigate();
   const [confirm, setConfirm] = useState(null); // { kind }
   const meta = IMAGE_STATUS_META[image.status] || IMAGE_STATUS_META.pending;
@@ -29,6 +29,7 @@ export default function CreatureImageTile({ image, creature, onApprove, onReject
   const runConfirm = async (note) => {
     if (confirm?.kind === "approve") await onApprove(note);
     else if (confirm?.kind === "reject") await onReject(note);
+    else if (confirm?.kind === "delete") await onDelete();
     setConfirm(null);
   };
 
@@ -124,15 +125,23 @@ export default function CreatureImageTile({ image, creature, onApprove, onReject
               </button>
             )}
           </div>
+          <button
+            onClick={() => setConfirm({ kind: "delete" })}
+            disabled={busy}
+            aria-label="Delete image"
+            className="flex items-center justify-center gap-1 bg-white/5 hover:bg-red-700/70 text-red-400 hover:text-white text-[11px] font-semibold py-1.5 rounded-md disabled:opacity-60"
+          >
+            <Trash2 className="w-3 h-3" /> Delete
+          </button>
         </div>
       )}
       {confirm && (
         <ConfirmNoteModal
-          title={confirm.kind === "approve" ? "Approve as guide" : "Reject image"}
-          message={confirm.kind === "approve" ? CREATURE_IMAGES_I18N.approveConfirm : CREATURE_IMAGES_I18N.rejectConfirm}
-          confirmLabel={confirm.kind === "approve" ? "Approve" : "Reject"}
+          title={confirm.kind === "approve" ? "Approve as guide" : confirm.kind === "delete" ? "Delete image" : "Reject image"}
+          message={confirm.kind === "approve" ? CREATURE_IMAGES_I18N.approveConfirm : confirm.kind === "delete" ? "Permanently remove this image? This cannot be undone. If it is the creature's default reference, that reference will be cleared." : CREATURE_IMAGES_I18N.rejectConfirm}
+          confirmLabel={confirm.kind === "approve" ? "Approve" : confirm.kind === "delete" ? "Delete" : "Reject"}
           confirmClass={confirm.kind === "approve" ? "bg-emerald-600" : "bg-red-700"}
-          noteLabel="Optional note"
+          noteLabel={confirm.kind === "delete" ? null : "Optional note"}
           onConfirm={runConfirm}
           onClose={() => setConfirm(null)}
         />
