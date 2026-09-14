@@ -2,11 +2,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { logCreatureEvent } from '../../shared/creatureImages.ts';
 
 // POST { imageId, note }
-// Rejects a CreatureImage: sets status='rejected', isGuide=false, and clears
-// isDefaultForTier. The image is kept in history (not deleted) but is no longer
-// eligible as a card-art guide. If the rejected image was the creature-level
-// default (isDefault), clears isDefault and the creature's referenceImageUrl.
-// Returns { image, creature }.
+// Marks a CreatureImage as rejected. The image is kept in history (not deleted)
+// but is no longer selectable for cards. If the rejected image was the default,
+// clears isDefault and the creature's referenceImageUrl (falls back to no image
+// until another image is approved+set-default). Returns { image, creature }.
 //
 // Admin-only.
 Deno.serve(async (req) => {
@@ -25,10 +24,8 @@ Deno.serve(async (req) => {
     const notes = [image.notes, note ? `rejected: ${note}` : 'rejected'].filter(Boolean).join(' | ');
     const updated = await base44.asServiceRole.entities.CreatureImage.update(imageId, {
       status: 'rejected',
-      isGuide: false,
-      isDefaultForTier: false,
-      isDefault: false,
       notes,
+      isDefault: false,
     });
 
     let creature = null;
@@ -48,11 +45,10 @@ Deno.serve(async (req) => {
     await logCreatureEvent(base44, {
       creatureId: image.creatureId,
       imageId,
-      action: 'reject_image',
+      action: 'image_rejected',
       userId: user.id,
       userName: user.fullName || user.email || '',
       note: note || '',
-      tier: image.tier || 1,
     });
     return Response.json({ image: updated, creature });
   } catch (error) {

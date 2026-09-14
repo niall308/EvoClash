@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { Check, X, Star, Download, Wand2, Crown } from "lucide-react";
+import { Check, X, Star, Download } from "lucide-react";
 import { Image } from "@/components/ui/image";
-import { IMAGE_STATUS_META, GUIDE_BADGE, TIER_BADGE, CREATURE_IMAGES_I18N } from "@/lib/creatureImages";
+import { IMAGE_STATUS_META, CREATURE_IMAGES_I18N } from "@/lib/creatureImages";
 import ConfirmNoteModal from "./ConfirmNoteModal";
 
 function fmtDate(ts) {
@@ -13,24 +13,17 @@ function fmtDate(ts) {
   }
 }
 
-// One image in the gallery: thumbnail + tier badge + status badge + optional
-// GUIDE badge + metadata + actions. Approve-as-guide / reject open a confirm-
-// with-optional-note modal. The creature-level default star (★) mirrors onto
-// Creature.referenceImageUrl; the tier-default crown (♕) marks the default
-// guide for this creature + tier. "Use in Card Generator" opens the card
-// generator prefilled with this guide.
-export default function CreatureImageTile({ image, onApprove, onReject, onSetDefault, onSetTierDefault, onUseInGenerator, busy }) {
-  const [confirm, setConfirm] = useState(null);
+// One image in the gallery: thumbnail + status badge + metadata + actions.
+// Approve/Reject open a confirm-with-note modal; Set Default and Download act
+// immediately. `pending` images without a url yet show a generating spinner.
+export default function CreatureImageTile({ image, onApprove, onReject, onSetDefault, busy }) {
+  const [confirm, setConfirm] = useState(null); // { kind, ... }
   const meta = IMAGE_STATUS_META[image.status] || IMAGE_STATUS_META.pending;
-  const tier = image.tier || 1;
-  const tierBadge = TIER_BADGE[tier] || TIER_BADGE[1];
   const isDefault = !!image.isDefault;
-  const isTierDefault = !!image.isDefaultForTier;
-  const isGuide = !!image.isGuide && image.status === "approved";
   const generating = !image.url;
 
   const runConfirm = async (note) => {
-    if (confirm?.kind === "approve") await onApprove(note);
+    if (confirm?.kind === "approve") await onApprove(note, confirm.setDefault);
     else if (confirm?.kind === "reject") await onReject(note);
     setConfirm(null);
   };
@@ -45,20 +38,12 @@ export default function CreatureImageTile({ image, onApprove, onReject, onSetDef
         ) : (
           <Image src={image.url} alt={image.prompt || "creature image"} className="w-full h-full" />
         )}
-        <span className={`absolute top-1.5 left-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded border ${tierBadge}`}>
-          T{tier}
-        </span>
-        <span className={`absolute top-1.5 left-9 text-[10px] font-bold px-1.5 py-0.5 rounded border ${meta.badge}`}>
+        <span className={`absolute top-1.5 left-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded border ${meta.badge}`}>
           {meta.label}
         </span>
-        {isGuide && (
-          <span className={`absolute top-1.5 right-1.5 text-[10px] font-black px-1.5 py-0.5 rounded ${GUIDE_BADGE}`}>
-            {CREATURE_IMAGES_I18N.guideBadge}
-          </span>
-        )}
-        {isTierDefault && (
-          <span className="absolute bottom-1.5 right-1.5 text-amber-300" title="Default guide for this tier">
-            <Crown className="w-3.5 h-3.5 fill-amber-300" />
+        {isDefault && (
+          <span className="absolute top-1.5 right-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-black flex items-center gap-0.5">
+            <Star className="w-2.5 h-2.5 fill-black" /> Default
           </span>
         )}
       </div>
@@ -77,69 +62,42 @@ export default function CreatureImageTile({ image, onApprove, onReject, onSetDef
         {image.notes && <div className="text-[10px] text-white/40 truncate">{image.notes}</div>}
       </div>
       {!generating && (
-        <div className="flex flex-col gap-1 px-2 pb-2">
-          <div className="flex gap-1">
-            {image.status !== "approved" && (
-              <button
-                onClick={() => setConfirm({ kind: "approve" })}
-                disabled={busy}
-                aria-label={CREATURE_IMAGES_I18N.approveAria}
-                className="flex-1 flex items-center justify-center gap-1 bg-emerald-600/80 hover:bg-emerald-600 text-white text-[11px] font-semibold py-1.5 rounded-md disabled:opacity-60"
-              >
-                <Check className="w-3 h-3" /> {CREATURE_IMAGES_I18N.approveAsGuide}
-              </button>
-            )}
-            {image.status !== "rejected" && (
-              <button
-                onClick={() => setConfirm({ kind: "reject" })}
-                disabled={busy}
-                aria-label={CREATURE_IMAGES_I18N.rejectAria}
-                className="flex items-center justify-center gap-1 bg-red-700/70 hover:bg-red-700 text-white text-[11px] font-semibold py-1.5 rounded-md disabled:opacity-60"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-          {isGuide && (
-            <>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => onSetTierDefault(image)}
-                  disabled={busy}
-                  aria-label={CREATURE_IMAGES_I18N.setTierDefaultAria}
-                  className={`flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold py-1.5 rounded-md ${
-                    isTierDefault ? "bg-amber-500/20 text-amber-300" : "bg-white/10 text-white hover:bg-white/20"
-                  } disabled:opacity-40`}
-                >
-                  <Crown className={`w-3 h-3 ${isTierDefault ? "fill-amber-300" : ""}`} /> {CREATURE_IMAGES_I18N.setTierDefault}
-                </button>
-                <button
-                  onClick={onSetDefault}
-                  disabled={busy}
-                  aria-label={CREATURE_IMAGES_I18N.setDefaultAria}
-                  className={`flex items-center justify-center px-2 py-1.5 rounded-md text-[11px] ${
-                    isDefault ? "bg-amber-500/20 text-amber-300" : "bg-white/10 text-white hover:bg-white/20"
-                  } disabled:opacity-40`}
-                  title="Creature-level reference"
-                >
-                  <Star className={`w-3 h-3 ${isDefault ? "fill-amber-300" : ""}`} />
-                </button>
-              </div>
-              <button
-                onClick={() => onUseInGenerator(image)}
-                disabled={busy}
-                aria-label={CREATURE_IMAGES_I18N.useInGeneratorAria}
-                className="flex items-center justify-center gap-1 bg-purple-600/70 hover:bg-purple-600 text-white text-[11px] font-semibold py-1.5 rounded-md disabled:opacity-60"
-              >
-                <Wand2 className="w-3 h-3" /> {CREATURE_IMAGES_I18N.useInGenerator}
-              </button>
-            </>
+        <div className="flex gap-1 px-2 pb-2">
+          {image.status !== "approved" && (
+            <button
+              onClick={() => setConfirm({ kind: "approve" })}
+              disabled={busy}
+              aria-label={CREATURE_IMAGES_I18N.approveAria}
+              className="flex-1 flex items-center justify-center gap-1 bg-emerald-600/80 hover:bg-emerald-600 text-white text-[11px] font-semibold py-1.5 rounded-md disabled:opacity-60"
+            >
+              <Check className="w-3 h-3" /> Approve
+            </button>
           )}
+          {image.status !== "rejected" && (
+            <button
+              onClick={() => setConfirm({ kind: "reject" })}
+              disabled={busy}
+              aria-label={CREATURE_IMAGES_I18N.rejectAria}
+              className="flex-1 flex items-center justify-center gap-1 bg-red-700/70 hover:bg-red-700 text-white text-[11px] font-semibold py-1.5 rounded-md disabled:opacity-60"
+            >
+              <X className="w-3 h-3" /> Reject
+            </button>
+          )}
+          <button
+            onClick={onSetDefault}
+            disabled={busy || image.status !== "approved"}
+            aria-label={CREATURE_IMAGES_I18N.setDefaultAria}
+            className={`flex items-center justify-center px-2 py-1.5 rounded-md text-[11px] ${
+              isDefault ? "bg-amber-500/20 text-amber-300" : "bg-white/10 text-white hover:bg-white/20"
+            } disabled:opacity-40`}
+          >
+            <Star className={`w-3 h-3 ${isDefault ? "fill-amber-300" : ""}`} />
+          </button>
         </div>
       )}
       {confirm && (
         <ConfirmNoteModal
-          title={confirm.kind === "approve" ? CREATURE_IMAGES_I18N.approveAsGuide : CREATURE_IMAGES_I18N.rejectImage}
+          title={confirm.kind === "approve" ? "Approve image" : "Reject image"}
           message={confirm.kind === "approve" ? CREATURE_IMAGES_I18N.approveConfirm : CREATURE_IMAGES_I18N.rejectConfirm}
           confirmLabel={confirm.kind === "approve" ? "Approve" : "Reject"}
           confirmClass={confirm.kind === "approve" ? "bg-emerald-600" : "bg-red-700"}

@@ -6,11 +6,6 @@
       "type": "string",
       "description": "FK to Creature.id. The creature this generated/uploaded image belongs to."
     },
-    "tier": {
-      "type": "number",
-      "default": 1,
-      "description": "Upgrade tier this image is a guide for (1\u20134). Tier 1 = base design; 2/3/4 = progressively upgraded looks. Clamped server-side."
-    },
     "url": {
       "type": "string",
       "default": "",
@@ -29,17 +24,7 @@
         "rejected"
       ],
       "default": "pending",
-      "description": "Approval state. 'pending' = generated/uploaded, awaiting admin review; 'approved' = selectable as a guide; 'rejected' = kept in history but not selectable."
-    },
-    "isGuide": {
-      "type": "boolean",
-      "default": false,
-      "description": "True once an admin approves this image as a guide for the card generator. Only approved + isGuide images are eligible to be used as a card-art guide for this creature + tier."
-    },
-    "isDefaultForTier": {
-      "type": "boolean",
-      "default": false,
-      "description": "Whether this is the default guide image for its creature + tier. At most one approved guide per creature per tier should have this set."
+      "description": "Approval state. 'pending' = generated/uploaded, awaiting admin review; 'approved' = selectable for cards; 'rejected' = kept in history but not selectable."
     },
     "generatedBy": {
       "type": "string",
@@ -63,7 +48,7 @@
     "prompt": {
       "type": "string",
       "default": "",
-      "description": "The admin-authored detailed prompt used to generate this image (stored for traceability/audit; empty for manual uploads that had no prompt)."
+      "description": "The prompt used to generate this image (empty for manual uploads)."
     },
     "stylePreset": {
       "type": "string",
@@ -73,7 +58,7 @@
     "isDefault": {
       "type": "boolean",
       "default": false,
-      "description": "Whether this is the creature's default reference image (creature-level, tier-agnostic). At most one approved image per creature should have this set; mirrored onto Creature.referenceImageUrl."
+      "description": "Whether this is the creature's default reference image. At most one approved image per creature should have this set; mirrored onto Creature.referenceImageUrl."
     },
     "errorMessage": {
       "type": "string",

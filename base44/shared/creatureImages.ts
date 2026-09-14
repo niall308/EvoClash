@@ -7,9 +7,8 @@
 //
 // Used by the generateCreatureImages / approveCreatureImage / rejectCreatureImage
 // / setDefaultCreatureImage / uploadCreatureImage / updateCreatureUniqueAttack
-// / getCreatureGuideImages / useGuideInCardGenerator backend functions so the
-// restricted GenerateImage integration is never called from the client and all
-// approval/audit logic lives server-side.
+// backend functions so the restricted GenerateImage integration is never called
+// from the client and all approval/audit logic lives server-side.
 
 import { CREATURE_ANATOMY, CREATURE_STANCES, CREATURE_COLOR_PALETTES } from "./cardArt.ts";
 
@@ -24,40 +23,11 @@ export const DEFAULT_STYLE_PRESET = "semi-realistic";
 
 export const MAX_GENERATE_COUNT = 5;
 
-// ---- Tier (upgrade) guidance ----
-export const MIN_TIER = 1;
-export const MAX_TIER = 4;
-
-export const TIER_GUIDANCE: Record<number, string> = {
-  1: "Base design — faithful representation of the creature; minimal embellishments; game-card friendly composition (transparent or simple background), clean silhouette, high-contrast foreground.",
-  2: "Enhanced gear / upgraded look — add light armor or elemental accents; small ornate details, slightly more dynamic pose; maintain card composition and legibility.",
-  3: "Major upgrade — elaborate armor/ornamentation, distinct elemental effects (fire/frost/magic), glowing runes, increased complexity, cinematic lighting, high detail while preserving readable silhouette for small card thumbnails.",
-  4: "Legendary/epic — iconic, ornate, highly stylized with particle effects, halo/glow, unique background suggestive of origin, ultra-high detail, dramatic lighting, make the creature look unique and heroic for special-card art.",
-};
-
-export function clampTier(t: number): number {
-  const n = Math.round(Number(t));
-  if (!Number.isFinite(n)) return MIN_TIER;
-  return Math.max(MIN_TIER, Math.min(MAX_TIER, n));
-}
-
-export function validateTier(t: number): { ok: true; value: number } | { ok: false; error: string } {
-  const n = Math.round(Number(t));
-  if (!Number.isFinite(n) || n < MIN_TIER || n > MAX_TIER) {
-    return { ok: false, error: `tier must be between ${MIN_TIER} and ${MAX_TIER}` };
-  }
-  return { ok: true, value: n };
-}
-
 export interface CreatureRecord {
   id: string;
   baseName: string;
   category?: string;
   description?: string;
-  uniqueAttackName?: string;
-  uniqueAttackPercent?: number;
-  uniqueAttackTarget?: string;
-  uniqueAttackEffects?: string[];
 }
 
 export interface GeneratedImage {
@@ -118,37 +88,6 @@ export function buildCreatureImagePrompt(creature: CreatureRecord, userPrompt: s
   return `${base} Anatomy: ${anatomy}. Style: ${preset.modifier}. The creature is the clear focal point, sharply rendered against its background. No text, no border, no frame.`;
 }
 
-// ---- Tiered upgrade-guide prompt (the "guide image" generator) ----
-// Combines the admin's detailed prompt with per-tier visual guidance and the
-// creature's unique-attack summary into a single ready-to-send image prompt.
-// Mirrors the prompt template in docs/admin-manage-creatures.md.
-export function uniqueAttackSummary(creature: CreatureRecord | null): string {
-  if (!creature) return "none";
-  const name = (creature.uniqueAttackName || "").trim();
-  if (!name) return "none";
-  const pct = clampUniqueAttackPercent(creature.uniqueAttackPercent || 0);
-  const target = creature.uniqueAttackTarget === "all" ? "all" : "single";
-  const eff = Array.isArray(creature.uniqueAttackEffects)
-    ? creature.uniqueAttackEffects.map((e) => String(e).trim()).filter(Boolean).join(", ")
-    : "";
-  return `${name} — ${pct}% ${target}${eff ? ` — ${eff}` : ""}`;
-}
-
-export function buildGuideImagePrompt(
-  creature: CreatureRecord,
-  adminPrompt: string,
-  stylePresetId: string,
-  tier: number
-): string {
-  const preset = IMAGE_STYLE_PRESETS.find((p) => p.id === stylePresetId) || IMAGE_STYLE_PRESETS[0];
-  const t = clampTier(tier);
-  const guidance = TIER_GUIDANCE[t];
-  const ua = uniqueAttackSummary(creature);
-  const palette = randomFrom(CREATURE_COLOR_PALETTES);
-  const admin = (adminPrompt || "").trim();
-  return `Creature: ${creature.baseName}. Tier: ${t}. Theme: ${preset.label}. Admin instructions: ${admin}. Tier enhancement: ${guidance} Visual: full-body, 4:5 aspect ratio, transparent/neutral background suitable for cropping to card, high-res (>=2048 preferred), clear silhouette, no watermarks. Palette: ${palette}. Unique attack: ${ua}. Deliverable: image(s) suitable as a card art guide${t >= 3 ? "; include a close-up detail for armor/patterns" : ""}.`;
-}
-
 // ---- Unique Attack validation ----
 export const MIN_UA_PERCENT = 1;
 export const MAX_UA_PERCENT = 1000;
@@ -183,7 +122,7 @@ export function validateUniqueAttack(input: Partial<UniqueAttackInput>): { ok: t
 // ---- Audit logging ----
 export async function logCreatureEvent(
   base44: any,
-  entry: { creatureId: string; imageId?: string; action: string; userId: string; userName?: string; note?: string; tier?: number }
+  entry: { creatureId: string; imageId?: string; action: string; userId: string; userName?: string; note?: string }
 ) {
   try {
     await base44.asServiceRole.entities.CreatureAuditLog.create({
@@ -193,7 +132,6 @@ export async function logCreatureEvent(
       userId: entry.userId,
       userName: entry.userName || "",
       note: entry.note || "",
-      tier: entry.tier || 0,
     });
   } catch (err) {
     // Audit logging is best-effort — never fail the main operation because of it.

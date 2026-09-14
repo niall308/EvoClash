@@ -7,7 +7,6 @@ import { ensureActiveDeck } from "@/lib/decks";
 import GameCard from "@/components/cards/GameCard";
 import CreaturePicker from "@/components/generate/CreaturePicker";
 import AutoBuildOfferModal from "@/components/generate/AutoBuildOfferModal";
-import GuidePicker from "@/components/generate/GuidePicker";
 import { Sparkles, Loader2, PlusCircle, RefreshCw, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
@@ -31,7 +30,6 @@ export default function CardGenerate() {
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [autoBuilding, setAutoBuilding] = useState(false);
   const [autoBuildProgress, setAutoBuildProgress] = useState(0);
-  const [guideImageId, setGuideImageId] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -44,16 +42,6 @@ export default function CardGenerate() {
       const { active } = await ensureActiveDeck(me.id);
       setActiveDeckId(active.id);
       if (cards.length === 0 && !me.autoBuildOffered) setShowOfferModal(true);
-      // Prefill from /generate?creature=<id>&guide=<imageId> (the "Use in Card
-      // Generator" action on an approved guide image).
-      const params = new URLSearchParams(window.location.search);
-      const creatureId = params.get("creature");
-      const guide = params.get("guide");
-      if (creatureId) {
-        const c = list.find((x) => x.id === creatureId);
-        if (c) setSelectedCreature(c);
-      }
-      if (guide) setGuideImageId(guide);
     })();
   }, []);
 
@@ -118,7 +106,6 @@ export default function CardGenerate() {
         baseName: cardData.baseName,
         type: cardData.type,
         isHybrid: useHybrid,
-        guideImageId: forced && guideImageId ? guideImageId : undefined,
       });
       cardData.imageUrl = data.url;
       setPreviewCard(cardData);
@@ -275,12 +262,7 @@ export default function CardGenerate() {
         </div>
 
         {isAdmin && (
-          <div className="flex flex-col gap-4">
-            <CreaturePicker creatures={creatures} selected={selectedCreature} onSelect={(c) => { setSelectedCreature(c); setGuideImageId(null); }} />
-            {selectedCreature && (
-              <GuidePicker creature={selectedCreature} guideImageId={guideImageId} onSelectGuide={setGuideImageId} />
-            )}
-          </div>
+          <CreaturePicker creatures={creatures} selected={selectedCreature} onSelect={setSelectedCreature} />
         )}
       </div>
     </div>

@@ -1,23 +1,21 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Sparkles, Upload, RefreshCw } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import CreatureImageTile from "./CreatureImageTile";
 import GenerateImagesModal from "./GenerateImagesModal";
 import ImportImageModal from "./ImportImageModal";
 import CreatureAuditFeed from "./CreatureAuditFeed";
-import { TIERS, TIER_BADGE, CREATURE_IMAGES_I18N } from "@/lib/creatureImages";
+import { CREATURE_IMAGES_I18N } from "@/lib/creatureImages";
 
-// Images tab for a creature: generate/import actions + a gallery grouped by
-// tier + activity feed. Approve-as-guide / reject / set-tier-default / use-in-
-// card-generator go through their backend functions, then refresh the gallery
-// and notify the parent (creature.referenceImageUrl may have changed).
+// Images tab for a creature: generate/import actions + thumbnail gallery +
+// activity feed. Approve/reject/set-default go through their backend functions,
+// then refresh the gallery and notify the parent (creature.referenceImageUrl may
+// have changed).
 export default function CreatureImagesTab({ creature, onCreatureChanged }) {
-  const navigate = useNavigate();
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
-  const [modal, setModal] = useState(null);
+  const [modal, setModal] = useState(null); // 'generate' | 'import' | null
 
   const load = useCallback(async () => {
     const list = await base44.entities.CreatureImage.filter({ creatureId: creature.id }, "-created_date");
@@ -65,22 +63,6 @@ export default function CreatureImagesTab({ creature, onCreatureChanged }) {
     }
   }, [refresh]);
 
-  const handleSetTierDefault = useCallback(async (image) => {
-    setBusyId(image.id);
-    try {
-      await base44.functions.invoke("setDefaultCreatureImage", { imageId: image.id, tier: image.tier || 1 });
-      await refresh();
-    } finally {
-      setBusyId(null);
-    }
-  }, [refresh]);
-
-  const handleUseInGenerator = useCallback((image) => {
-    navigate(`/generate?creature=${encodeURIComponent(creature.id)}&guide=${encodeURIComponent(image.id)}`);
-  }, [navigate, creature.id]);
-
-  const byTier = TIERS.map((t) => ({ tier: t, items: images.filter((i) => (i.tier || 1) === t) }));
-
   return (
     <div>
       <div className="flex gap-2 mb-3">
@@ -108,31 +90,17 @@ export default function CreatureImagesTab({ creature, onCreatureChanged }) {
       ) : images.length === 0 ? (
         <div className="text-white/40 text-xs py-6 text-center">{CREATURE_IMAGES_I18N.noImages}</div>
       ) : (
-        <div className="space-y-4">
-          {byTier.map(({ tier, items }) =>
-            items.length === 0 ? null : (
-              <div key={tier}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${TIER_BADGE[tier]}`}>T{tier}</span>
-                  <span className="text-white/40 text-[11px]">{items.length} image{items.length === 1 ? "" : "s"}</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {items.map((img) => (
-                    <CreatureImageTile
-                      key={img.id}
-                      image={img}
-                      busy={busyId === img.id}
-                      onApprove={(note) => handleApprove(img.id, note)}
-                      onReject={(note) => handleReject(img.id, note)}
-                      onSetDefault={() => handleSetDefault(img.id)}
-                      onSetTierDefault={handleSetTierDefault}
-                      onUseInGenerator={handleUseInGenerator}
-                    />
-                  ))}
-                </div>
-              </div>
-            )
-          )}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {images.map((img) => (
+            <CreatureImageTile
+              key={img.id}
+              image={img}
+              busy={busyId === img.id}
+              onApprove={(note) => handleApprove(img.id, note)}
+              onReject={(note) => handleReject(img.id, note)}
+              onSetDefault={() => handleSetDefault(img.id)}
+            />
+          ))}
         </div>
       )}
 
