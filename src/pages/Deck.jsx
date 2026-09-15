@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import CardGrid from "@/components/cards/CardGrid";
+import DeckListView from "@/components/cards/DeckListView";
 import CardFilterBar from "@/components/cards/CardFilterBar";
 import CardActionModal from "@/components/cards/CardActionModal";
 import CardStatsModal from "@/components/cards/CardStatsModal";
@@ -10,7 +11,7 @@ import DeckTabs from "@/components/decks/DeckTabs";
 import NewDeckModal from "@/components/decks/NewDeckModal";
 import { ensureActiveDeck } from "@/lib/decks";
 import { DECK_COST, MAX_DECKS } from "@/lib/gameConstants";
-import { Sparkles, Loader2, ArrowUpCircle, ListChecks, PlusCircle, Trash2, Star } from "lucide-react";
+import { Sparkles, Loader2, ArrowUpCircle, ListChecks, PlusCircle, Trash2, Star, LayoutGrid, List } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import PullToRefresh from "@/components/common/PullToRefresh";
 
@@ -31,6 +32,7 @@ export default function Deck() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [statsCard, setStatsCard] = useState(null);
   const [compareIndex, setCompareIndex] = useState(null);
+  const [viewMode, setViewMode] = useState("grid");
 
   const load = async (me) => {
     setUser(me);
@@ -148,8 +150,16 @@ export default function Deck() {
           <p className="text-white/50 text-xs">{cards ? `${cards.length}/50 cards (min 15 to play)` : "Loading..."}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={toggleBulkMode}
+        <button
+          onClick={() => setViewMode((m) => (m === "grid" ? "list" : "grid"))}
+          className="flex items-center gap-1 px-3 py-2 rounded-full text-xs font-bold bg-white/10"
+          aria-label="Toggle view"
+        >
+          {viewMode === "grid" ? <List className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
+          {viewMode === "grid" ? "List" : "Grid"}
+        </button>
+        <button
+          onClick={toggleBulkMode}
             className={`flex items-center gap-1 px-3 py-2 rounded-full text-xs font-bold ${
               bulkMode ? "bg-red-600" : "bg-white/10"
             }`}
@@ -198,14 +208,18 @@ export default function Deck() {
             hybridOnly={hybridOnly}
             onHybridToggle={setHybridOnly}
           />
-          <CardGrid
-            cards={filteredCards}
-            onDelete={handleDelete}
-            selectedId={selectedId}
-            onSelect={handleSelect}
-            bulkMode={bulkMode}
-            selectedIds={selectedIds}
-          />
+          {viewMode === "grid" ? (
+            <CardGrid
+              cards={filteredCards}
+              onDelete={handleDelete}
+              selectedId={selectedId}
+              onSelect={handleSelect}
+              bulkMode={bulkMode}
+              selectedIds={selectedIds}
+            />
+          ) : (
+            <DeckListView cards={filteredCards} onSelect={handleSelect} />
+          )}
         </>
       )}
 
