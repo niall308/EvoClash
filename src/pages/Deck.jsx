@@ -5,6 +5,7 @@ import CardGrid from "@/components/cards/CardGrid";
 import CardFilterBar from "@/components/cards/CardFilterBar";
 import CardActionModal from "@/components/cards/CardActionModal";
 import CardStatsModal from "@/components/cards/CardStatsModal";
+import DeckCompareModal from "@/components/cards/DeckCompareModal";
 import DeckTabs from "@/components/decks/DeckTabs";
 import NewDeckModal from "@/components/decks/NewDeckModal";
 import { ensureActiveDeck } from "@/lib/decks";
@@ -29,6 +30,7 @@ export default function Deck() {
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [statsCard, setStatsCard] = useState(null);
+  const [compareIndex, setCompareIndex] = useState(null);
 
   const load = async (me) => {
     setUser(me);
@@ -217,6 +219,20 @@ export default function Deck() {
             setStatsCard(selectedCard);
             setSelectedId(null);
           }}
+          onCompare={() => {
+            const pos = filteredCards.findIndex((c) => c.id === selectedCard.id);
+            setCompareIndex(pos >= 0 ? pos : 0);
+            setSelectedId(null);
+          }}
+        />
+      )}
+
+      {compareIndex !== null && (
+        <DeckCompareModal
+          cards={filteredCards}
+          startIndex={compareIndex}
+          onDelete={handleDelete}
+          onClose={() => setCompareIndex(null)}
         />
       )}
 
