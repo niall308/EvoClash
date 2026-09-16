@@ -57,11 +57,8 @@ export default function AdminAiDecks() {
         imageUrl: data.url,
         difficulty,
         uniqueAttackName: c?.uniqueAttackName || "",
-        uniqueAttackPercent: Math.max(0, Math.min(200, c?.uniqueAttackPercent || 0)),
-        uniqueAttackTarget: c?.uniqueAttackTarget === "all" || c?.uniqueAttackTarget === "multi" ? "all" : "single",
-        uniqueAttackEffectType: c?.uniqueAttackEffectType || "none",
-        uniqueAttackEffectPercent: Math.max(0, Math.min(200, c?.uniqueAttackEffectPercent || 0)),
-        uniqueAttackEffectDuration: Math.max(0, c?.uniqueAttackEffectDuration || 0),
+        uniqueAttackPercent: c?.uniqueAttackPercent || 0,
+        uniqueAttackTarget: c?.uniqueAttackTarget === "multi" ? "multi" : "single",
         uniqueAttackEffect: c?.uniqueAttackEffect || "",
       });
       setProgress(finished.length);

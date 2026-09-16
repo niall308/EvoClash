@@ -39,18 +39,11 @@ Deno.serve(async (req) => {
     // onto the new card so the in-game resolver (src/lib/uniqueAttacks) reads
     // the configured attack instead of the static JSON fallback.
     const creatureByBaseName = allCreatures.find((c) => c.baseName === safeCardData.baseName);
-    // Canonical UA model: cap 200, normalize target to single|all, stamp the
-    // structured effectType + parameters so the resolver never falls back to
-    // free-text matching for admin-configured creatures.
-    const normTarget = (t) => (t === 'all' || t === 'multi' ? 'all' : 'single');
     const uniqueAttackFields = creatureByBaseName
       ? {
           uniqueAttackName: creatureByBaseName.uniqueAttackName || '',
-          uniqueAttackPercent: Math.max(0, Math.min(200, Number(creatureByBaseName.uniqueAttackPercent) || 0)),
-          uniqueAttackTarget: normTarget(creatureByBaseName.uniqueAttackTarget),
-          uniqueAttackEffectType: creatureByBaseName.uniqueAttackEffectType || 'none',
-          uniqueAttackEffectPercent: Math.max(0, Math.min(200, Number(creatureByBaseName.uniqueAttackEffectPercent) || 0)),
-          uniqueAttackEffectDuration: Math.max(0, Number(creatureByBaseName.uniqueAttackEffectDuration) || 0),
+          uniqueAttackPercent: Math.max(0, Math.min(250, Number(creatureByBaseName.uniqueAttackPercent) || 0)),
+          uniqueAttackTarget: creatureByBaseName.uniqueAttackTarget === 'multi' ? 'multi' : 'single',
           uniqueAttackEffect: creatureByBaseName.uniqueAttackEffect || '',
         }
       : {};

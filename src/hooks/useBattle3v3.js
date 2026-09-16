@@ -11,7 +11,7 @@ import {
 import { isTimestampReady, DAY_MS } from "@/lib/powerUps";
 import { base44 } from "@/api/base44Client";
 import { play } from "@/lib/soundEngine";
-import { cardUniqueAttack, clampPercent, applyUniqueAttackEffect } from "@/lib/uniqueAttacks";
+import { cardUniqueAttack, clampPercent } from "@/lib/uniqueAttacks";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -394,29 +394,24 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
         if (newHp <= 0) defeatedSlots.push(tIdx);
       }
 
-      // Apply the unique attack's effect via the shared registry. heal_team_on_destroy
-      // fires only when at least one opposing card was destroyed by this attack.
-      applyUniqueAttackEffect(def, { destroyedOpponentCount: defeatedSlots.length }, {
-        healSelf: (pct) =>
-          setPlayerSlots((slots) => {
-            const next = [...slots];
-            const s = next[aIdx];
-            if (s) next[aIdx] = { ...s, hp: Math.min(s.maxHp, s.hp + Math.round(s.maxHp * (pct / 100))) };
-            return next;
-          }),
-        healTeam: (pct) =>
-          setPlayerSlots((slots) => slots.map((s) => (s ? { ...s, hp: Math.min(s.maxHp, s.hp + Math.round(s.maxHp * (pct / 100))) } : s))),
-        halfAttackTarget: (turns) => {
-          if (def.target === "single" && chosenTargetIdx != null && aiSlots[chosenTargetIdx]) {
-            setAiDebuffs((d) => {
-              const next = [...d];
-              next[chosenTargetIdx] = { ...next[chosenTargetIdx], halfAttackTurns: turns };
-              return next;
-            });
-          }
-        },
-        log: (msg) => setLog(msg),
-      });
+      // Apply the unique attack's mapped effect after all damage lands.
+      const et = def.effectType;
+      if (et === "healSelf50") {
+        setPlayerSlots((slots) => {
+          const next = [...slots];
+          const s = next[aIdx];
+          if (s) next[aIdx] = { ...s, hp: Math.min(s.maxHp, s.hp + Math.round(s.maxHp * 0.5)) };
+          return next;
+        });
+      } else if (et === "healAll30") {
+        setPlayerSlots((slots) => slots.map((s) => (s ? { ...s, hp: Math.min(s.maxHp, s.hp + Math.round(s.maxHp * 0.3)) } : s)));
+      } else if (et === "halfAttackTarget1" && def.target === "single" && chosenTargetIdx != null && aiSlots[chosenTargetIdx]) {
+        setAiDebuffs((d) => {
+          const next = [...d];
+          next[chosenTargetIdx] = { ...next[chosenTargetIdx], halfAttackTurns: 1 };
+          return next;
+        });
+      }
 
       // Resolve defeated enemy cards: lose a life, clear the slot, refill from the AI pool.
       for (const tIdx of defeatedSlots) {

@@ -1,8 +1,3 @@
-// Frontend optimistic copy of the card-creation free-limit/coin-cost rules.
-// The BACKEND (base44/shared/cardCreationLimits.ts) is authoritative —
-// createGeneratedCard re-validates everything server-side. This module only
-// pre-flights the UI so users get instant feedback before spending coins.
-// If you change rules here, update the backend copy too. See AGENTS.md.
 import { FREE_CARDS_INITIAL, FREE_CREATIONS_PER_DAY, EXTRA_CREATURE_COST } from "@/lib/gameConstants";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
