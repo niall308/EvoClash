@@ -40,6 +40,7 @@ export default function AdminAiDecks() {
     setProgress(0);
     const creatureList = await base44.entities.Creature.list();
     const hybridCreatures = creatureList.filter((c) => c.role === "hyper_rare");
+    const creatureByBase = Object.fromEntries(creatureList.map((c) => [c.baseName, c]));
     const cards = buildDeckCards(difficulty, creatureList, hybridCreatures.length > 0 ? hybridCreatures : [{ baseName: "Chimera" }]);
     const finished = [];
     for (const card of cards) {
@@ -48,7 +49,18 @@ export default function AdminAiDecks() {
         type: card.type,
         isHybrid: !!card.isHybrid,
       });
-      finished.push({ ...card, imageUrl: data.url, difficulty });
+      // Stamp the admin-authored Unique Attack fields from the Creature entity
+      // onto every AI deck card so the in-game resolver uses them.
+      const c = creatureByBase[card.baseName];
+      finished.push({
+        ...card,
+        imageUrl: data.url,
+        difficulty,
+        uniqueAttackName: c?.uniqueAttackName || "",
+        uniqueAttackPercent: c?.uniqueAttackPercent || 0,
+        uniqueAttackTarget: c?.uniqueAttackTarget === "multi" ? "multi" : "single",
+        uniqueAttackEffect: c?.uniqueAttackEffect || "",
+      });
       setProgress(finished.length);
     }
     const existing = await base44.entities.AiDeckCard.filter({ difficulty });

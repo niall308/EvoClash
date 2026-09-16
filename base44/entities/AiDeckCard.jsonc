@@ -60,6 +60,30 @@
     },
     "imageUrl": {
       "type": "string"
+    },
+    "uniqueAttackName": {
+      "type": "string",
+      "default": "",
+      "description": "Display name of this creature's Unique Attack, stamped from the Creature entity at deck generation."
+    },
+    "uniqueAttackPercent": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 250
+    },
+    "uniqueAttackTarget": {
+      "type": "string",
+      "enum": [
+        "single",
+        "multi"
+      ],
+      "default": "single"
+    },
+    "uniqueAttackEffect": {
+      "type": "string",
+      "default": "",
+      "description": "Additional effect description for the Unique Attack, stamped from the Creature entity."
     }
   },
   "required": [

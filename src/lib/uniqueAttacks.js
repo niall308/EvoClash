@@ -47,10 +47,41 @@ export function getUniqueAttackDefinition(baseName) {
   };
 }
 
-// Resolves a card's unique attack from its baseName (works for any card object,
-// whether or not a uniqueAttack field was ever attached to the stored entity).
+// Maps the admin-authored free-text effect onto one of the engine's known
+// mechanics (see useBattleMatch: healSelf50 / healAll30 / halfAttackTarget1).
+// Unmapped text falls back to "none" (shown as descriptive text only, no mechanic).
+function mapEffectType(effect) {
+  const e = (effect || "").toLowerCase();
+  if (!e) return "none";
+  const heals = e.includes("heal") || e.includes("restore") || e.includes("recov");
+  if (heals && (e.includes("all") || e.includes("every") || e.includes("each"))) return "healAll30";
+  if (heals) return "healSelf50";
+  if (e.includes("half") || e.includes("less damage") || e.includes("50% less") || (e.includes("reduce") && e.includes("attack"))) {
+    return "halfAttackTarget1";
+  }
+  return "none";
+}
+
+// Resolves a card's unique attack. Admin-authored fields stamped onto the card
+// (server-side at creation/backfill from the Creature entity) take precedence
+// over the static JSON definitions; a card with no admin config falls back to
+// the static definition by baseName. Works for any card object (player Card,
+// AiDeckCard, or a live-generated AI card that carries no stamped fields).
 export function cardUniqueAttack(card) {
   if (!card || !card.baseName) return null;
+  const hasAdmin =
+    !!card.uniqueAttackName ||
+    (card.uniqueAttackPercent || 0) > 0 ||
+    !!card.uniqueAttackEffect;
+  if (hasAdmin) {
+    return {
+      name: card.uniqueAttackName || card.baseName,
+      percent: clampPercent(card.uniqueAttackPercent || 100),
+      target: card.uniqueAttackTarget === "multi" ? "all" : "single",
+      effect: card.uniqueAttackEffect || "",
+      effectType: mapEffectType(card.uniqueAttackEffect),
+    };
+  }
   return getUniqueAttackDefinition(card.baseName);
 }
 

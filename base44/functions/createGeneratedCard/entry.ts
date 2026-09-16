@@ -35,6 +35,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: validationError.message }, { status: 400 });
     }
 
+    // Stamp the admin-authored Unique Attack fields from the Creature entity
+    // onto the new card so the in-game resolver (src/lib/uniqueAttacks) reads
+    // the configured attack instead of the static JSON fallback.
+    const creatureByBaseName = allCreatures.find((c) => c.baseName === safeCardData.baseName);
+    const uniqueAttackFields = creatureByBaseName
+      ? {
+          uniqueAttackName: creatureByBaseName.uniqueAttackName || '',
+          uniqueAttackPercent: Math.max(0, Math.min(250, Number(creatureByBaseName.uniqueAttackPercent) || 0)),
+          uniqueAttackTarget: creatureByBaseName.uniqueAttackTarget === 'multi' ? 'multi' : 'single',
+          uniqueAttackEffect: creatureByBaseName.uniqueAttackEffect || '',
+        }
+      : {};
+
     // Re-verify the free-creation allowance and coin cost against the real,
     // server-counted card total — never trust the client's coin/limit checks.
     // Explicit high limit: the SDK default cap (~50) would silently truncate a
@@ -54,7 +67,7 @@ Deno.serve(async (req) => {
     try { deck = await base44.entities.Deck.get(deckId); } catch {}
     if (!deck) return Response.json({ error: 'Invalid deck' }, { status: 400 });
 
-    const card = await base44.entities.Card.create({ ...safeCardData, deckId, ownerId: user.id });
+    const card = await base44.entities.Card.create({ ...safeCardData, ...uniqueAttackFields, deckId, ownerId: user.id });
 
     const userUpdate = buildCreationUpdate(user, ownedCards.length);
     const updatedUser = Object.keys(userUpdate).length ? await base44.auth.updateMe(userUpdate) : user;

@@ -105,6 +105,32 @@
     "ownerId": {
       "type": "string",
       "description": "Current owner's user id. Mutable (unlike the built-in created_by_id) so cards can change hands via trades."
+    },
+    "uniqueAttackName": {
+      "type": "string",
+      "default": "",
+      "description": "Display name of this creature's Unique Attack, stamped from the Creature entity at creation."
+    },
+    "uniqueAttackPercent": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 250,
+      "description": "Damage percentage of the Unique Attack (0\u2013250), stamped from the Creature entity."
+    },
+    "uniqueAttackTarget": {
+      "type": "string",
+      "enum": [
+        "single",
+        "multi"
+      ],
+      "default": "single",
+      "description": "Whether the Unique Attack hits one card (single) or all opposing cards (multi)."
+    },
+    "uniqueAttackEffect": {
+      "type": "string",
+      "default": "",
+      "description": "Additional effect description for the Unique Attack, stamped from the Creature entity."
     }
   },
   "required": [
