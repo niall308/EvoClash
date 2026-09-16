@@ -70,43 +70,20 @@
       "type": "number",
       "default": 0,
       "minimum": 0,
-      "maximum": 200
+      "maximum": 250
     },
     "uniqueAttackTarget": {
       "type": "string",
       "enum": [
         "single",
-        "all"
+        "multi"
       ],
       "default": "single"
-    },
-    "uniqueAttackEffectType": {
-      "type": "string",
-      "enum": [
-        "none",
-        "healSelf",
-        "healAll",
-        "halfAttackTarget",
-        "healTeamOnDestroy"
-      ],
-      "default": "none"
-    },
-    "uniqueAttackEffectPercent": {
-      "type": "number",
-      "default": 0,
-      "minimum": 0,
-      "maximum": 200
-    },
-    "uniqueAttackEffectDuration": {
-      "type": "number",
-      "default": 0,
-      "minimum": 0,
-      "maximum": 10
     },
     "uniqueAttackEffect": {
       "type": "string",
       "default": "",
-      "description": "Admin-facing effect description (display only), stamped from the Creature entity."
+      "description": "Additional effect description for the Unique Attack, stamped from the Creature entity."
     }
   },
   "required": [

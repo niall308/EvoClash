@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { computeDamage, maxHealth } from "@/lib/battleEngine";
-import { cardUniqueAttack, uniqueAttackDamage, effectiveEffectPercent, effectLogMessage } from "@/lib/uniqueAttacks";
 import { TIER_RANGES, DEFAULT_ACTIVE_POWERUPS, TURN_TIME_LIMIT_SECONDS, MAX_CONSECUTIVE_TURN_TIMEOUTS } from "@/lib/gameConstants";
 import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
 import { play } from "@/lib/soundEngine";
@@ -32,7 +31,6 @@ export default function usePvpMatch(matchCode) {
   const [powerUsedThisTurn, setPowerUsedThisTurn] = useState(false);
   const [reshuffleModalOpen, setReshuffleModalOpen] = useState(false);
   const [effect, setEffect] = useState(null);
-  const [pendingUniqueAttack, setPendingUniqueAttack] = useState(null);
   const prevHpRef = useRef({ my: null, opp: null, round: null });
   const finalizedRef = useRef(false);
 
@@ -250,28 +248,12 @@ export default function usePvpMatch(matchCode) {
     [match, myRole, pendingHybrid, updateMatch]
   );
 
-  const attack = useCallback(async (timingMultiplier = 1, opts = {}) => {
+  const attack = useCallback(async (timingMultiplier = 1) => {
     if (!match || match.phase !== "battle" || match.turn !== myRole) return;
     play("attack");
     let attacker = match[`${myRole}Card`];
     const defender = match[`${oppRole}Card`];
     if (!attacker?.id || !defender?.id) return;
-    const usedList = match.usedUniqueAttacks || [];
-    const usingUniqueAttack = !!opts.uniqueAttack && !usedList.includes(attacker.id);
-    const ua = usingUniqueAttack ? opts.uniqueAttack : null;
-    const myMax = maxHealth(attacker);
-    const onUseHeal = ua && (ua.effectType === "healSelf" || ua.effectType === "healAll")
-      ? Math.round(myMax * effectiveEffectPercent(ua, ua.effectType === "healSelf" ? 50 : 30) / 100)
-      : 0;
-    const onDestroyHeal = ua && ua.effectType === "healTeamOnDestroy"
-      ? Math.round(myMax * effectiveEffectPercent(ua, 20) / 100)
-      : 0;
-    if (usingUniqueAttack) {
-      // Authoritative: persist on the shared PvpMatch record so both clients see
-      // the usage and a tampered/reconnecting client cannot reuse it.
-      base44.functions.invoke("recordPvpUniqueAttack", { matchCode, cardId: attacker.id }).catch(() => {});
-      setPendingUniqueAttack(null);
-    }
     const usingDoubleAttack = !!match[`${myRole}DoubleAttackActive`];
     const usingTripleDefense = !!match[`${oppRole}TripleDefenseActive`];
     const usingBlock = !!match[`${oppRole}BlockActive`];
@@ -281,7 +263,6 @@ export default function usePvpMatch(matchCode) {
 
     if (usingTierBoost) attacker = { ...attacker, ...tierBoost };
     if (usingHalfAttack) attacker = { ...attacker, attack: Math.round(attacker.attack * 0.5) };
-    if (usingUniqueAttack) attacker = { ...attacker, attack: uniqueAttackDamage(attacker, opts.uniqueAttack) };
 
     const result = usingBlock
       ? { tie: false, recoil: false, damage: 0, isCrit: false }
@@ -326,21 +307,11 @@ export default function usePvpMatch(matchCode) {
 
       // Show the finishing hit (damage number + arrow) first, before swapping cards/round,
       // so the destroy animation actually gets a chance to play.
-      const destroyUpdates = {
+      await updateMatch(match.id, {
         [`${targetRole}Hp`]: 0,
         log: matchOver ? `${winnerName} wins the match!` : `${winnerName} wins round ${match.round}!`,
         ...buffUpdates,
-      };
-      // Player won the round (targetRole === oppRole): apply unique-attack heals to
-      // the surviving card so the healed HP carries into the next round.
-      if (usingUniqueAttack && targetRole === oppRole) {
-        const healed = (match[`${myRole}Hp`] || 0) + onUseHeal + onDestroyHeal;
-        destroyUpdates[`${myRole}Hp`] = Math.min(myMax, healed);
-        if (onDestroyHeal > 0) {
-          destroyUpdates.log = effectLogMessage(opts.uniqueAttack, { attackerName: match[`${myRole}Card`]?.name, destroyed: true });
-        }
-      }
-      await updateMatch(match.id, destroyUpdates);
+      });
       await new Promise((resolve) => setTimeout(resolve, 900));
 
       if (matchOver) {
@@ -366,21 +337,14 @@ export default function usePvpMatch(matchCode) {
       return;
     }
 
-    const nonDestroyUpdates = {
+    updateMatch(match.id, {
       [`${targetRole}Hp`]: newHp,
       turn: oppRole,
       turnStartedAt: new Date().toISOString(),
       log: `${myRole === "player1" ? match.player1Name : match.player2Name} deals ${result.damage} damage!`,
       [`${myRole}Timeouts`]: 0,
       ...buffUpdates,
-    };
-    if (usingUniqueAttack && onUseHeal > 0) {
-      // recoil: targetRole === myRole and newHp is the player's reduced HP — heal
-      // on top of it; otherwise heal the (un-hit) attacker.
-      const base = targetRole === myRole ? newHp : (match[`${myRole}Hp`] || 0);
-      nonDestroyUpdates[`${myRole}Hp`] = Math.min(myMax, base + onUseHeal);
-    }
-    updateMatch(match.id, nonDestroyUpdates).then(() => {
+    }).then(() => {
       if (match.matchType === "offline") base44.functions.invoke("notifyTurnChange", { matchCode: match.code });
     });
   }, [match, myRole, oppRole, updateMatch]);
@@ -458,23 +422,6 @@ export default function usePvpMatch(matchCode) {
     await updateMatch(match.id, { phase: "matchEnd", log: "Your opponent forfeited!" });
     await finalizeOnce();
   }, [match, myRole, updateMatch]);
-
-  // ---- Unique Attack (PvP) ----
-  // Usage is authoritative on the shared PvpMatch.usedUniqueAttacks record (both
-  // clients read it), mirrored server-side via recordPvpUniqueAttack — never a
-  // client-only flag. Once per card per match; resets when a new PvpMatch is made.
-  const triggerUniqueAttack = useCallback(() => {
-    if (!match || match.phase !== "battle" || match.turn !== myRole) return null;
-    const card = match[`${myRole}Card`];
-    if (!card?.id) return null;
-    if ((match.usedUniqueAttacks || []).includes(card.id)) return null;
-    const def = cardUniqueAttack(card);
-    if (!def) return null;
-    setPendingUniqueAttack(def);
-    return def;
-  }, [match, myRole]);
-
-  const cancelUniqueAttack = useCallback(() => setPendingUniqueAttack(null), []);
 
   // ---- Power-ups (shared user cooldown fields, same as AI battles) ----
   const activatePower = useCallback(
@@ -687,9 +634,5 @@ export default function usePvpMatch(matchCode) {
     boostPreview,
     turnTimeLeft,
     effect,
-    pendingUniqueAttack,
-    triggerUniqueAttack,
-    cancelUniqueAttack,
-    uniqueAttackUsed: myCard ? (match?.usedUniqueAttacks || []).includes(myCard.id) : false,
   };
 }

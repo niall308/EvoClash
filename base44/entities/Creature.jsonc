@@ -26,8 +26,7 @@
     },
     "description": {
       "type": "string",
-      "default": "",
-      "description": "Admin-facing anatomy/design guide for the AI card generator."
+      "default": ""
     },
     "referenceImageUrl": {
       "type": "string",
@@ -43,48 +42,22 @@
       "type": "number",
       "default": 0,
       "minimum": 0,
-      "maximum": 200,
-      "description": "Damage percentage of the Unique Attack (0\u2013200). 0/empty falls back to 100% at resolve time."
+      "maximum": 250,
+      "description": "Damage percentage of the Unique Attack (0\u2013250)."
     },
     "uniqueAttackTarget": {
       "type": "string",
       "enum": [
         "single",
-        "all"
+        "multi"
       ],
       "default": "single",
-      "description": "Whether the Unique Attack hits one card (single) or all opposing cards (all). Legacy 'multi' is normalized to 'all'."
-    },
-    "uniqueAttackEffectType": {
-      "type": "string",
-      "enum": [
-        "none",
-        "healSelf",
-        "healAll",
-        "halfAttackTarget",
-        "healTeamOnDestroy"
-      ],
-      "default": "none",
-      "description": "Canonical structured effect identifier. Free-text uniqueAttackEffect is display-only and never executed as logic."
-    },
-    "uniqueAttackEffectPercent": {
-      "type": "number",
-      "default": 0,
-      "minimum": 0,
-      "maximum": 200,
-      "description": "Effect magnitude (percent) for effects that scale by a percentage (healSelf/healAll/healTeamOnDestroy)."
-    },
-    "uniqueAttackEffectDuration": {
-      "type": "number",
-      "default": 0,
-      "minimum": 0,
-      "maximum": 10,
-      "description": "Effect duration in turns for effects that persist (halfAttackTarget)."
+      "description": "Whether the Unique Attack hits one card (single) or all opposing cards (multi)."
     },
     "uniqueAttackEffect": {
       "type": "string",
       "default": "",
-      "description": "Admin-facing effect description (display only \u2014 not parsed as a mechanic)."
+      "description": "Additional effect description for the Unique Attack, e.g. 'halves target's attack next turn'."
     }
   },
   "required": [

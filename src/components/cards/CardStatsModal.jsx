@@ -43,8 +43,10 @@ export default function CardStatsModal({ card, onClose }) {
               </div>
               {ua.effectType === "none" ? (
                 <div className="text-white/40 text-xs">{UNIQUE_ATTACK_I18N.noEffect}</div>
+              ) : ua.effectType === "custom" ? (
+                <div className="text-amber-400 text-xs">{UNIQUE_ATTACK_I18N.customEffect}</div>
               ) : (
-                <div className="text-white/60 text-xs">{ua.effect || ua.effectType}</div>
+                <div className="text-white/60 text-xs">{ua.effect}</div>
               )}
             </div>
           )}

@@ -2,12 +2,6 @@ import { FREE_CARDS_INITIAL, FREE_CREATIONS_PER_DAY, EXTRA_CREATURE_COST } from 
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Frontend mirror of base44/shared/cardCreationLimits.ts. The BACKEND is the
-// authoritative source for card-creation limits and coin deductions (it
-// re-counts owned cards and re-checks the allowance on every create). This
-// module is an optimistic pre-flight for instant UI feedback only — never trust
-// it for security-sensitive decisions; the server always re-validates.
-//
 // Returns the current free-creation status for a user, given their lifetime
 // deck size fallback (for users created before totalCardsCreated existed).
 export function getCreationStatus(user, fallbackCount) {

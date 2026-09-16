@@ -1,20 +1,15 @@
 import React, { useState } from "react";
 import { Trash2, Pencil, Check, ChevronDown } from "lucide-react";
-import { EFFECT_TYPES, EFFECT_TYPE_IDS } from "@/lib/uniqueAttacks";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
 const TARGET_OPTIONS = [
-  { value: "single", label: "Single Card" },
-  { value: "all", label: "All Cards" },
+  { value: "single", label: "Single" },
+  { value: "multi", label: "Multi (all)" },
 ];
-const EFFECT_OPTIONS = EFFECT_TYPE_IDS.map((id) => ({ value: id, label: EFFECT_TYPES[id].label }));
-const MAX_PERCENT = 200;
-const MAX_DURATION = 10;
-const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
-function Picker({ label, options, value, onSelect }) {
+function TargetPicker({ value, onSelect }) {
   const [open, setOpen] = useState(false);
-  const current = options.find((o) => o.value === value)?.label || value;
+  const current = TARGET_OPTIONS.find((o) => o.value === value)?.label || value;
   return (
     <>
       <button
@@ -27,10 +22,10 @@ function Picker({ label, options, value, onSelect }) {
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent className="bg-[#0D1B2A] border-white/10 text-white">
           <DrawerHeader>
-            <DrawerTitle className="text-white">{label}</DrawerTitle>
+            <DrawerTitle className="text-white">Target</DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] space-y-1 max-h-[60vh] overflow-y-auto">
-            {options.map((o) => (
+          <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] space-y-1">
+            {TARGET_OPTIONS.map((o) => (
               <button
                 key={o.value}
                 type="button"
@@ -58,27 +53,20 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
   const [uaName, setUaName] = useState(creature.uniqueAttackName || "");
   const [uaPercent, setUaPercent] = useState(creature.uniqueAttackPercent?.toString() || "");
   const [uaTarget, setUaTarget] = useState(creature.uniqueAttackTarget || "single");
-  const [uaEffectType, setUaEffectType] = useState(creature.uniqueAttackEffectType || "none");
-  const [uaEffectPercent, setUaEffectPercent] = useState(creature.uniqueAttackEffectPercent?.toString() || "");
-  const [uaEffectDuration, setUaEffectDuration] = useState(creature.uniqueAttackEffectDuration?.toString() || "");
   const [uaEffect, setUaEffect] = useState(creature.uniqueAttackEffect || "");
-  const effectMeta = EFFECT_TYPES[uaEffectType];
 
   const save = async () => {
     await onUpdate(creature.id, {
       description: description.trim(),
       uniqueAttackName: uaName.trim(),
-      uniqueAttackPercent: clamp(Number(uaPercent) || 0, 0, MAX_PERCENT),
+      uniqueAttackPercent: Math.max(0, Math.min(250, Number(uaPercent) || 0)),
       uniqueAttackTarget: uaTarget,
-      uniqueAttackEffectType: uaEffectType,
-      uniqueAttackEffectPercent: effectMeta?.needsPercent ? clamp(Number(uaEffectPercent) || 0, 0, MAX_PERCENT) : 0,
-      uniqueAttackEffectDuration: effectMeta?.needsDuration ? clamp(Number(uaEffectDuration) || 0, 0, MAX_DURATION) : 0,
       uniqueAttackEffect: uaEffect.trim(),
     });
     setEditing(false);
   };
 
-  const hasUA = creature.uniqueAttackName || creature.uniqueAttackPercent || creature.uniqueAttackEffectType;
+  const hasUA = creature.uniqueAttackName || creature.uniqueAttackPercent || creature.uniqueAttackEffect;
 
   return (
     <div className="bg-white/5 rounded-lg px-3 py-2">
@@ -102,7 +90,7 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Anatomy guide for the AI card generator"
+            placeholder="Anatomy guide for the AI card generator, e.g. 'a winged bird-woman with a human female torso and face, feathered wings instead of arms, and taloned bird feet — never a snake or reptile body'"
             rows={3}
             className="w-full bg-white/10 rounded-md px-2.5 py-2 text-xs outline-none resize-none"
           />
@@ -119,55 +107,22 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
                 <input
                   type="number"
                   min={0}
-                  max={MAX_PERCENT}
+                  max={250}
                   value={uaPercent}
                   onChange={(e) => setUaPercent(e.target.value)}
-                  placeholder="Damage %"
+                  placeholder="Percent"
                   className="w-full bg-transparent text-xs outline-none"
                 />
                 <span className="text-[10px] text-white/40 ml-1">%</span>
               </div>
               <div className="flex-1">
-                <Picker label="Target" options={TARGET_OPTIONS} value={uaTarget} onSelect={setUaTarget} />
+                <TargetPicker value={uaTarget} onSelect={setUaTarget} />
               </div>
-            </div>
-            <div className="flex gap-2 mt-1.5">
-              <div className="flex-1">
-                <Picker label="Special Effect" options={EFFECT_OPTIONS} value={uaEffectType} onSelect={setUaEffectType} />
-              </div>
-              {effectMeta?.needsPercent && (
-                <div className="flex-1 flex items-center bg-white/10 rounded-md px-2.5 py-2">
-                  <input
-                    type="number"
-                    min={0}
-                    max={MAX_PERCENT}
-                    value={uaEffectPercent}
-                    onChange={(e) => setUaEffectPercent(e.target.value)}
-                    placeholder="Effect %"
-                    className="w-full bg-transparent text-xs outline-none"
-                  />
-                  <span className="text-[10px] text-white/40 ml-1">%</span>
-                </div>
-              )}
-              {effectMeta?.needsDuration && (
-                <div className="flex-1 flex items-center bg-white/10 rounded-md px-2.5 py-2">
-                  <input
-                    type="number"
-                    min={0}
-                    max={MAX_DURATION}
-                    value={uaEffectDuration}
-                    onChange={(e) => setUaEffectDuration(e.target.value)}
-                    placeholder="Turns"
-                    className="w-full bg-transparent text-xs outline-none"
-                  />
-                  <span className="text-[10px] text-white/40 ml-1">t</span>
-                </div>
-              )}
             </div>
             <input
               value={uaEffect}
               onChange={(e) => setUaEffect(e.target.value)}
-              placeholder="Effect description (display only — optional)"
+              placeholder="Additional effects (optional)"
               className="w-full bg-white/10 rounded-md px-2.5 py-2 text-xs outline-none mt-1.5"
             />
           </div>
@@ -185,14 +140,7 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
                 {creature.uniqueAttackPercent ? ` · ${creature.uniqueAttackPercent}%` : ""}
                 {creature.uniqueAttackTarget ? ` · ${creature.uniqueAttackTarget}` : ""}
               </p>
-              {creature.uniqueAttackEffectType && creature.uniqueAttackEffectType !== "none" && (
-                <p className="text-white/30">
-                  Effect: {EFFECT_TYPES[creature.uniqueAttackEffectType]?.label || creature.uniqueAttackEffectType}
-                  {creature.uniqueAttackEffectPercent ? ` (${creature.uniqueAttackEffectPercent}%)` : ""}
-                  {creature.uniqueAttackEffectDuration ? ` · ${creature.uniqueAttackEffectDuration} turn(s)` : ""}
-                </p>
-              )}
-              {creature.uniqueAttackEffect && <p className="text-white/30">{creature.uniqueAttackEffect}</p>}
+              {creature.uniqueAttackEffect && <p className="text-white/30">Effect: {creature.uniqueAttackEffect}</p>}
             </div>
           ) : null}
         </>
