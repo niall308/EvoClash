@@ -11,7 +11,7 @@ import {
 import { isTimestampReady, DAY_MS } from "@/lib/powerUps";
 import { base44 } from "@/api/base44Client";
 import { play } from "@/lib/soundEngine";
-import { cardUniqueAttack, clampPercent } from "@/lib/uniqueAttacks";
+import { cardUniqueAttack, uniqueAttackDamage, applyUniqueAttackEffect } from "@/lib/uniqueAttacks";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -353,8 +353,7 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
 
       const aIdx = attackerIdx;
       const aSlot = playerSlots[aIdx];
-      const pct = clampPercent(def.percent);
-      const attacker = { ...aSlot.card, attack: Math.floor(((aSlot.card.attack || 0) * pct) / 100) };
+      const attacker = { ...aSlot.card, attack: uniqueAttackDamage(aSlot.card, def) };
 
       // mark used locally + record server-side (authoritative reuse guard)
       usedUniqueAttacksRef.current = { ...usedUniqueAttacksRef.current, [aSlot.card.id]: true };
@@ -394,24 +393,35 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
         if (newHp <= 0) defeatedSlots.push(tIdx);
       }
 
-      // Apply the unique attack's mapped effect after all damage lands.
-      const et = def.effectType;
-      if (et === "healSelf50") {
-        setPlayerSlots((slots) => {
-          const next = [...slots];
-          const s = next[aIdx];
-          if (s) next[aIdx] = { ...s, hp: Math.min(s.maxHp, s.hp + Math.round(s.maxHp * 0.5)) };
-          return next;
-        });
-      } else if (et === "healAll30") {
-        setPlayerSlots((slots) => slots.map((s) => (s ? { ...s, hp: Math.min(s.maxHp, s.hp + Math.round(s.maxHp * 0.3)) } : s)));
-      } else if (et === "halfAttackTarget1" && def.target === "single" && chosenTargetIdx != null && aiSlots[chosenTargetIdx]) {
+      // Apply the unique attack's structured effect via the shared registry
+      // (src/lib/uniqueAttacks). Runs after all damage lands so destruction-
+      // triggered effects (healTeamOnDestroy) know how many cards were destroyed.
+      const destroyedCount = defeatedSlots.length;
+      const uaCtx = {
+        effectType: def.effectType,
+        attackerCard: aSlot.card,
+        destroyedCount,
+        ownActiveCards: playerSlots.filter((s) => s).map((s) => ({ card: s.card, maxHp: s.maxHp })),
+      };
+      const fx = applyUniqueAttackEffect(def.effectType, uaCtx);
+      if (fx.heals.length > 0) {
+        const healMap = new Map(fx.heals.map((h) => [h.card.id, h.amount]));
+        setPlayerSlots((slots) =>
+          slots.map((s) => {
+            if (!s) return s;
+            const amount = healMap.get(s.card.id);
+            return amount ? { ...s, hp: Math.min(s.maxHp, s.hp + amount) } : s;
+          })
+        );
+      }
+      if (fx.halfAttackTarget && def.target === "single" && chosenTargetIdx != null && aiSlots[chosenTargetIdx] && !defeatedSlots.includes(chosenTargetIdx)) {
         setAiDebuffs((d) => {
           const next = [...d];
           next[chosenTargetIdx] = { ...next[chosenTargetIdx], halfAttackTurns: 1 };
           return next;
         });
       }
+      if (fx.log) setLog(fx.log);
 
       // Resolve defeated enemy cards: lose a life, clear the slot, refill from the AI pool.
       for (const tIdx of defeatedSlots) {
