@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { validateCardData } from '../../shared/cardValidation.ts';
 import { getCreationStatus, buildCreationUpdate, EXTRA_CREATURE_COST } from '../../shared/cardCreationLimits.ts';
-import { buildUniqueAttackFields } from '../../shared/uniqueAttackNormalize.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -38,12 +37,15 @@ Deno.serve(async (req) => {
 
     // Stamp the admin-authored Unique Attack fields from the Creature entity
     // onto the new card so the in-game resolver (src/lib/uniqueAttacks) reads
-    // the configured attack instead of the static JSON fallback. Fields are
-    // normalized (percent clamped to 200, target single|all, canonical
-    // effectType) via the shared helper.
+    // the configured attack instead of the static JSON fallback.
     const creatureByBaseName = allCreatures.find((c) => c.baseName === safeCardData.baseName);
     const uniqueAttackFields = creatureByBaseName
-      ? buildUniqueAttackFields(creatureByBaseName)
+      ? {
+          uniqueAttackName: creatureByBaseName.uniqueAttackName || '',
+          uniqueAttackPercent: Math.max(0, Math.min(250, Number(creatureByBaseName.uniqueAttackPercent) || 0)),
+          uniqueAttackTarget: creatureByBaseName.uniqueAttackTarget === 'multi' ? 'multi' : 'single',
+          uniqueAttackEffect: creatureByBaseName.uniqueAttackEffect || '',
+        }
       : {};
 
     // Re-verify the free-creation allowance and coin cost against the real,

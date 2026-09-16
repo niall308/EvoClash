@@ -11,14 +11,7 @@ const ROLE_OPTIONS = [
 ];
 const TARGET_OPTIONS = [
   { value: "single", label: "Single" },
-  { value: "all", label: "All (every opposing card)" },
-];
-const EFFECT_TYPE_OPTIONS = [
-  { value: "none", label: "None (damage only)" },
-  { value: "healSelf", label: "Heal Self 50%" },
-  { value: "healAll", label: "Heal All Allies 30%" },
-  { value: "halfAttack", label: "Half Target's Attack (1 turn)" },
-  { value: "healTeamOnDestroy", label: "Heal Team 20% on Destroy" },
+  { value: "multi", label: "Multi (all)" },
 ];
 
 function PickerField({ label, options, value, onSelect, disabled }) {
@@ -72,7 +65,6 @@ export default function CreatureForm({ onAdd }) {
   const [uaPercent, setUaPercent] = useState("");
   const [uaTarget, setUaTarget] = useState("single");
   const [uaEffect, setUaEffect] = useState("");
-  const [uaEffectType, setUaEffectType] = useState("none");
   const isHybrid = category === "Hybrid";
 
   const submit = (e) => {
@@ -84,10 +76,9 @@ export default function CreatureForm({ onAdd }) {
       role: isHybrid ? "hyper_rare" : role,
       description: description.trim(),
       uniqueAttackName: uaName.trim(),
-      uniqueAttackPercent: Math.max(0, Math.min(200, Number(uaPercent) || 0)),
+      uniqueAttackPercent: Math.max(0, Math.min(250, Number(uaPercent) || 0)),
       uniqueAttackTarget: uaTarget,
       uniqueAttackEffect: uaEffect.trim(),
-      uniqueAttackEffectType: uaEffectType,
     });
     setBaseName("");
     setDescription("");
@@ -95,7 +86,6 @@ export default function CreatureForm({ onAdd }) {
     setUaPercent("");
     setUaTarget("single");
     setUaEffect("");
-    setUaEffectType("none");
   };
 
   return (
@@ -144,7 +134,7 @@ export default function CreatureForm({ onAdd }) {
             <input
               type="number"
               min={0}
-              max={200}
+              max={250}
               value={uaPercent}
               onChange={(e) => setUaPercent(e.target.value)}
               placeholder="Percent"
@@ -162,10 +152,6 @@ export default function CreatureForm({ onAdd }) {
           placeholder="Additional effects (optional, e.g. halves target's attack next turn)"
           className="w-full bg-white/10 rounded-md px-3 py-2 text-xs outline-none mt-2"
         />
-        <div className="mt-2">
-          <p className="text-[10px] text-white/40 mb-1">Effect mechanic (validated; text above is display-only)</p>
-          <PickerField label="Effect Type" options={EFFECT_TYPE_OPTIONS} value={uaEffectType} onSelect={setUaEffectType} />
-        </div>
       </div>
 
       <button type="submit" className="w-full flex items-center justify-center gap-1 bg-purple-600 rounded-md py-2 text-sm font-semibold">

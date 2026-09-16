@@ -12,7 +12,7 @@ import {
 import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
 import { base44 } from "@/api/base44Client";
 import { play } from "@/lib/soundEngine";
-import { cardUniqueAttack, uniqueAttackDamage, applyUniqueAttackEffect } from "@/lib/uniqueAttacks";
+import { cardUniqueAttack } from "@/lib/uniqueAttacks";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -304,7 +304,8 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       if (usingDoubleBonusDamage) attacker = { ...attacker, bonusDamage: (attacker.bonusDamage || 0) * 2 };
       if (usingMaximizeDefense) defender = { ...defender, defense: TIER_RANGES[defender.tier || 1].statMax };
       if (usingUniqueAttack) {
-        attacker = { ...attacker, attack: uniqueAttackDamage(attacker, opts.uniqueAttack) };
+        const pct = Math.max(1, Math.min(1000, Number(opts.uniqueAttack.percent) || 100));
+        attacker = { ...attacker, attack: Math.floor((attacker.attack * pct) / 100) };
         // Mark used locally + record server-side (authoritative reuse guard).
         usedUniqueAttacksRef.current = { ...usedUniqueAttacksRef.current, [playerCard.id]: true };
         setUsedUniqueAttacks((m) => ({ ...m, [playerCard.id]: true }));
@@ -426,31 +427,18 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       if ((usingBlock || usingNegate || usingDivineProtection) && damage === 0) matchBlocksRef.current += 1;
       await sleep(3000);
       setEffect(null);
-      // Apply the unique attack's structured effect via the shared registry
-      // (src/lib/uniqueAttacks). Runs AFTER damage is dealt so destruction-
-      // triggered effects (healTeamOnDestroy) know whether an opposing card
-      // was actually destroyed. Each hook translates the normalized result
-      // into its own state shape.
-      if (usingUniqueAttack) {
-        const destroyedOpponent = newTargetHP <= 0 && targetSide === "ai";
-        const uaCtx = {
-          effectType: opts.uniqueAttack.effectType,
-          attackerCard: playerCard,
-          destroyedCount: destroyedOpponent ? 1 : 0,
-          ownActiveCards: [{ card: playerCard, maxHp: maxHealth(playerCard) + (pfx.maxHPBonus || 0) }],
-        };
-        const fx = applyUniqueAttackEffect(opts.uniqueAttack.effectType, uaCtx);
-        for (const h of fx.heals) {
-          if (h.card.id === playerCard.id) {
-            const max = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
-            setPlayerHP((hp) => Math.min(max, hp + h.amount));
-          }
-        }
-        if (fx.halfAttackTarget && aiCard && !destroyedOpponent) {
+      // Apply the unique attack's mapped effect (mechanics that already exist in
+      // the engine). Unmapped ("custom") effects are shown as descriptive text only.
+      if (usingUniqueAttack && opts.uniqueAttack.effectType && opts.uniqueAttack.effectType !== "none") {
+        const et = opts.uniqueAttack.effectType;
+        if (et === "healSelf50" || et === "healAll30") {
+          const frac = et === "healSelf50" ? 0.5 : 0.3;
+          const max = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
+          setPlayerHP((hp) => Math.min(max, hp + Math.round(max * frac)));
+        } else if (et === "halfAttackTarget1" && aiCard) {
           halfAttackCardRef.current = aiCard;
           setHalfAttackTurnsLeft(1);
         }
-        if (fx.log) setLog(fx.log);
       }
       if (newTargetHP <= 0) {
         play("card_defeat");

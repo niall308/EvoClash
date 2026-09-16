@@ -42,34 +42,22 @@
       "type": "number",
       "default": 0,
       "minimum": 0,
-      "maximum": 200,
-      "description": "Damage percentage of the Unique Attack (0\u2013200). 0 means no Unique Attack configured."
+      "maximum": 250,
+      "description": "Damage percentage of the Unique Attack (0\u2013250)."
     },
     "uniqueAttackTarget": {
       "type": "string",
       "enum": [
         "single",
-        "all"
+        "multi"
       ],
       "default": "single",
-      "description": "Whether the Unique Attack hits one opposing card (single) or all opposing cards (all)."
+      "description": "Whether the Unique Attack hits one card (single) or all opposing cards (multi)."
     },
     "uniqueAttackEffect": {
       "type": "string",
       "default": "",
-      "description": "Free-text display-only description of the Unique Attack's effect (flavor text; the actual mechanic is uniqueAttackEffectType)."
-    },
-    "uniqueAttackEffectType": {
-      "type": "string",
-      "enum": [
-        "none",
-        "healSelf",
-        "healAll",
-        "halfAttack",
-        "healTeamOnDestroy"
-      ],
-      "default": "none",
-      "description": "Structured effect mechanic applied by the battle resolver. 'none' = damage only. healTeamOnDestroy heals all active allied cards 20% max HP after destroying an opposing card."
+      "description": "Additional effect description for the Unique Attack, e.g. 'halves target's attack next turn'."
     }
   },
   "required": [
