@@ -1,16 +1,15 @@
 import React, { useState } from "react";
 import { Trash2, Pencil, Check, ChevronDown } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { UNIQUE_ATTACK_EFFECT_OPTIONS } from "@/lib/uniqueAttackEffects";
 
 const TARGET_OPTIONS = [
   { value: "single", label: "Single" },
   { value: "multi", label: "Multi (all)" },
 ];
 
-function OptionPicker({ label, options, value, onSelect }) {
+function TargetPicker({ value, onSelect }) {
   const [open, setOpen] = useState(false);
-  const current = options.find((o) => o.value === value)?.label || value || "—";
+  const current = TARGET_OPTIONS.find((o) => o.value === value)?.label || value;
   return (
     <>
       <button
@@ -23,10 +22,10 @@ function OptionPicker({ label, options, value, onSelect }) {
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent className="bg-[#0D1B2A] border-white/10 text-white">
           <DrawerHeader>
-            <DrawerTitle className="text-white">{label}</DrawerTitle>
+            <DrawerTitle className="text-white">Target</DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] space-y-1 max-h-[60vh] overflow-y-auto">
-            {options.map((o) => (
+          <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] space-y-1">
+            {TARGET_OPTIONS.map((o) => (
               <button
                 key={o.value}
                 type="button"
@@ -55,7 +54,6 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
   const [uaPercent, setUaPercent] = useState(creature.uniqueAttackPercent?.toString() || "");
   const [uaTarget, setUaTarget] = useState(creature.uniqueAttackTarget || "single");
   const [uaEffect, setUaEffect] = useState(creature.uniqueAttackEffect || "");
-  const [uaEffectType, setUaEffectType] = useState(creature.uniqueAttackEffectType || "none");
 
   const save = async () => {
     await onUpdate(creature.id, {
@@ -64,7 +62,6 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
       uniqueAttackPercent: Math.max(0, Math.min(250, Number(uaPercent) || 0)),
       uniqueAttackTarget: uaTarget,
       uniqueAttackEffect: uaEffect.trim(),
-      uniqueAttackEffectType: uaEffectType,
     });
     setEditing(false);
   };
@@ -119,11 +116,8 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
                 <span className="text-[10px] text-white/40 ml-1">%</span>
               </div>
               <div className="flex-1">
-                <OptionPicker label="Target" options={TARGET_OPTIONS} value={uaTarget} onSelect={setUaTarget} />
+                <TargetPicker value={uaTarget} onSelect={setUaTarget} />
               </div>
-            </div>
-            <div className="flex mt-1.5">
-              <OptionPicker label="Effect type" options={UNIQUE_ATTACK_EFFECT_OPTIONS} value={uaEffectType} onSelect={setUaEffectType} />
             </div>
             <input
               value={uaEffect}
@@ -145,7 +139,6 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
                 <span className="text-amber-400/80 font-semibold">{creature.uniqueAttackName || "—"}</span>
                 {creature.uniqueAttackPercent ? ` · ${creature.uniqueAttackPercent}%` : ""}
                 {creature.uniqueAttackTarget ? ` · ${creature.uniqueAttackTarget}` : ""}
-                {creature.uniqueAttackEffectType && creature.uniqueAttackEffectType !== "none" ? ` · ${creature.uniqueAttackEffectType}` : ""}
               </p>
               {creature.uniqueAttackEffect && <p className="text-white/30">Effect: {creature.uniqueAttackEffect}</p>}
             </div>

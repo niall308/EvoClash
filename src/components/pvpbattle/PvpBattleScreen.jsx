@@ -14,8 +14,6 @@ import PowerButtons from "@/components/battle/PowerButtons";
 import ReshuffleModal from "@/components/battle/ReshuffleModal";
 import TypeChoiceModal from "@/components/battle/TypeChoiceModal";
 import AttackTimingBar from "@/components/battle/AttackTimingBar";
-import UniqueAttackButton from "@/components/battle/UniqueAttackButton";
-import UniqueAttackModal from "@/components/battle/UniqueAttackModal";
 import PvpMatchEndModal from "@/components/pvpbattle/PvpMatchEndModal";
 import BottomNav from "@/components/layout/BottomNav";
 import { maxHealth } from "@/lib/battleEngine";
@@ -48,21 +46,13 @@ export default function PvpBattleScreen({ matchCode }) {
     boostPreview,
     turnTimeLeft,
     effect,
-    usedUniqueAttacks,
-    pendingUniqueAttack,
-    triggerUniqueAttack,
-    cancelUniqueAttack,
-    uniqueAttackUsed,
   } = usePvpMatch(matchCode);
   const [showForfeitModal, setShowForfeitModal] = useState(false);
   const [readied, setReadied] = useState(false);
 
   React.useEffect(() => {
-    if (!(match?.phase === "battle" && match?.turn === myRole)) {
-      setReadied(false);
-      cancelUniqueAttack();
-    }
-  }, [match?.phase, match?.turn, myRole, cancelUniqueAttack]);
+    if (!(match?.phase === "battle" && match?.turn === myRole)) setReadied(false);
+  }, [match?.phase, match?.turn, myRole]);
 
   if (!match || !myRole) {
     return (
@@ -173,9 +163,6 @@ export default function PvpBattleScreen({ matchCode }) {
                 <Zap className="w-3.5 h-3.5" /> Tier Upgrade ready!
               </span>
             )}
-            {myCard?.id && !readied && (
-              <UniqueAttackButton card={myCard} used={uniqueAttackUsed} onClick={() => triggerUniqueAttack()} />
-            )}
             {readied ? (
               <AttackTimingBar
                 onLock={(multiplier) => {
@@ -236,18 +223,6 @@ export default function PvpBattleScreen({ matchCode }) {
         />
       )}
       {pendingHybrid?.id && <TypeChoiceModal onChoose={chooseHybridType} />}
-      {pendingUniqueAttack && (
-        <UniqueAttackModal
-          uniqueAttack={pendingUniqueAttack}
-          onUse={() => {
-            const ua = pendingUniqueAttack;
-            cancelUniqueAttack();
-            setReadied(false);
-            attack(1, { uniqueAttack: ua });
-          }}
-          onCancel={cancelUniqueAttack}
-        />
-      )}
 
       {match.phase === "matchEnd" && (
         <PvpMatchEndModal

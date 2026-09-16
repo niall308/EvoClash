@@ -13,7 +13,6 @@ import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/po
 import { base44 } from "@/api/base44Client";
 import { play } from "@/lib/soundEngine";
 import { cardUniqueAttack } from "@/lib/uniqueAttacks";
-import { applyUniqueAttackEffect } from "@/lib/uniqueAttackEffects";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -444,24 +443,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       if (newTargetHP <= 0) {
         play("card_defeat");
         const winnerSide = targetSide === "player" ? "ai" : "player";
-        let survivorHP = winnerSide === "player" ? playerHP : aiHP;
-        // Destroy-triggered unique-attack effects (e.g. heal_team_on_destroy):
-        // fire only after the attack actually destroyed the opponent's card.
-        if (usingUniqueAttack && winnerSide === "player" && opts.uniqueAttack) {
-          const healRes = applyUniqueAttackEffect(opts.uniqueAttack.effectType, {
-            destroyedOpponent: true,
-            healTeam: (fraction) => {
-              const max = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
-              const before = playerHP;
-              const after = Math.min(max, before + Math.round(max * fraction));
-              setPlayerHP(after);
-              return { totalHealed: after - before, cards: [{ id: playerCard.id, healed: after - before, maxHp: max }] };
-            },
-            addLog: (m) => setLog(m),
-            playSound: (k) => play(k),
-          });
-          if (healRes?.totalHealed) survivorHP += healRes.totalHealed;
-        }
+        const survivorHP = winnerSide === "player" ? playerHP : aiHP;
         setGraveyardCards((g) => [...g, defender]);
         await finishRound(winnerSide, survivorHP);
         busyRef.current = false;

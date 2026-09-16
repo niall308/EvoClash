@@ -31,7 +31,6 @@ Deno.serve(async (req) => {
           uniqueAttackPercent: Math.max(0, Math.min(250, Number(c.uniqueAttackPercent) || 0)),
           uniqueAttackTarget: c.uniqueAttackTarget === 'multi' ? 'multi' : 'single',
           uniqueAttackEffect: c.uniqueAttackEffect || '',
-          uniqueAttackEffectType: c.uniqueAttackEffectType || 'none',
         },
       ])
     );

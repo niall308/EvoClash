@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { CATEGORIES } from "@/lib/gameConstants";
 import { Plus, ChevronDown } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { UNIQUE_ATTACK_EFFECT_OPTIONS } from "@/lib/uniqueAttackEffects";
 
 const ALL_CATEGORIES = [...CATEGORIES, "Hybrid"];
 const ROLE_OPTIONS = [
@@ -66,7 +65,6 @@ export default function CreatureForm({ onAdd }) {
   const [uaPercent, setUaPercent] = useState("");
   const [uaTarget, setUaTarget] = useState("single");
   const [uaEffect, setUaEffect] = useState("");
-  const [uaEffectType, setUaEffectType] = useState("none");
   const isHybrid = category === "Hybrid";
 
   const submit = (e) => {
@@ -81,7 +79,6 @@ export default function CreatureForm({ onAdd }) {
       uniqueAttackPercent: Math.max(0, Math.min(250, Number(uaPercent) || 0)),
       uniqueAttackTarget: uaTarget,
       uniqueAttackEffect: uaEffect.trim(),
-      uniqueAttackEffectType: uaEffectType,
     });
     setBaseName("");
     setDescription("");
@@ -89,7 +86,6 @@ export default function CreatureForm({ onAdd }) {
     setUaPercent("");
     setUaTarget("single");
     setUaEffect("");
-    setUaEffectType("none");
   };
 
   return (
@@ -149,9 +145,6 @@ export default function CreatureForm({ onAdd }) {
           <div className="flex-1">
             <PickerField label="Target" options={TARGET_OPTIONS} value={uaTarget} onSelect={setUaTarget} />
           </div>
-        </div>
-        <div className="flex mt-2">
-          <PickerField label="Effect type" options={UNIQUE_ATTACK_EFFECT_OPTIONS} value={uaEffectType} onSelect={setUaEffectType} />
         </div>
         <input
           value={uaEffect}
