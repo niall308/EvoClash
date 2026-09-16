@@ -11,7 +11,7 @@ import { getActiveTabPath, getLastTabPath } from "@/lib/tabNavigation";
 const TABS = [
   { path: "/", label: "Play", icon: Swords },
   { path: "/deck", label: "Deck", icon: Layers },
-  { path: "/generate", label: "Generate", icon: Sparkles },
+  { path: "/generate", label: "Creature Card Creation", icon: Sparkles },
   { path: "/trades", label: "Trades", icon: ArrowLeftRight },
   { path: "/profile", label: "Profile", icon: User },
 ];

@@ -14,7 +14,7 @@ const BUTTONS = [
   { to: "/story", label: "Story Mode", icon: BookOpen, color: "from-purple-600 to-indigo-500" },
   { to: "/play", label: "Play", icon: Swords, color: "from-red-600 to-orange-500" },
   { to: "/deck", label: "Deck", icon: Layers, color: "from-blue-600 to-cyan-500" },
-  { to: "/generate", label: "AI Generate", icon: Sparkles, color: "from-purple-600 to-fuchsia-500" },
+  { to: "/generate", label: "Creature Card Creation", icon: Sparkles, color: "from-purple-600 to-fuchsia-500" },
   { to: "/trades", label: "Trades", icon: ArrowLeftRight, color: "from-sky-600 to-cyan-500" },
   { to: "/profile", label: "Profile", icon: User, color: "from-emerald-600 to-teal-500" },
 ];

@@ -185,7 +185,7 @@ export default function CardGenerate() {
           </div>
         </div>
       )}
-      <h1 className="text-2xl font-black mb-1 mt-2">AI Generate</h1>
+      <h1 className="text-2xl font-black mb-1 mt-2">Creature Card Creation</h1>
       <p className="text-white/50 text-xs mb-1">{count === null ? "Loading..." : `${count}/50 cards owned`}</p>
       <p className="text-[11px] mb-8 h-4">
         {status && !isAdmin && status.pastInitialFree && (
