@@ -12,7 +12,7 @@ import {
 import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
 import { base44 } from "@/api/base44Client";
 import { play } from "@/lib/soundEngine";
-import { cardUniqueAttack } from "@/lib/uniqueAttacks";
+import { cardUniqueAttack, applyUniqueAttackEffect, clampPercent } from "@/lib/uniqueAttacks";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -304,7 +304,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       if (usingDoubleBonusDamage) attacker = { ...attacker, bonusDamage: (attacker.bonusDamage || 0) * 2 };
       if (usingMaximizeDefense) defender = { ...defender, defense: TIER_RANGES[defender.tier || 1].statMax };
       if (usingUniqueAttack) {
-        const pct = Math.max(1, Math.min(1000, Number(opts.uniqueAttack.percent) || 100));
+        const pct = clampPercent(opts.uniqueAttack.percent);
         attacker = { ...attacker, attack: Math.floor((attacker.attack * pct) / 100) };
         // Mark used locally + record server-side (authoritative reuse guard).
         usedUniqueAttacksRef.current = { ...usedUniqueAttacksRef.current, [playerCard.id]: true };
@@ -427,18 +427,23 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       if ((usingBlock || usingNegate || usingDivineProtection) && damage === 0) matchBlocksRef.current += 1;
       await sleep(3000);
       setEffect(null);
-      // Apply the unique attack's mapped effect (mechanics that already exist in
-      // the engine). Unmapped ("custom") effects are shown as descriptive text only.
-      if (usingUniqueAttack && opts.uniqueAttack.effectType && opts.uniqueAttack.effectType !== "none") {
-        const et = opts.uniqueAttack.effectType;
-        if (et === "healSelf50" || et === "healAll30") {
-          const frac = et === "healSelf50" ? 0.5 : 0.3;
-          const max = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
-          setPlayerHP((hp) => Math.min(max, hp + Math.round(max * frac)));
-        } else if (et === "halfAttackTarget1" && aiCard) {
-          halfAttackCardRef.current = aiCard;
-          setHalfAttackTurnsLeft(1);
-        }
+      // Apply the unique attack's effect via the shared registry (src/lib/uniqueAttacks).
+      // The registry owns the rules (including heal_team_on_destroy, which only fires
+      // when this attack destroyed a card); the hook only owns state mutation. In 1v1
+      // the "team" is the single active card, so healSelf and healTeam both heal it.
+      if (usingUniqueAttack) {
+        const maxHp = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
+        applyUniqueAttackEffect(opts.uniqueAttack, { destroyedOpponentCount: newTargetHP <= 0 ? 1 : 0 }, {
+          healSelf: (pct) => setPlayerHP((hp) => Math.min(maxHp, hp + Math.round(maxHp * (pct / 100)))),
+          healTeam: (pct) => setPlayerHP((hp) => Math.min(maxHp, hp + Math.round(maxHp * (pct / 100)))),
+          halfAttackTarget: (turns) => {
+            if (aiCard) {
+              halfAttackCardRef.current = aiCard;
+              setHalfAttackTurnsLeft(turns);
+            }
+          },
+          log: (msg) => setLog(msg),
+        });
       }
       if (newTargetHP <= 0) {
         play("card_defeat");

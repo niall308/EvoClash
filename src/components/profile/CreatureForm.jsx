@@ -1,17 +1,15 @@
 import React, { useState } from "react";
 import { CATEGORIES } from "@/lib/gameConstants";
-import { Plus, ChevronDown } from "lucide-react";
+import { Plus, ChevronDown, Loader2 } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import UniqueAttackEditor from "@/components/profile/UniqueAttackEditor";
+import { validateUniqueAttack, normalizeUniqueAttackForm } from "@/lib/uniqueAttacks";
 
 const ALL_CATEGORIES = [...CATEGORIES, "Hybrid"];
 const ROLE_OPTIONS = [
   { value: "predator", label: "Predator" },
   { value: "prey", label: "Prey" },
   { value: "balanced", label: "Balanced" },
-];
-const TARGET_OPTIONS = [
-  { value: "single", label: "Single" },
-  { value: "multi", label: "Multi (all)" },
 ];
 
 function PickerField({ label, options, value, onSelect, disabled }) {
@@ -56,36 +54,45 @@ function PickerField({ label, options, value, onSelect, disabled }) {
   );
 }
 
+const emptyUA = {
+  uniqueAttackName: "",
+  uniqueAttackPercent: "",
+  uniqueAttackTarget: "single",
+  uniqueAttackEffectType: "none",
+  uniqueAttackEffectPercent: "",
+  uniqueAttackEffectDuration: "",
+  uniqueAttackEffect: "",
+};
+
 export default function CreatureForm({ onAdd }) {
   const [baseName, setBaseName] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [role, setRole] = useState("balanced");
   const [description, setDescription] = useState("");
-  const [uaName, setUaName] = useState("");
-  const [uaPercent, setUaPercent] = useState("");
-  const [uaTarget, setUaTarget] = useState("single");
-  const [uaEffect, setUaEffect] = useState("");
+  const [ua, setUa] = useState(emptyUA);
+  const [saving, setSaving] = useState(false);
   const isHybrid = category === "Hybrid";
+  const { valid } = validateUniqueAttack(ua);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (!baseName.trim()) return;
-    onAdd({
-      baseName: baseName.trim(),
-      category,
-      role: isHybrid ? "hyper_rare" : role,
-      description: description.trim(),
-      uniqueAttackName: uaName.trim(),
-      uniqueAttackPercent: Math.max(0, Math.min(250, Number(uaPercent) || 0)),
-      uniqueAttackTarget: uaTarget,
-      uniqueAttackEffect: uaEffect.trim(),
-    });
-    setBaseName("");
-    setDescription("");
-    setUaName("");
-    setUaPercent("");
-    setUaTarget("single");
-    setUaEffect("");
+    if (!baseName.trim() || saving || !valid) return;
+    setSaving(true);
+    try {
+      const normalized = normalizeUniqueAttackForm(ua);
+      await onAdd({
+        baseName: baseName.trim(),
+        category,
+        role: isHybrid ? "hyper_rare" : role,
+        description: description.trim(),
+        ...normalized,
+      });
+      setBaseName("");
+      setDescription("");
+      setUa(emptyUA);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -121,41 +128,15 @@ export default function CreatureForm({ onAdd }) {
         className="w-full bg-white/10 rounded-md px-3 py-2 text-xs outline-none resize-none"
       />
 
-      <div className="pt-1 border-t border-white/10">
-        <p className="text-[11px] font-bold text-amber-400/80 pt-1.5 pb-0.5">Unique Attack</p>
-        <input
-          value={uaName}
-          onChange={(e) => setUaName(e.target.value)}
-          placeholder="Attack name (e.g. Devouring Chomp)"
-          className="w-full bg-white/10 rounded-md px-3 py-2 text-sm outline-none"
-        />
-        <div className="flex gap-2 mt-2 items-center">
-          <div className="flex-1 flex items-center bg-white/10 rounded-md px-3 py-2">
-            <input
-              type="number"
-              min={0}
-              max={250}
-              value={uaPercent}
-              onChange={(e) => setUaPercent(e.target.value)}
-              placeholder="Percent"
-              className="w-full bg-transparent text-sm outline-none"
-            />
-            <span className="text-xs text-white/40 ml-1">%</span>
-          </div>
-          <div className="flex-1">
-            <PickerField label="Target" options={TARGET_OPTIONS} value={uaTarget} onSelect={setUaTarget} />
-          </div>
-        </div>
-        <input
-          value={uaEffect}
-          onChange={(e) => setUaEffect(e.target.value)}
-          placeholder="Additional effects (optional, e.g. halves target's attack next turn)"
-          className="w-full bg-white/10 rounded-md px-3 py-2 text-xs outline-none mt-2"
-        />
-      </div>
+      <UniqueAttackEditor value={ua} onChange={setUa} />
 
-      <button type="submit" className="w-full flex items-center justify-center gap-1 bg-purple-600 rounded-md py-2 text-sm font-semibold">
-        <Plus className="w-4 h-4" /> Add Creature
+      <button
+        type="submit"
+        disabled={saving || !baseName.trim() || !valid}
+        className="w-full flex items-center justify-center gap-1 bg-purple-600 rounded-md py-2 text-sm font-semibold disabled:opacity-40"
+      >
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+        {saving ? "Saving…" : "Add Creature"}
       </button>
     </form>
   );

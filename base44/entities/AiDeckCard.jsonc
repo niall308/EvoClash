@@ -64,26 +64,49 @@
     "uniqueAttackName": {
       "type": "string",
       "default": "",
-      "description": "Display name of this creature's Unique Attack, stamped from the Creature entity at deck generation."
+      "description": "Canonical UA field stamped from the Creature entity at deck generation."
     },
     "uniqueAttackPercent": {
       "type": "number",
       "default": 0,
       "minimum": 0,
-      "maximum": 250
+      "maximum": 200
     },
     "uniqueAttackTarget": {
       "type": "string",
       "enum": [
         "single",
-        "multi"
+        "all"
       ],
       "default": "single"
+    },
+    "uniqueAttackEffectType": {
+      "type": "string",
+      "enum": [
+        "none",
+        "heal_self",
+        "heal_team",
+        "heal_team_on_destroy",
+        "half_attack_target",
+        "custom"
+      ],
+      "default": "none"
+    },
+    "uniqueAttackEffectPercent": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 200
+    },
+    "uniqueAttackEffectDuration": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0
     },
     "uniqueAttackEffect": {
       "type": "string",
       "default": "",
-      "description": "Additional effect description for the Unique Attack, stamped from the Creature entity."
+      "description": "Display description only, stamped from the Creature entity."
     }
   },
   "required": [

@@ -23,13 +23,19 @@ Deno.serve(async (req) => {
     // creature's UA and re-syncing clears it from cards too. Empty fields make
     // the resolver fall back to data/uniqueAttacks.json, so un-configured
     // creatures keep their static behavior.
+    // Canonical UA model: cap 200, normalize legacy "multi" → "all", and stamp
+    // the structured effectType + parameters onto every existing card.
+    const normTarget = (t: string) => (t === 'all' || t === 'multi' ? 'all' : 'single');
     const uaByBase: Record<string, object> = Object.fromEntries(
       creatures.map((c) => [
         c.baseName,
         {
           uniqueAttackName: c.uniqueAttackName || '',
-          uniqueAttackPercent: Math.max(0, Math.min(250, Number(c.uniqueAttackPercent) || 0)),
-          uniqueAttackTarget: c.uniqueAttackTarget === 'multi' ? 'multi' : 'single',
+          uniqueAttackPercent: Math.max(0, Math.min(200, Number(c.uniqueAttackPercent) || 0)),
+          uniqueAttackTarget: normTarget(c.uniqueAttackTarget),
+          uniqueAttackEffectType: c.uniqueAttackEffectType || 'none',
+          uniqueAttackEffectPercent: Math.max(0, Math.min(200, Number(c.uniqueAttackEffectPercent) || 0)),
+          uniqueAttackEffectDuration: Math.max(0, Number(c.uniqueAttackEffectDuration) || 0),
           uniqueAttackEffect: c.uniqueAttackEffect || '',
         },
       ])

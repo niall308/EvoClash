@@ -198,6 +198,14 @@
       "type": "number",
       "default": 0,
       "description": "Consecutive turn timeouts for player2. Resets to 0 whenever player2 attacks."
+    },
+    "usedUniqueAttacks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Card ids whose Unique Attack has been used this match. Dormant authoritative guard for when unique attacks are wired into PvP; both clients must honor it to prevent replayed/reused attacks."
     }
   },
   "required": [

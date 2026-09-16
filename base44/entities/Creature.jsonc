@@ -26,7 +26,8 @@
     },
     "description": {
       "type": "string",
-      "default": ""
+      "default": "",
+      "description": "Anatomy/design guide for the AI card art generator."
     },
     "referenceImageUrl": {
       "type": "string",
@@ -36,28 +37,54 @@
     "uniqueAttackName": {
       "type": "string",
       "default": "",
-      "description": "Display name of this creature's Unique Attack."
+      "description": "Canonical UA field: display name of this creature's Unique Attack."
     },
     "uniqueAttackPercent": {
       "type": "number",
       "default": 0,
       "minimum": 0,
-      "maximum": 250,
-      "description": "Damage percentage of the Unique Attack (0\u2013250)."
+      "maximum": 200,
+      "description": "Canonical UA field: damage percentage (0\u2013200)."
     },
     "uniqueAttackTarget": {
       "type": "string",
       "enum": [
         "single",
-        "multi"
+        "all"
       ],
       "default": "single",
-      "description": "Whether the Unique Attack hits one card (single) or all opposing cards (multi)."
+      "description": "Canonical UA field: 'single' hits one card, 'all' hits every opposing card."
+    },
+    "uniqueAttackEffectType": {
+      "type": "string",
+      "enum": [
+        "none",
+        "heal_self",
+        "heal_team",
+        "heal_team_on_destroy",
+        "half_attack_target",
+        "custom"
+      ],
+      "default": "none",
+      "description": "Canonical UA field: structured effect identifier. See src/lib/uniqueAttacks.js EFFECT_TYPES."
+    },
+    "uniqueAttackEffectPercent": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 200,
+      "description": "Canonical UA field: numeric parameter for effects that scale by percentage (heal amount, etc.)."
+    },
+    "uniqueAttackEffectDuration": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "description": "Canonical UA field: numeric parameter for effects with a duration in turns (e.g. half_attack_target)."
     },
     "uniqueAttackEffect": {
       "type": "string",
       "default": "",
-      "description": "Additional effect description for the Unique Attack, e.g. 'halves target's attack next turn'."
+      "description": "Canonical UA field: admin-facing display description only. The mechanic is driven by uniqueAttackEffectType, not this text."
     }
   },
   "required": [

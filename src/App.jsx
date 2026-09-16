@@ -47,7 +47,6 @@ const Trades = lazy(() => import('@/pages/Trades'));
 const StoryMap = lazy(() => import('@/pages/StoryMap'));
 const StoryBattle = lazy(() => import('@/pages/StoryBattle'));
 const Battle3v3 = lazy(() => import('@/pages/Battle3v3'));
-// Add page imports here
 
 function RouteLoader() {
   return (
@@ -126,7 +125,6 @@ const AuthenticatedApp = () => {
           <Route path="/battle-3v3" element={<Battle3v3 />} />
           <Route path="/pvp-battle/:code" element={<PvpBattle />} />
         </Route>
-        {/* Add your page Route elements here */}
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </Suspense>

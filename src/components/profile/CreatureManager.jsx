@@ -7,18 +7,26 @@ import { RefreshCw } from "lucide-react";
 
 export default function CreatureManager() {
   const [creatures, setCreatures] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const list = await base44.entities.Creature.list();
-      setCreatures(list);
+      try {
+        const list = await base44.entities.Creature.list();
+        setCreatures(list);
+      } catch (err) {
+        alert("Failed to load creatures: " + (err?.message || err));
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
   const handleAdd = async (data) => {
     const created = await base44.entities.Creature.create(data);
     setCreatures((c) => [...c, created]);
+    return created;
   };
 
   const handleDelete = async (id) => {
@@ -29,6 +37,7 @@ export default function CreatureManager() {
   const handleUpdate = async (id, data) => {
     const updated = await base44.entities.Creature.update(id, data);
     setCreatures((c) => c.map((x) => (x.id === id ? updated : x)));
+    return updated;
   };
 
   const handleSyncUA = async () => {
@@ -66,7 +75,8 @@ export default function CreatureManager() {
         {creatures.map((c) => (
           <CreatureRow key={c.id} creature={c} onDelete={handleDelete} onUpdate={handleUpdate} />
         ))}
-        {creatures.length === 0 && <p className="text-white/40 text-sm">No creatures yet.</p>}
+        {loading && <p className="text-white/40 text-sm">Loading creatures…</p>}
+        {!loading && creatures.length === 0 && <p className="text-white/40 text-sm">No creatures yet.</p>}
       </div>
     </div>
   );

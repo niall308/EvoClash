@@ -109,28 +109,54 @@
     "uniqueAttackName": {
       "type": "string",
       "default": "",
-      "description": "Display name of this creature's Unique Attack, stamped from the Creature entity at creation."
+      "description": "Canonical UA field stamped from the Creature entity at creation."
     },
     "uniqueAttackPercent": {
       "type": "number",
       "default": 0,
       "minimum": 0,
-      "maximum": 250,
-      "description": "Damage percentage of the Unique Attack (0\u2013250), stamped from the Creature entity."
+      "maximum": 200,
+      "description": "Canonical UA field: damage percentage (0\u2013200), stamped from the Creature entity."
     },
     "uniqueAttackTarget": {
       "type": "string",
       "enum": [
         "single",
-        "multi"
+        "all"
       ],
       "default": "single",
-      "description": "Whether the Unique Attack hits one card (single) or all opposing cards (multi)."
+      "description": "Canonical UA field: 'single' or 'all'."
+    },
+    "uniqueAttackEffectType": {
+      "type": "string",
+      "enum": [
+        "none",
+        "heal_self",
+        "heal_team",
+        "heal_team_on_destroy",
+        "half_attack_target",
+        "custom"
+      ],
+      "default": "none",
+      "description": "Canonical UA field: structured effect identifier, stamped from the Creature entity."
+    },
+    "uniqueAttackEffectPercent": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 200,
+      "description": "Canonical UA field: effect percentage parameter, stamped from the Creature entity."
+    },
+    "uniqueAttackEffectDuration": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "description": "Canonical UA field: effect duration in turns, stamped from the Creature entity."
     },
     "uniqueAttackEffect": {
       "type": "string",
       "default": "",
-      "description": "Additional effect description for the Unique Attack, stamped from the Creature entity."
+      "description": "Canonical UA field: display description only, stamped from the Creature entity."
     }
   },
   "required": [
