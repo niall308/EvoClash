@@ -16,6 +16,7 @@ export const SOUND_KEYS = [
   { key: "card_upgrade", label: "Upgrade Card Sound", category: "action" },
   { key: "unique_card_gen", label: "Unique Card Generation Sound", category: "action" },
   { key: "card_gen", label: "Card Generation Sound", category: "action" },
+  { key: "heal", label: "Heal Sound", category: "action" },
 ];
 
 export const SOUND_MAP = Object.fromEntries(SOUND_KEYS.map((s) => [s.key, s]));

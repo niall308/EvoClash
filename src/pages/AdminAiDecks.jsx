@@ -60,6 +60,7 @@ export default function AdminAiDecks() {
         uniqueAttackPercent: c?.uniqueAttackPercent || 0,
         uniqueAttackTarget: c?.uniqueAttackTarget === "multi" ? "multi" : "single",
         uniqueAttackEffect: c?.uniqueAttackEffect || "",
+        uniqueAttackEffectType: c?.uniqueAttackEffectType || "none",
       });
       setProgress(finished.length);
     }

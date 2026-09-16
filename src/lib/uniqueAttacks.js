@@ -71,6 +71,7 @@ export function cardUniqueAttack(card) {
   if (!card || !card.baseName) return null;
   const hasAdmin =
     !!card.uniqueAttackName ||
+    !!card.uniqueAttackEffectType ||
     (card.uniqueAttackPercent || 0) > 0 ||
     !!card.uniqueAttackEffect;
   if (hasAdmin) {
@@ -79,7 +80,9 @@ export function cardUniqueAttack(card) {
       percent: clampPercent(card.uniqueAttackPercent || 100),
       target: card.uniqueAttackTarget === "multi" ? "all" : "single",
       effect: card.uniqueAttackEffect || "",
-      effectType: mapEffectType(card.uniqueAttackEffect),
+      // Prefer the admin-authored structured effect type; fall back to free-text
+      // matching only when no explicit type was stamped (backward compat).
+      effectType: card.uniqueAttackEffectType || mapEffectType(card.uniqueAttackEffect),
     };
   }
   return getUniqueAttackDefinition(card.baseName);

@@ -58,6 +58,19 @@
       "type": "string",
       "default": "",
       "description": "Additional effect description for the Unique Attack, e.g. 'halves target's attack next turn'."
+    },
+    "uniqueAttackEffectType": {
+      "type": "string",
+      "enum": [
+        "none",
+        "healSelf50",
+        "healAll30",
+        "halfAttackTarget1",
+        "heal_team_on_destroy",
+        "custom"
+      ],
+      "default": "none",
+      "description": "Structured Unique Attack effect. 'none' = no mechanic (descriptive only). Legacy healSelf50/healAll30/halfAttackTarget1 are applied inline by the battle hooks; heal_team_on_destroy is resolved via the shared effect registry (src/lib/uniqueAttackEffects) after a card is destroyed."
     }
   },
   "required": [

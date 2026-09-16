@@ -12,6 +12,7 @@ import { isTimestampReady, DAY_MS } from "@/lib/powerUps";
 import { base44 } from "@/api/base44Client";
 import { play } from "@/lib/soundEngine";
 import { cardUniqueAttack, clampPercent } from "@/lib/uniqueAttacks";
+import { applyUniqueAttackEffect } from "@/lib/uniqueAttackEffects";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -412,6 +413,30 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
           return next;
         });
       }
+
+      // Destroy-triggered unique-attack effects (e.g. heal_team_on_destroy): fire
+      // only after the attack destroyed at least one opposing card. Heals every
+      // active card on the attacking (player) team by the effect's fraction,
+      // clamped to each card's max health.
+      applyUniqueAttackEffect(def.effectType, {
+        destroyedOpponent: defeatedSlots.length > 0,
+        healTeam: (fraction) => {
+          let totalHealed = 0;
+          const cards = [];
+          const next = playerSlots.map((s) => {
+            if (!s) return s;
+            const healAmt = Math.round(s.maxHp * fraction);
+            const newHp = Math.min(s.maxHp, s.hp + healAmt);
+            totalHealed += newHp - s.hp;
+            cards.push({ id: s.card.id, healed: newHp - s.hp, maxHp: s.maxHp });
+            return { ...s, hp: newHp };
+          });
+          setPlayerSlots(next);
+          return { totalHealed, cards };
+        },
+        addLog: (m) => setLog(m),
+        playSound: (k) => play(k),
+      });
 
       // Resolve defeated enemy cards: lose a life, clear the slot, refill from the AI pool.
       for (const tIdx of defeatedSlots) {

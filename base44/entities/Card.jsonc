@@ -131,6 +131,19 @@
       "type": "string",
       "default": "",
       "description": "Additional effect description for the Unique Attack, stamped from the Creature entity."
+    },
+    "uniqueAttackEffectType": {
+      "type": "string",
+      "enum": [
+        "none",
+        "healSelf50",
+        "healAll30",
+        "halfAttackTarget1",
+        "heal_team_on_destroy",
+        "custom"
+      ],
+      "default": "none",
+      "description": "Structured Unique Attack effect, stamped from the Creature entity. Resolved by src/lib/uniqueAttacks (cardUniqueAttack) and applied by the battle hooks / shared effect registry."
     }
   },
   "required": [
