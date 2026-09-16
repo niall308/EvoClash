@@ -50,16 +50,20 @@ export default function AdminAiDecks() {
         isHybrid: !!card.isHybrid,
       });
       // Stamp the admin-authored Unique Attack fields from the Creature entity
-      // onto every AI deck card so the in-game resolver uses them.
+      // onto every AI deck card so the in-game resolver uses them. Fields are
+      // normalized (percent clamped to 200, target single|all, canonical
+      // effectType) to match createGeneratedCard / syncUniqueAttacks.
       const c = creatureByBase[card.baseName];
+      const uaConfigured = !!(c?.uniqueAttackName || (c?.uniqueAttackPercent || 0) > 0 || c?.uniqueAttackEffect);
       finished.push({
         ...card,
         imageUrl: data.url,
         difficulty,
         uniqueAttackName: c?.uniqueAttackName || "",
-        uniqueAttackPercent: c?.uniqueAttackPercent || 0,
-        uniqueAttackTarget: c?.uniqueAttackTarget === "multi" ? "multi" : "single",
+        uniqueAttackPercent: Math.max(0, Math.min(200, Number(c?.uniqueAttackPercent) || 0)),
+        uniqueAttackTarget: c?.uniqueAttackTarget === "all" || c?.uniqueAttackTarget === "multi" ? "all" : "single",
         uniqueAttackEffect: c?.uniqueAttackEffect || "",
+        uniqueAttackEffectType: uaConfigured ? (c?.uniqueAttackEffectType || "none") : "none",
       });
       setProgress(finished.length);
     }

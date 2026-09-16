@@ -1,16 +1,26 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { buildUniqueAttackFields, normalizeTarget, normalizeEffectType, clampPercent } from '../../shared/uniqueAttackNormalize.ts';
 
 // Admin-only maintenance function. Stamps the admin-authored Unique Attack
 // fields (uniqueAttackName / uniqueAttackPercent / uniqueAttackTarget /
-// uniqueAttackEffect) from each configured Creature onto every existing Card
-// and AiDeckCard that shares its baseName, so the in-game resolver
-// (src/lib/uniqueAttacks.cardUniqueAttack) uses the configured attack instead
-// of the static JSON fallback.
+// uniqueAttackEffect / uniqueAttackEffectType) from each configured Creature
+// onto every existing Card and AiDeckCard that shares its baseName, so the
+// in-game resolver uses the configured attack instead of the static JSON
+// fallback.
 //
-// Creatures with no UA configured are skipped (their cards keep falling back
-// to data/uniqueAttacks.json). Run this after editing a creature's UA to push
-// the change to cards that already exist — newly created cards are stamped
-// automatically at creation time (createGeneratedCard / AdminAiDecks).
+// This is the copy-at-creation backfill: editing a Creature does NOT change
+// cards that already exist until an admin runs this. Newly created cards are
+// stamped automatically at creation time (createGeneratedCard / AdminAiDecks).
+//
+// Normalization performed on every stamped card:
+//   - percent clamped to 0–200
+//   - target normalized to single|all (legacy "multi" → "all")
+//   - effectType normalized to the canonical enum (legacy names → canonical)
+//   - malformed UA repaired (invalid effectType → "none", percent → clamped)
+//
+// Creatures with no UA configured are stamped with empty fields so reverting a
+// creature's UA and re-syncing clears it from cards (the resolver then falls
+// back to data/uniqueAttacks.json).
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -19,20 +29,8 @@ Deno.serve(async (req) => {
     if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
 
     const creatures = await base44.asServiceRole.entities.Creature.list(1000);
-    // Stamp EVERY creature's current UA (empty included) so that reverting a
-    // creature's UA and re-syncing clears it from cards too. Empty fields make
-    // the resolver fall back to data/uniqueAttacks.json, so un-configured
-    // creatures keep their static behavior.
     const uaByBase: Record<string, object> = Object.fromEntries(
-      creatures.map((c) => [
-        c.baseName,
-        {
-          uniqueAttackName: c.uniqueAttackName || '',
-          uniqueAttackPercent: Math.max(0, Math.min(250, Number(c.uniqueAttackPercent) || 0)),
-          uniqueAttackTarget: c.uniqueAttackTarget === 'multi' ? 'multi' : 'single',
-          uniqueAttackEffect: c.uniqueAttackEffect || '',
-        },
-      ])
+      creatures.map((c) => [c.baseName, buildUniqueAttackFields(c)])
     );
     const configuredCount = creatures.filter(
       (c) => !!c.uniqueAttackName || (c.uniqueAttackPercent || 0) > 0 || !!c.uniqueAttackEffect

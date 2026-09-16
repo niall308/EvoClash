@@ -4,12 +4,19 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 
 const TARGET_OPTIONS = [
   { value: "single", label: "Single" },
-  { value: "multi", label: "Multi (all)" },
+  { value: "all", label: "All (every opposing card)" },
+];
+const EFFECT_TYPE_OPTIONS = [
+  { value: "none", label: "None (damage only)" },
+  { value: "healSelf", label: "Heal Self 50%" },
+  { value: "healAll", label: "Heal All Allies 30%" },
+  { value: "halfAttack", label: "Half Target's Attack (1 turn)" },
+  { value: "healTeamOnDestroy", label: "Heal Team 20% on Destroy" },
 ];
 
-function TargetPicker({ value, onSelect }) {
+function PickerField({ label, options, value, onSelect }) {
   const [open, setOpen] = useState(false);
-  const current = TARGET_OPTIONS.find((o) => o.value === value)?.label || value;
+  const current = options.find((o) => o.value === value)?.label || value;
   return (
     <>
       <button
@@ -22,10 +29,10 @@ function TargetPicker({ value, onSelect }) {
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent className="bg-[#0D1B2A] border-white/10 text-white">
           <DrawerHeader>
-            <DrawerTitle className="text-white">Target</DrawerTitle>
+            <DrawerTitle className="text-white">{label}</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] space-y-1">
-            {TARGET_OPTIONS.map((o) => (
+            {options.map((o) => (
               <button
                 key={o.value}
                 type="button"
@@ -54,14 +61,16 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
   const [uaPercent, setUaPercent] = useState(creature.uniqueAttackPercent?.toString() || "");
   const [uaTarget, setUaTarget] = useState(creature.uniqueAttackTarget || "single");
   const [uaEffect, setUaEffect] = useState(creature.uniqueAttackEffect || "");
+  const [uaEffectType, setUaEffectType] = useState(creature.uniqueAttackEffectType || "none");
 
   const save = async () => {
     await onUpdate(creature.id, {
       description: description.trim(),
       uniqueAttackName: uaName.trim(),
-      uniqueAttackPercent: Math.max(0, Math.min(250, Number(uaPercent) || 0)),
+      uniqueAttackPercent: Math.max(0, Math.min(200, Number(uaPercent) || 0)),
       uniqueAttackTarget: uaTarget,
       uniqueAttackEffect: uaEffect.trim(),
+      uniqueAttackEffectType: uaEffectType,
     });
     setEditing(false);
   };
@@ -107,7 +116,7 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
                 <input
                   type="number"
                   min={0}
-                  max={250}
+                  max={200}
                   value={uaPercent}
                   onChange={(e) => setUaPercent(e.target.value)}
                   placeholder="Percent"
@@ -116,15 +125,18 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
                 <span className="text-[10px] text-white/40 ml-1">%</span>
               </div>
               <div className="flex-1">
-                <TargetPicker value={uaTarget} onSelect={setUaTarget} />
+                <PickerField label="Target" options={TARGET_OPTIONS} value={uaTarget} onSelect={setUaTarget} />
               </div>
             </div>
             <input
               value={uaEffect}
               onChange={(e) => setUaEffect(e.target.value)}
-              placeholder="Additional effects (optional)"
+              placeholder="Additional effects (optional, display-only)"
               className="w-full bg-white/10 rounded-md px-2.5 py-2 text-xs outline-none mt-1.5"
             />
+            <div className="mt-1.5">
+              <PickerField label="Effect Type" options={EFFECT_TYPE_OPTIONS} value={uaEffectType} onSelect={setUaEffectType} />
+            </div>
           </div>
           <button onClick={save} className="flex items-center gap-1 bg-purple-600 rounded-md px-2.5 py-1.5 text-xs font-semibold">
             <Check className="w-3.5 h-3.5" /> Save

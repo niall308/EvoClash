@@ -115,22 +115,34 @@
       "type": "number",
       "default": 0,
       "minimum": 0,
-      "maximum": 250,
-      "description": "Damage percentage of the Unique Attack (0\u2013250), stamped from the Creature entity."
+      "maximum": 200,
+      "description": "Damage percentage of the Unique Attack (0\u2013200), stamped from the Creature entity. 0 = no UA."
     },
     "uniqueAttackTarget": {
       "type": "string",
       "enum": [
         "single",
-        "multi"
+        "all"
       ],
       "default": "single",
-      "description": "Whether the Unique Attack hits one card (single) or all opposing cards (multi)."
+      "description": "Whether the Unique Attack hits one opposing card (single) or all opposing cards (all). Stamped from the Creature entity."
     },
     "uniqueAttackEffect": {
       "type": "string",
       "default": "",
-      "description": "Additional effect description for the Unique Attack, stamped from the Creature entity."
+      "description": "Free-text display-only description of the Unique Attack's effect, stamped from the Creature entity."
+    },
+    "uniqueAttackEffectType": {
+      "type": "string",
+      "enum": [
+        "none",
+        "healSelf",
+        "healAll",
+        "halfAttack",
+        "healTeamOnDestroy"
+      ],
+      "default": "none",
+      "description": "Structured effect mechanic applied by the battle resolver, stamped from the Creature entity."
     }
   },
   "required": [
