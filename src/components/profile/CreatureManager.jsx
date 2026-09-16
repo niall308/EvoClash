@@ -3,9 +3,11 @@ import { base44 } from "@/api/base44Client";
 import CreatureRow from "@/components/profile/CreatureRow";
 import CreatureForm from "@/components/profile/CreatureForm";
 import DownloadAllImagesButton from "@/components/profile/DownloadAllImagesButton";
+import { RefreshCw } from "lucide-react";
 
 export default function CreatureManager() {
   const [creatures, setCreatures] = useState([]);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -29,11 +31,35 @@ export default function CreatureManager() {
     setCreatures((c) => c.map((x) => (x.id === id ? updated : x)));
   };
 
+  const handleSyncUA = async () => {
+    setSyncing(true);
+    try {
+      const { data } = await base44.functions.invoke("syncUniqueAttacks", {});
+      alert(
+        `Synced Unique Attacks:\n• ${data.cardsUpdated} player cards\n• ${data.aiDeckCardsUpdated} AI deck cards\n(from ${data.configuredCreatures} configured creatures)`
+      );
+    } catch (err) {
+      alert("Sync failed: " + (err?.message || err));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between gap-3 mb-3">
         <h2 className="text-lg font-bold">Manage Creatures</h2>
-        <DownloadAllImagesButton creatures={creatures} />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSyncUA}
+            disabled={syncing}
+            className="flex items-center gap-1 px-3 py-2 rounded-full text-xs font-bold bg-purple-600 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing…" : "Sync UA to Cards"}
+          </button>
+          <DownloadAllImagesButton creatures={creatures} />
+        </div>
       </div>
       <CreatureForm onAdd={handleAdd} />
       <div className="space-y-2 max-h-72 overflow-y-auto">

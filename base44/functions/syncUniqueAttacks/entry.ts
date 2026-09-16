@@ -19,11 +19,12 @@ Deno.serve(async (req) => {
     if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
 
     const creatures = await base44.asServiceRole.entities.Creature.list(1000);
-    const configured = creatures.filter(
-      (c) => !!c.uniqueAttackName || (c.uniqueAttackPercent || 0) > 0 || !!c.uniqueAttackEffect
-    );
+    // Stamp EVERY creature's current UA (empty included) so that reverting a
+    // creature's UA and re-syncing clears it from cards too. Empty fields make
+    // the resolver fall back to data/uniqueAttacks.json, so un-configured
+    // creatures keep their static behavior.
     const uaByBase: Record<string, object> = Object.fromEntries(
-      configured.map((c) => [
+      creatures.map((c) => [
         c.baseName,
         {
           uniqueAttackName: c.uniqueAttackName || '',
@@ -33,6 +34,9 @@ Deno.serve(async (req) => {
         },
       ])
     );
+    const configuredCount = creatures.filter(
+      (c) => !!c.uniqueAttackName || (c.uniqueAttackPercent || 0) > 0 || !!c.uniqueAttackEffect
+    ).length;
 
     const stamp = async (entity: 'Card' | 'AiDeckCard') => {
       const all = await base44.asServiceRole.entities[entity].filter({}, undefined, 1000);
@@ -49,7 +53,7 @@ Deno.serve(async (req) => {
     const aiCards = await stamp('AiDeckCard');
 
     return Response.json({
-      configuredCreatures: configured.length,
+      configuredCreatures: configuredCount,
       cardsUpdated: cards.matched,
       aiDeckCardsUpdated: aiCards.matched,
       cardsTotal: cards.total,
