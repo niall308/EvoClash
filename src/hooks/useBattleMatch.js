@@ -12,7 +12,7 @@ import {
 import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
 import { base44 } from "@/api/base44Client";
 import { play } from "@/lib/soundEngine";
-import { cardUniqueAttack } from "@/lib/uniqueAttacks";
+import { cardUniqueAttack, uniqueAttackDamage, effectiveEffectPercent, effectiveEffectDuration, effectLogMessage } from "@/lib/uniqueAttacks";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -304,8 +304,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       if (usingDoubleBonusDamage) attacker = { ...attacker, bonusDamage: (attacker.bonusDamage || 0) * 2 };
       if (usingMaximizeDefense) defender = { ...defender, defense: TIER_RANGES[defender.tier || 1].statMax };
       if (usingUniqueAttack) {
-        const pct = Math.max(1, Math.min(1000, Number(opts.uniqueAttack.percent) || 100));
-        attacker = { ...attacker, attack: Math.floor((attacker.attack * pct) / 100) };
+        attacker = { ...attacker, attack: uniqueAttackDamage(attacker, opts.uniqueAttack) };
         // Mark used locally + record server-side (authoritative reuse guard).
         usedUniqueAttacksRef.current = { ...usedUniqueAttacksRef.current, [playerCard.id]: true };
         setUsedUniqueAttacks((m) => ({ ...m, [playerCard.id]: true }));
@@ -429,21 +428,27 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       setEffect(null);
       // Apply the unique attack's mapped effect (mechanics that already exist in
       // the engine). Unmapped ("custom") effects are shown as descriptive text only.
-      if (usingUniqueAttack && opts.uniqueAttack.effectType && opts.uniqueAttack.effectType !== "none") {
+      if (usingUniqueAttack && opts.uniqueAttack.effectType && opts.uniqueAttack.effectType !== "none" && opts.uniqueAttack.effectType !== "healTeamOnDestroy") {
         const et = opts.uniqueAttack.effectType;
-        if (et === "healSelf50" || et === "healAll30") {
-          const frac = et === "healSelf50" ? 0.5 : 0.3;
+        if (et === "healSelf" || et === "healAll") {
+          const healPct = effectiveEffectPercent(opts.uniqueAttack, et === "healSelf" ? 50 : 30);
           const max = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
-          setPlayerHP((hp) => Math.min(max, hp + Math.round(max * frac)));
-        } else if (et === "halfAttackTarget1" && aiCard) {
+          setPlayerHP((hp) => Math.min(max, hp + Math.round(max * healPct / 100)));
+        } else if (et === "halfAttackTarget" && aiCard) {
           halfAttackCardRef.current = aiCard;
-          setHalfAttackTurnsLeft(1);
+          setHalfAttackTurnsLeft(effectiveEffectDuration(opts.uniqueAttack, 1));
         }
       }
       if (newTargetHP <= 0) {
         play("card_defeat");
         const winnerSide = targetSide === "player" ? "ai" : "player";
-        const survivorHP = winnerSide === "player" ? playerHP : aiHP;
+        let survivorHP = winnerSide === "player" ? playerHP : aiHP;
+        if (usingUniqueAttack && opts.uniqueAttack.effectType === "healTeamOnDestroy" && winnerSide === "player") {
+          const healPct = effectiveEffectPercent(opts.uniqueAttack, 20);
+          const max = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
+          survivorHP = Math.min(max, survivorHP + Math.round(max * healPct / 100));
+          setLog(effectLogMessage(opts.uniqueAttack, { attackerName: playerCard?.name, destroyed: true }));
+        }
         setGraveyardCards((g) => [...g, defender]);
         await finishRound(winnerSide, survivorHP);
         busyRef.current = false;

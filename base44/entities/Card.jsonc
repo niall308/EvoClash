@@ -115,22 +115,48 @@
       "type": "number",
       "default": 0,
       "minimum": 0,
-      "maximum": 250,
-      "description": "Damage percentage of the Unique Attack (0\u2013250), stamped from the Creature entity."
+      "maximum": 200,
+      "description": "Damage percentage of the Unique Attack (0\u2013200), stamped from the Creature entity."
     },
     "uniqueAttackTarget": {
       "type": "string",
       "enum": [
         "single",
-        "multi"
+        "all"
       ],
       "default": "single",
-      "description": "Whether the Unique Attack hits one card (single) or all opposing cards (multi)."
+      "description": "Whether the Unique Attack hits one card (single) or all opposing cards (all)."
+    },
+    "uniqueAttackEffectType": {
+      "type": "string",
+      "enum": [
+        "none",
+        "healSelf",
+        "healAll",
+        "halfAttackTarget",
+        "healTeamOnDestroy"
+      ],
+      "default": "none",
+      "description": "Canonical structured effect identifier, stamped from the Creature entity."
+    },
+    "uniqueAttackEffectPercent": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 200,
+      "description": "Effect magnitude (percent), stamped from the Creature entity."
+    },
+    "uniqueAttackEffectDuration": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Effect duration in turns, stamped from the Creature entity."
     },
     "uniqueAttackEffect": {
       "type": "string",
       "default": "",
-      "description": "Additional effect description for the Unique Attack, stamped from the Creature entity."
+      "description": "Admin-facing effect description (display only), stamped from the Creature entity."
     }
   },
   "required": [

@@ -42,8 +42,11 @@ Deno.serve(async (req) => {
     const uniqueAttackFields = creatureByBaseName
       ? {
           uniqueAttackName: creatureByBaseName.uniqueAttackName || '',
-          uniqueAttackPercent: Math.max(0, Math.min(250, Number(creatureByBaseName.uniqueAttackPercent) || 0)),
-          uniqueAttackTarget: creatureByBaseName.uniqueAttackTarget === 'multi' ? 'multi' : 'single',
+          uniqueAttackPercent: Math.max(0, Math.min(200, Number(creatureByBaseName.uniqueAttackPercent) || 0)),
+          uniqueAttackTarget: creatureByBaseName.uniqueAttackTarget === 'all' || creatureByBaseName.uniqueAttackTarget === 'multi' ? 'all' : 'single',
+          uniqueAttackEffectType: creatureByBaseName.uniqueAttackEffectType || 'none',
+          uniqueAttackEffectPercent: Math.max(0, Math.min(200, Number(creatureByBaseName.uniqueAttackEffectPercent) || 0)),
+          uniqueAttackEffectDuration: Math.max(0, Math.min(10, Number(creatureByBaseName.uniqueAttackEffectDuration) || 0)),
           uniqueAttackEffect: creatureByBaseName.uniqueAttackEffect || '',
         }
       : {};
