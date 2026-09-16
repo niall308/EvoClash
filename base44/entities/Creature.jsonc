@@ -32,6 +32,32 @@
       "type": "string",
       "default": "",
       "description": "Admin-approved generated image used as an anatomy reference for future AI card art of this creature."
+    },
+    "uniqueAttackName": {
+      "type": "string",
+      "default": "",
+      "description": "Display name of this creature's Unique Attack."
+    },
+    "uniqueAttackPercent": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 250,
+      "description": "Damage percentage of the Unique Attack (0\u2013250)."
+    },
+    "uniqueAttackTarget": {
+      "type": "string",
+      "enum": [
+        "single",
+        "multi"
+      ],
+      "default": "single",
+      "description": "Whether the Unique Attack hits one card (single) or all opposing cards (multi)."
+    },
+    "uniqueAttackEffect": {
+      "type": "string",
+      "default": "",
+      "description": "Additional effect description for the Unique Attack, e.g. 'halves target's attack next turn'."
     }
   },
   "required": [

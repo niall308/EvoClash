@@ -9,6 +9,10 @@ const ROLE_OPTIONS = [
   { value: "prey", label: "Prey" },
   { value: "balanced", label: "Balanced" },
 ];
+const TARGET_OPTIONS = [
+  { value: "single", label: "Single" },
+  { value: "multi", label: "Multi (all)" },
+];
 
 function PickerField({ label, options, value, onSelect, disabled }) {
   const [open, setOpen] = useState(false);
@@ -57,14 +61,31 @@ export default function CreatureForm({ onAdd }) {
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [role, setRole] = useState("balanced");
   const [description, setDescription] = useState("");
+  const [uaName, setUaName] = useState("");
+  const [uaPercent, setUaPercent] = useState("");
+  const [uaTarget, setUaTarget] = useState("single");
+  const [uaEffect, setUaEffect] = useState("");
   const isHybrid = category === "Hybrid";
 
   const submit = (e) => {
     e.preventDefault();
     if (!baseName.trim()) return;
-    onAdd({ baseName: baseName.trim(), category, role: isHybrid ? "hyper_rare" : role, description: description.trim() });
+    onAdd({
+      baseName: baseName.trim(),
+      category,
+      role: isHybrid ? "hyper_rare" : role,
+      description: description.trim(),
+      uniqueAttackName: uaName.trim(),
+      uniqueAttackPercent: Math.max(0, Math.min(250, Number(uaPercent) || 0)),
+      uniqueAttackTarget: uaTarget,
+      uniqueAttackEffect: uaEffect.trim(),
+    });
     setBaseName("");
     setDescription("");
+    setUaName("");
+    setUaPercent("");
+    setUaTarget("single");
+    setUaEffect("");
   };
 
   return (
@@ -99,6 +120,40 @@ export default function CreatureForm({ onAdd }) {
         rows={3}
         className="w-full bg-white/10 rounded-md px-3 py-2 text-xs outline-none resize-none"
       />
+
+      <div className="pt-1 border-t border-white/10">
+        <p className="text-[11px] font-bold text-amber-400/80 pt-1.5 pb-0.5">Unique Attack</p>
+        <input
+          value={uaName}
+          onChange={(e) => setUaName(e.target.value)}
+          placeholder="Attack name (e.g. Devouring Chomp)"
+          className="w-full bg-white/10 rounded-md px-3 py-2 text-sm outline-none"
+        />
+        <div className="flex gap-2 mt-2 items-center">
+          <div className="flex-1 flex items-center bg-white/10 rounded-md px-3 py-2">
+            <input
+              type="number"
+              min={0}
+              max={250}
+              value={uaPercent}
+              onChange={(e) => setUaPercent(e.target.value)}
+              placeholder="Percent"
+              className="w-full bg-transparent text-sm outline-none"
+            />
+            <span className="text-xs text-white/40 ml-1">%</span>
+          </div>
+          <div className="flex-1">
+            <PickerField label="Target" options={TARGET_OPTIONS} value={uaTarget} onSelect={setUaTarget} />
+          </div>
+        </div>
+        <input
+          value={uaEffect}
+          onChange={(e) => setUaEffect(e.target.value)}
+          placeholder="Additional effects (optional, e.g. halves target's attack next turn)"
+          className="w-full bg-white/10 rounded-md px-3 py-2 text-xs outline-none mt-2"
+        />
+      </div>
+
       <button type="submit" className="w-full flex items-center justify-center gap-1 bg-purple-600 rounded-md py-2 text-sm font-semibold">
         <Plus className="w-4 h-4" /> Add Creature
       </button>
