@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { generateRandomCard, generateHybridCard } from "@/lib/cardGenerator";
-import { STYLE_REFERENCE_URL, HYBRID_CHANCE } from "@/lib/gameConstants";
+import { HYBRID_CHANCE } from "@/lib/gameConstants";
 import { getCreationStatus, EXTRA_CREATURE_COST } from "@/lib/cardCreationLimits";
 import { ensureActiveDeck } from "@/lib/decks";
 import GameCard from "@/components/cards/GameCard";

@@ -11,7 +11,7 @@ import DeckTabs from "@/components/decks/DeckTabs";
 import NewDeckModal from "@/components/decks/NewDeckModal";
 import { ensureActiveDeck } from "@/lib/decks";
 import { DECK_COST, MAX_DECKS } from "@/lib/gameConstants";
-import { Sparkles, Loader2, ArrowUpCircle, ListChecks, PlusCircle, Trash2, Star, LayoutGrid, List } from "lucide-react";
+import { Sparkles, Loader2, ListChecks, PlusCircle, Trash2, Star, LayoutGrid, List } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import PullToRefresh from "@/components/common/PullToRefresh";
 
