@@ -12,7 +12,7 @@ import {
 import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/powerUps";
 import { base44 } from "@/api/base44Client";
 import { play } from "@/lib/soundEngine";
-import { cardUniqueAttack, healedHpForTeamOnDestroy, HEAL_TEAM_ON_DESTROY } from "@/lib/uniqueAttacks";
+import { cardUniqueAttack } from "@/lib/uniqueAttacks";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -438,10 +438,6 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         } else if (et === "halfAttackTarget1" && aiCard) {
           halfAttackCardRef.current = aiCard;
           setHalfAttackTurnsLeft(1);
-        } else if (et === HEAL_TEAM_ON_DESTROY && !result.recoil && newTargetHP <= 0) {
-          const max = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
-          setPlayerHP((hp) => healedHpForTeamOnDestroy(max, hp));
-          setLog("Unique Attack destroyed a card — your active card healed 20%!");
         }
       }
       if (newTargetHP <= 0) {

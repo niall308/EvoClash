@@ -21,17 +21,6 @@ export const UNIQUE_ATTACK_I18N = {
   customEffect: "Custom effect — needs design mapping",
 };
 
-// Post-destruction team heal: when a unique attack destroys at least one
-// opposing card, every currently-active card on the attacking team heals 20%
-// of its own max health (clamped to max, once per attack, no trigger if nothing
-// was destroyed). Pure helper so any battle mode can reuse it without coupling
-// to that mode's state shape.
-export const HEAL_TEAM_ON_DESTROY = "heal_team_on_destroy";
-export const HEAL_TEAM_FRACTION = 0.2;
-export function healedHpForTeamOnDestroy(maxHp, currentHp) {
-  return Math.min(maxHp, currentHp + Math.round(maxHp * HEAL_TEAM_FRACTION));
-}
-
 const MIN_PERCENT = 1;
 const MAX_PERCENT = 1000;
 
@@ -65,7 +54,6 @@ function mapEffectType(effect) {
   const e = (effect || "").toLowerCase();
   if (!e) return "none";
   const heals = e.includes("heal") || e.includes("restore") || e.includes("recov");
-  if (heals && (e.includes("destroy") || e.includes("defeat"))) return HEAL_TEAM_ON_DESTROY;
   if (heals && (e.includes("all") || e.includes("every") || e.includes("each"))) return "healAll30";
   if (heals) return "healSelf50";
   if (e.includes("half") || e.includes("less damage") || e.includes("50% less") || (e.includes("reduce") && e.includes("attack"))) {

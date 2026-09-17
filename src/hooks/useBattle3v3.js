@@ -11,7 +11,7 @@ import {
 import { isTimestampReady, DAY_MS } from "@/lib/powerUps";
 import { base44 } from "@/api/base44Client";
 import { play } from "@/lib/soundEngine";
-import { cardUniqueAttack, clampPercent, healedHpForTeamOnDestroy, HEAL_TEAM_ON_DESTROY } from "@/lib/uniqueAttacks";
+import { cardUniqueAttack, clampPercent } from "@/lib/uniqueAttacks";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -396,7 +396,6 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
 
       // Apply the unique attack's mapped effect after all damage lands.
       const et = def.effectType;
-      let teamHealed = false;
       if (et === "healSelf50") {
         setPlayerSlots((slots) => {
           const next = [...slots];
@@ -412,9 +411,6 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
           next[chosenTargetIdx] = { ...next[chosenTargetIdx], halfAttackTurns: 1 };
           return next;
         });
-      } else if (et === HEAL_TEAM_ON_DESTROY && defeatedSlots.length > 0) {
-        setPlayerSlots((slots) => slots.map((s) => (s ? { ...s, hp: healedHpForTeamOnDestroy(s.maxHp, s.hp) } : s)));
-        teamHealed = true;
       }
 
       // Resolve defeated enemy cards: lose a life, clear the slot, refill from the AI pool.
@@ -445,7 +441,7 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
       setAttackerIdx(null);
       setTargetIdx(null);
       setTurn("ai");
-      setLog(teamHealed ? "Unique Attack destroyed a card — your active cards healed 20%! AI's turn..." : "Unique Attack unleashed! AI's turn...");
+      setLog("Unique Attack unleashed! AI's turn...");
       busyRef.current = false;
     },
     [attackerIdx, playerSlots, aiSlots, aiLives, applyProgression, refillAiSlot]
