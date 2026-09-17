@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Swords, Layers, Sparkles, User, ShieldCheck, Coins, ArrowLeftRight, BookOpen } from "lucide-react";
+import { Swords, Layers, Sparkles, User, ShieldCheck, Coins, ArrowLeftRight, BookOpen, Egg } from "lucide-react";
 import { CARD_BACK_URL } from "@/lib/gameConstants";
 import { useAuth } from "@/lib/AuthContext";
 import useClaimableMilestones from "@/hooks/useClaimableMilestones";
@@ -15,6 +15,7 @@ const BUTTONS = [
   { to: "/play", label: "Play", icon: Swords, color: "from-red-600 to-orange-500" },
   { to: "/deck", label: "Deck", icon: Layers, color: "from-blue-600 to-cyan-500" },
   { to: "/generate", label: "Creature Card Creation", icon: Sparkles, color: "from-purple-600 to-fuchsia-500" },
+  { to: "/egg-store", label: "Egg Store", icon: Egg, color: "from-amber-500 to-yellow-400" },
   { to: "/trades", label: "Trades", icon: ArrowLeftRight, color: "from-sky-600 to-cyan-500" },
   { to: "/profile", label: "Profile", icon: User, color: "from-emerald-600 to-teal-500" },
 ];

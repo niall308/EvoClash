@@ -47,6 +47,7 @@ const Trades = lazy(() => import('@/pages/Trades'));
 const StoryMap = lazy(() => import('@/pages/StoryMap'));
 const StoryBattle = lazy(() => import('@/pages/StoryBattle'));
 const Battle3v3 = lazy(() => import('@/pages/Battle3v3'));
+const EggStore = lazy(() => import('@/pages/EggStore'));
 // Add page imports here
 
 function RouteLoader() {
@@ -119,6 +120,7 @@ const AuthenticatedApp = () => {
             <Route path="/join-lobby/:code" element={<JoinLobby />} />
             <Route path="/create-offline-lobby" element={<CreateOfflineLobby />} />
             <Route path="/trades" element={<Trades />} />
+            <Route path="/egg-store" element={<EggStore />} />
             <Route path="/story" element={<StoryMap />} />
             <Route path="/story-battle/:stage/:match" element={<StoryBattle />} />
           </Route>
