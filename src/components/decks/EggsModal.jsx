@@ -10,6 +10,7 @@ export default function EggsModal({ onClose, onUserUpdate }) {
   const { toast } = useToast();
   const [eggs, setEggs] = useState(null);
   const [payingId, setPayingId] = useState(null);
+  const [hatchingId, setHatchingId] = useState(null);
   const today = new Date().toISOString().slice(0, 10);
 
   const load = async () => {
@@ -43,6 +44,19 @@ export default function EggsModal({ onClose, onUserUpdate }) {
       toast({ title: e.response?.data?.error || "Payment failed", variant: "destructive" });
     } finally {
       setPayingId(null);
+    }
+  };
+
+  const hatch = async (egg) => {
+    setHatchingId(egg.id);
+    try {
+      const res = await base44.functions.invoke("hatchEgg", { eggId: egg.id });
+      toast({ title: "Egg hatched!", description: `${res.data.card.name} added to your deck.` });
+      load();
+    } catch (e) {
+      toast({ title: e.response?.data?.error || "Hatch failed", variant: "destructive" });
+    } finally {
+      setHatchingId(null);
     }
   };
 
@@ -93,20 +107,20 @@ export default function EggsModal({ onClose, onUserUpdate }) {
                       <Progress value={pct} className="h-2 [&_>div]:bg-amber-500" />
                     </div>
                     <button
-                      onClick={() => pay(egg)}
-                      disabled={ready || paidToday || payingId === egg.id}
+                      onClick={() => (ready ? hatch(egg) : pay(egg))}
+                      disabled={payingId === egg.id || hatchingId === egg.id || (!ready && paidToday)}
                       className={`mt-2 w-full py-2 rounded-full text-xs font-bold flex items-center justify-center gap-1 ${
                         ready
-                          ? "bg-amber-500/20 text-amber-300"
+                          ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-black active:scale-95"
                           : paidToday
                             ? "bg-white/10 text-white/40"
                             : "bg-gradient-to-r from-amber-500 to-yellow-400 text-black active:scale-95"
                       }`}
                     >
-                      {payingId === egg.id ? (
+                      {payingId === egg.id || hatchingId === egg.id ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : ready ? (
-                        "Ready — hatch coming soon"
+                        "Hatch!"
                       ) : paidToday ? (
                         "Paid today — come back tomorrow"
                       ) : (

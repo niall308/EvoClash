@@ -58,6 +58,32 @@
       "type": "string",
       "default": "",
       "description": "Additional effect description for the Unique Attack, e.g. 'halves target's attack next turn'."
+    },
+    "eggBabyName": {
+      "type": "string",
+      "default": "",
+      "description": "Display name for the baby card this creature hatches into from an egg. Falls back to baseName if empty."
+    },
+    "eggUpgradedName": {
+      "type": "string",
+      "default": "",
+      "description": "Display name for the upgraded (Tier 4) form of this creature's egg hatchling. Falls back to the baby name if empty."
+    },
+    "eggBabyImages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Card-art image URLs for the baby form. One is chosen at random when an egg hatches. A creature needs at least one to be eligible as an egg hatch."
+    },
+    "eggUpgradedImages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Card-art image URLs for the upgraded form. One is chosen at random when a hatchling is upgraded."
     }
   },
   "required": [

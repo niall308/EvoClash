@@ -131,6 +131,21 @@
       "type": "string",
       "default": "",
       "description": "Additional effect description for the Unique Attack, stamped from the Creature entity."
+    },
+    "isEggHatchling": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if this card was hatched from a Creature Egg (baby form). Such cards use the egg upgrade path instead of the normal tier-evolve path."
+    },
+    "eggCreatureId": {
+      "type": "string",
+      "default": "",
+      "description": "Id of the Creature entity this egg hatchling was spawned from. Used to resolve the upgraded image/name on upgrade."
+    },
+    "eggUpgraded": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once an egg hatchling has been evolved into its special upgraded (Tier 4) form. Prevents re-upgrading."
     }
   },
   "required": [

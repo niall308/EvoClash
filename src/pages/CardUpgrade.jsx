@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import GameCard from "@/components/cards/GameCard";
 import StatUpgradeRow from "@/components/upgrade/StatUpgradeRow";
 import EvolveSection from "@/components/upgrade/EvolveSection";
+import EggHatchlingEvolveSection from "@/components/upgrade/EggHatchlingEvolveSection";
 import TypeChangeSection from "@/components/upgrade/TypeChangeSection";
 import { checkUpgradeEligible } from "@/lib/upgradeCheck";
 import { getStatUpgradeCost, getStatUpgradeMaxUses } from "@/lib/statUpgradeCost";
@@ -21,6 +22,7 @@ export default function CardUpgrade() {
   const [user, setUser] = useState(null);
   const [purchasing, setPurchasing] = useState(null);
   const [evolving, setEvolving] = useState(false);
+  const [eggEvolving, setEggEvolving] = useState(false);
   const [typePurchasing, setTypePurchasing] = useState(null);
 
   useEffect(() => {
@@ -91,6 +93,22 @@ export default function CardUpgrade() {
     }
   };
 
+  const handleEggEvolve = async () => {
+    if (eggEvolving) return;
+    setEggEvolving(true);
+    try {
+      const { data } = await base44.functions.invoke("upgradeEggHatchling", { cardId: card.id });
+      setCard((c) => ({ ...c, ...data.card }));
+      setUser(data.user);
+      play("card_upgrade");
+      toast({ title: "Upgraded to its final form!" });
+    } catch (err) {
+      toast({ title: "Upgrade failed", description: err?.message || "Something went wrong.", variant: "destructive" });
+    } finally {
+      setEggEvolving(false);
+    }
+  };
+
   return (
     <div className="text-white px-6 py-6">
       <Link to="/deck" className="inline-flex items-center gap-1 text-white/60 text-sm mb-6 min-h-[44px] px-1 -ml-1">
@@ -123,7 +141,14 @@ export default function CardUpgrade() {
       {!card.isHybrid && (
         <TypeChangeSection card={card} coins={user.coins || 0} purchasing={typePurchasing} onChangeType={handleChangeType} />
       )}
-      {card.tier < 4 && (
+      {card.isEggHatchling && !card.eggUpgraded ? (
+        <EggHatchlingEvolveSection
+          cost={TIER_UPGRADE_COST}
+          coins={user.coins || 0}
+          evolving={eggEvolving}
+          onEvolve={handleEggEvolve}
+        />
+      ) : card.tier < 4 ? (
         <>
           <p className="text-[10px] text-white/40 mt-4">
             Destroyed {card.totalWins || 0}/{UPGRADE_REQUIREMENT.cardsDestroyed} · Games {card.totalGames || 0}/{UPGRADE_REQUIREMENT.gamesPlayed} · Match wins {card.matchWins || 0}/{UPGRADE_REQUIREMENT.matchWins}
@@ -137,7 +162,7 @@ export default function CardUpgrade() {
             tier={card.tier}
           />
         </>
-      )}
+      ) : null}
     </div>
   );
 }

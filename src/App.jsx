@@ -48,6 +48,7 @@ const StoryMap = lazy(() => import('@/pages/StoryMap'));
 const StoryBattle = lazy(() => import('@/pages/StoryBattle'));
 const Battle3v3 = lazy(() => import('@/pages/Battle3v3'));
 const EggStore = lazy(() => import('@/pages/EggStore'));
+const AdminEggCreatures = lazy(() => import('@/pages/AdminEggCreatures'));
 // Add page imports here
 
 function RouteLoader() {
@@ -108,7 +109,8 @@ const AuthenticatedApp = () => {
               <Route path="/admin/milestones" element={<AdminMilestones />} />
               <Route path="/admin/card-backgrounds" element={<AdminCardBackgrounds />} />
               <Route path="/admin/sounds" element={<AdminSounds />} />
-            </Route>
+              <Route path="/admin/egg-creatures" element={<AdminEggCreatures />} />
+              </Route>
             <Route path="/card-upgrade/:id" element={<CardUpgrade />} />
             <Route path="/leaderboards" element={<Leaderboards />} />
             <Route path="/power-ups" element={<PowerUps />} />
