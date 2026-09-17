@@ -434,13 +434,23 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
         refillAiSlot(tIdx);
       }
 
+      // healTeamOnDestroy: applied only when this unique attack actually destroyed
+      // at least one enemy card. Each surviving attacker-side card recovers 20% of
+      // its own max HP, clamped to max.
+      const healTeamOnDestroy = def.effectType === "healTeamOnDestroy" && defeatedSlots.length > 0;
+      if (healTeamOnDestroy) {
+        setPlayerSlots((slots) => slots.map((s) => (s ? { ...s, hp: Math.min(s.maxHp, s.hp + Math.round(s.maxHp * 0.2)) } : s)));
+      }
+
       const aLivesAfter = aiLives - defeatedSlots.length;
       if (aLivesAfter <= 0) { await applyProgression("player"); busyRef.current = false; return; }
 
       setAttackerIdx(null);
       setTargetIdx(null);
       setTurn("ai");
-      setLog("Unique Attack unleashed! AI's turn...");
+      setLog(healTeamOnDestroy
+        ? `${aSlot.card.name}'s Unique Attack destroyed ${defeatedSlots.length} card(s) — your team recovers 20% max HP! AI's turn...`
+        : "Unique Attack unleashed! AI's turn...");
       busyRef.current = false;
     },
     [attackerIdx, playerSlots, aiSlots, aiLives, applyProgression, refillAiSlot]

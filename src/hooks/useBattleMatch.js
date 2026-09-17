@@ -304,7 +304,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       if (usingDoubleBonusDamage) attacker = { ...attacker, bonusDamage: (attacker.bonusDamage || 0) * 2 };
       if (usingMaximizeDefense) defender = { ...defender, defense: TIER_RANGES[defender.tier || 1].statMax };
       if (usingUniqueAttack) {
-        const pct = Math.max(1, Math.min(1000, Number(opts.uniqueAttack.percent) || 100));
+        const pct = Math.max(1, Math.min(250, Number(opts.uniqueAttack.percent) || 100));
         attacker = { ...attacker, attack: Math.floor((attacker.attack * pct) / 100) };
         // Mark used locally + record server-side (authoritative reuse guard).
         usedUniqueAttacksRef.current = { ...usedUniqueAttacksRef.current, [playerCard.id]: true };
@@ -443,7 +443,15 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       if (newTargetHP <= 0) {
         play("card_defeat");
         const winnerSide = targetSide === "player" ? "ai" : "player";
-        const survivorHP = winnerSide === "player" ? playerHP : aiHP;
+        let survivorHP = winnerSide === "player" ? playerHP : aiHP;
+        // healTeamOnDestroy: applied only when the unique attack actually destroys
+        // the defender. In 1v1 the "team" is the single active card, so the surviving
+        // attacker recovers 20% of its own max HP, clamped to max.
+        if (usingUniqueAttack && opts.uniqueAttack?.effectType === "healTeamOnDestroy" && winnerSide === "player" && playerCard) {
+          const maxHp = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
+          survivorHP = Math.min(maxHp, survivorHP + Math.round(maxHp * 0.2));
+          setLog(`${playerCard.name}'s Unique Attack destroyed the opponent — ${playerCard.name} recovers 20% max HP!`);
+        }
         setGraveyardCards((g) => [...g, defender]);
         await finishRound(winnerSide, survivorHP);
         busyRef.current = false;

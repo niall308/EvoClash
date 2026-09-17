@@ -22,7 +22,7 @@ export const UNIQUE_ATTACK_I18N = {
 };
 
 const MIN_PERCENT = 1;
-const MAX_PERCENT = 1000;
+const MAX_PERCENT = 250;
 
 export function clampPercent(p) {
   const n = Number(p);
@@ -54,6 +54,7 @@ function mapEffectType(effect) {
   const e = (effect || "").toLowerCase();
   if (!e) return "none";
   const heals = e.includes("heal") || e.includes("restore") || e.includes("recov");
+  if (heals && e.includes("destroy")) return "healTeamOnDestroy";
   if (heals && (e.includes("all") || e.includes("every") || e.includes("each"))) return "healAll30";
   if (heals) return "healSelf50";
   if (e.includes("half") || e.includes("less damage") || e.includes("50% less") || (e.includes("reduce") && e.includes("attack"))) {
