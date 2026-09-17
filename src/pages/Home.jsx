@@ -34,6 +34,10 @@ export default function Home() {
     if (user && !hasMarkedSeen.current) {
       hasMarkedSeen.current = true;
       base44.auth.updateMe({ lastSeenAt: new Date().toISOString() });
+      // Reconcile missed-day penalties on every creature egg the player owns,
+      // so the daily-hatch subtraction fires on login even if they never open
+      // the Creature Eggs view. Best-effort — never blocks the home screen.
+      base44.functions.invoke("reconcileEggs", {}).catch(() => {});
     }
   }, [user]);
 

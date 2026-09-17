@@ -11,13 +11,14 @@ import DeckTabs from "@/components/decks/DeckTabs";
 import NewDeckModal from "@/components/decks/NewDeckModal";
 import { ensureActiveDeck } from "@/lib/decks";
 import { DECK_COST, MAX_DECKS } from "@/lib/gameConstants";
-import { Sparkles, Loader2, ListChecks, PlusCircle, Trash2, Star, LayoutGrid, List } from "lucide-react";
+import { Sparkles, Loader2, ListChecks, PlusCircle, Trash2, Star, LayoutGrid, List, Egg } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import PullToRefresh from "@/components/common/PullToRefresh";
+import EggsModal from "@/components/decks/EggsModal";
 
 export default function Deck() {
   const navigate = useNavigate();
-  const { user: authUser } = useAuth();
+  const { user: authUser, updateUser } = useAuth();
   const [user, setUser] = useState(authUser);
   const [decks, setDecks] = useState(null);
   const [activeDeckId, setActiveDeckId] = useState(null);
@@ -33,6 +34,7 @@ export default function Deck() {
   const [statsCard, setStatsCard] = useState(null);
   const [compareIndex, setCompareIndex] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
+  const [showEggs, setShowEggs] = useState(false);
 
   const load = async (me) => {
     setUser(me);
@@ -172,6 +174,15 @@ export default function Deck() {
         </div>
       </div>
 
+      <div className="px-6 pb-3">
+        <button
+          onClick={() => setShowEggs(true)}
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black py-3 rounded-full text-sm font-bold active:scale-95 transition-transform"
+        >
+          <Egg className="w-4 h-4" /> Creature Eggs
+        </button>
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-white/50" />
@@ -274,6 +285,8 @@ export default function Deck() {
           onCancel={() => setShowNewDeckModal(false)}
         />
       )}
+
+      {showEggs && <EggsModal onClose={() => setShowEggs(false)} onUserUpdate={updateUser} />}
     </div>
     </PullToRefresh>
   );

@@ -1,0 +1,44 @@
+{
+  "name": "Egg",
+  "type": "object",
+  "properties": {
+    "progress": {
+      "type": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 30,
+      "description": "Days paid toward hatching (0-30)."
+    },
+    "lastPaidDate": {
+      "type": "string",
+      "default": "",
+      "description": "YYYY-MM-DD (UTC) of the last 250-LC daily payment. Empty until the first payment."
+    },
+    "lastSettledDate": {
+      "type": "string",
+      "default": "",
+      "description": "YYYY-MM-DD (UTC) through which missed-day penalties have been reconciled. Set to today on purchase."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "incubating",
+        "ready"
+      ],
+      "default": "incubating",
+      "description": "'incubating' = still growing; 'ready' = 30/30 days paid, awaiting the hatchling card system."
+    }
+  },
+  "required": [],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}
