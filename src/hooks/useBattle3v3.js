@@ -4,7 +4,6 @@ import { generateRandomCard } from "@/lib/cardGenerator";
 import {
   AI_OPPONENT_NAMES,
   AI_DIFFICULTY_TIERS,
-  DEFAULT_ACTIVE_POWERUPS,
   TURN_TIME_LIMIT_SECONDS,
   MAX_CONSECUTIVE_TURN_TIMEOUTS,
 } from "@/lib/gameConstants";
