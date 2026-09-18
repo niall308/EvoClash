@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { EGG_HATCH_DAYS } from "../../shared/eggHatch.ts";
 import { buildCardImagePrompt, buildEggHatchRecolorPrompt } from "../../shared/cardArt.ts";
+import { flattenPngOntoSolid } from "../../shared/imageFlatten.ts";
 
 // Hatches a ready (30/30) egg into a baby creature card. Picks a random
 // eligible creature (one that has at least one eggBabyImages entry), uses a
@@ -60,9 +61,24 @@ export default async function (req: Request) {
     const babyImage = randomFrom(creature.eggBabyImages || []);
     let cardArtUrl: string;
     if (babyImage) {
+      // The stored baby image is typically a transparent PNG. A transparent
+      // reference makes GenerateImage paint a checkerboard where the alpha was,
+      // so flatten it onto a solid background first and pass the opaque version
+      // as the reference. Falls back to the original URL if flattening fails.
+      let refUrl = babyImage;
+      try {
+        const flatBytes = await flattenPngOntoSolid(babyImage, [255, 255, 255]);
+        if (flatBytes) {
+          const file = new File([flatBytes], `hatchling-${creature.baseName}.png`, { type: 'image/png' });
+          const up: any = await base44.asServiceRole.integrations.Core.UploadPublicFile({ file });
+          if (up?.file_url) refUrl = up.file_url;
+        }
+      } catch (e) {
+        console.error('flatten baby image failed, using original:', e);
+      }
       const { prompt, existingImageUrls } = buildEggHatchRecolorPrompt(
         { baseName: creature.baseName, type, isHybrid: false },
-        babyImage,
+        refUrl,
         typeBackgrounds
       );
       const gen = await base44.asServiceRole.integrations.Core.GenerateImage({
