@@ -1,7 +1,33 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { EGG_HATCH_DAYS } from "../../shared/eggHatch.ts";
 import { buildCardImagePrompt, buildEggHatchRecolorPrompt } from "../../shared/cardArt.ts";
-import { flattenPngOntoSolid } from "../../shared/imageFlatten.ts";
+import { flattenPngOntoSolid, hasCheckerboardAtUrl } from "../../shared/imageFlatten.ts";
+
+// Generates card art, then re-rolls if the output contains a transparency
+// checkerboard pattern (which the model sometimes paints even from an opaque
+// reference). Up to maxAttempts; returns the first clean image, or the last
+// attempt if none are clean so a hatch never fails purely on detection.
+async function generateCleanArt(
+  base44: any,
+  prompt: string,
+  existingImageUrls: string[],
+  maxAttempts = 3
+): Promise<string> {
+  let url = '';
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const gen = await base44.asServiceRole.integrations.Core.GenerateImage({
+      prompt,
+      existing_image_urls: existingImageUrls,
+    });
+    url = gen.url;
+    if (attempt < maxAttempts - 1 && await hasCheckerboardAtUrl(url)) {
+      console.log(`hatchEgg: checkerboard detected on attempt ${attempt + 1}, regenerating`);
+      continue;
+    }
+    return url;
+  }
+  return url;
+}
 
 // Hatches a ready (30/30) egg into a baby creature card. Picks a random
 // eligible creature (one that has at least one eggBabyImages entry), uses a
@@ -81,22 +107,14 @@ export default async function (req: Request) {
         refUrl,
         typeBackgrounds
       );
-      const gen = await base44.asServiceRole.integrations.Core.GenerateImage({
-        prompt,
-        existing_image_urls: existingImageUrls,
-      });
-      cardArtUrl = gen.url;
+      cardArtUrl = await generateCleanArt(base44, prompt, existingImageUrls);
     } else {
       // No stored baby image — fall back to from-scratch generation.
       const { prompt, existingImageUrls } = buildCardImagePrompt(
         { baseName: creature.baseName, type, isHybrid: false },
         { typeBackgrounds, creatureDescription: creature.description || '', referenceImageUrl: creature.referenceImageUrl || '' }
       );
-      const gen = await base44.asServiceRole.integrations.Core.GenerateImage({
-        prompt,
-        existing_image_urls: existingImageUrls,
-      });
-      cardArtUrl = gen.url;
+      cardArtUrl = await generateCleanArt(base44, prompt, existingImageUrls);
     }
 
     // The card is created unassigned; the player chooses to add it to a deck or
