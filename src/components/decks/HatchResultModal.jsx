@@ -9,7 +9,7 @@ const SELL_VALUE = 100000;
 // never left orphaned without a deck.
 export default function HatchResultModal({ card, onAddToDeck, onSell, busy }) {
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center px-4" onClick={(e) => e.stopPropagation()}>
       <div className="bg-[#0D1B2A] rounded-3xl border border-amber-500/30 p-5 w-full max-w-xs flex flex-col items-center gap-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center gap-2 text-amber-300 font-black text-lg">
           <Sparkles className="w-5 h-5" /> Egg Hatched!
