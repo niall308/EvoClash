@@ -21,6 +21,7 @@ Deno.serve(async (req) => {
       return {
         id: l.id,
         code: l.code,
+        hostUserId: l.created_by_id,
         hostName: l.hostName || host?.username || host?.full_name || 'Player',
         rankPoints: host?.rankPoints || 0,
         wins: host?.wins || 0,

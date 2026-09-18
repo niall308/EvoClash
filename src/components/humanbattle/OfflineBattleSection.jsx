@@ -7,6 +7,7 @@ import useSentBattleRequestAcceptance from "@/hooks/useSentBattleRequestAcceptan
 import useOfflineMatches, { isMyTurnInMatch } from "@/hooks/useOfflineMatches";
 import { useAuth } from "@/lib/AuthContext";
 import OpenLobbiesList from "@/components/humanbattle/OpenLobbiesList";
+import PlayerProfileModal from "@/components/pvpbattle/PlayerProfileModal";
 
 const MAX_OFFLINE_MATCHES = 10;
 
@@ -21,6 +22,7 @@ export default function OfflineBattleSection() {
   const [pendingRequestIds, setPendingRequestIds] = useState([]);
   const [respondingId, setRespondingId] = useState(null);
   const [searching, setSearching] = useState(false);
+  const [profileView, setProfileView] = useState(null);
   const pollRef = useRef(null);
   const searchingRef = useRef(false);
   const { requests: allRequests, refresh: refreshIncoming } = useIncomingBattleRequests();
@@ -160,7 +162,12 @@ export default function OfflineBattleSection() {
           {incomingRequests.map((req) => (
             <div key={req.id} className="flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-3">
               <div>
-                <p className="font-bold text-sm">{req.fromUserName}</p>
+                <button
+                  onClick={() => setProfileView({ id: req.created_by_id, name: req.fromUserName })}
+                  className="font-bold text-sm text-left active:opacity-70"
+                >
+                  {req.fromUserName}
+                </button>
                 <p className="text-white/40 text-xs">wants an offline battle</p>
               </div>
               <div className="flex items-center gap-2">
@@ -193,7 +200,12 @@ export default function OfflineBattleSection() {
               const requested = sentRequestIds.includes(p.id);
               return (
                 <div key={p.id} className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3">
-                  <p className="font-bold text-sm">{p.full_name}</p>
+                  <button
+                    onClick={() => setProfileView({ id: p.id, name: p.full_name })}
+                    className="font-bold text-sm text-left active:opacity-70"
+                  >
+                    {p.full_name}
+                  </button>
                   <button
                     onClick={() => requestBattle(p)}
                     disabled={requested || atCap}
@@ -219,7 +231,12 @@ export default function OfflineBattleSection() {
           const requested = sentRequestIds.includes(p.id);
           return (
             <div key={p.id} className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3">
-              <p className="font-bold text-sm">{p.full_name}</p>
+              <button
+                onClick={() => setProfileView({ id: p.id, name: p.full_name })}
+                className="font-bold text-sm text-left active:opacity-70"
+              >
+                {p.full_name}
+              </button>
               <button
                 onClick={() => requestBattle(p)}
                 disabled={requested || atCap}
@@ -234,6 +251,10 @@ export default function OfflineBattleSection() {
           );
         })}
       </div>
+
+      {profileView && (
+        <PlayerProfileModal player={profileView} onClose={() => setProfileView(null)} />
+      )}
     </div>
   );
 }

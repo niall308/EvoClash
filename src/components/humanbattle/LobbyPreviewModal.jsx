@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { X, Loader2, Swords } from "lucide-react";
+import { X, Loader2, Swords, User } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import RankEmblem from "@/components/rank/RankEmblem";
+import PlayerProfileModal from "@/components/pvpbattle/PlayerProfileModal";
 import { getRankByRP } from "@/lib/rankSystem";
 
 // Preview of an open lobby's host (rank + win/loss record) before joining —
@@ -10,6 +11,7 @@ import { getRankByRP } from "@/lib/rankSystem";
 export default function LobbyPreviewModal({ lobby, onClose, onJoined }) {
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
+  const [showProfile, setShowProfile] = useState(false);
   const rank = getRankByRP(lobby.rankPoints);
 
   const join = async () => {
@@ -43,10 +45,18 @@ export default function LobbyPreviewModal({ lobby, onClose, onJoined }) {
 
         <div className="flex items-center gap-3 bg-white/5 rounded-2xl px-4 py-3 mb-3">
           <RankEmblem rp={lobby.rankPoints} size="lg" />
-          <div>
+          <div className="flex-1">
             <p className="font-bold text-sm">{rank.name}</p>
             <p className="text-white/40 text-xs">{lobby.rankPoints} RP</p>
           </div>
+          {lobby.hostUserId && (
+            <button
+              onClick={() => setShowProfile(true)}
+              className="flex items-center gap-1 bg-white/10 text-white/80 text-xs font-bold px-3 py-2 rounded-full active:scale-95 transition-transform"
+            >
+              <User className="w-3.5 h-3.5" /> Profile
+            </button>
+          )}
         </div>
 
         <div className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3 mb-6">
@@ -67,6 +77,13 @@ export default function LobbyPreviewModal({ lobby, onClose, onJoined }) {
           {joining ? "Joining..." : "Join & Start Battle"}
         </button>
       </motion.div>
+
+      {showProfile && lobby.hostUserId && (
+        <PlayerProfileModal
+          player={{ id: lobby.hostUserId, name: lobby.hostName }}
+          onClose={() => setShowProfile(false)}
+        />
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { UserPlus, Users, Copy, Check, ArrowLeftRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import ProposeTradeModal from "@/components/trades/ProposeTradeModal";
-import FriendDetailModal from "@/components/profile/FriendDetailModal";
+import PlayerProfileModal from "@/components/pvpbattle/PlayerProfileModal";
 
 const generateFriendCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
@@ -142,7 +142,8 @@ export default function FriendsSection({ user, onUserUpdate }) {
       )}
 
       {selectedFriend && (
-        <FriendDetailModal
+        <PlayerProfileModal
+          player={{ id: selectedFriend.friendUserId, name: selectedFriend.friendName }}
           friend={selectedFriend}
           onClose={() => setSelectedFriend(null)}
           onRemove={(id) => {
