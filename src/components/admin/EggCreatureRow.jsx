@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Loader2, X, ImagePlus } from "lucide-react";
+import { Loader2, X, ImagePlus, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import EggCreaturePreview from "@/components/admin/EggCreaturePreview";
 
 // One row in the Egg Creatures admin page. Lets the admin edit the baby +
 // upgraded display names and add/remove baby + upgraded card-art images for a
@@ -14,6 +15,7 @@ export default function EggCreatureRow({ creature, onUpdate }) {
   const [upgradedImages, setUpgradedImages] = useState(creature.eggUpgradedImages || []);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(null); // "baby" | "upgraded"
+  const [showPreview, setShowPreview] = useState(false);
 
   const save = async (fields) => {
     setSaving(true);
@@ -76,8 +78,15 @@ export default function EggCreatureRow({ creature, onUpdate }) {
             </span>
           )}
           {saving && <Loader2 className="w-4 h-4 animate-spin text-white/50" />}
+          <button
+            onClick={() => setShowPreview(true)}
+            className="flex items-center gap-1 text-[11px] font-bold text-white/80 bg-white/10 hover:bg-white/20 rounded-full px-2.5 py-1 transition-colors"
+          >
+            <Eye className="w-3.5 h-3.5" /> Preview
+          </button>
         </div>
       </div>
+      {showPreview && <EggCreaturePreview creature={{ ...creature, eggBabyName: babyName, eggUpgradedName: upgradedName, eggBabyImages: babyImages, eggUpgradedImages: upgradedImages }} onClose={() => setShowPreview(false)} />}
 
       <div className="grid grid-cols-2 gap-2 mb-3">
         <label className="block">
