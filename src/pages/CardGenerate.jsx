@@ -5,6 +5,7 @@ import { HYBRID_CHANCE } from "@/lib/gameConstants";
 import { getCreationStatus, EXTRA_CREATURE_COST } from "@/lib/cardCreationLimits";
 import { ensureActiveDeck } from "@/lib/decks";
 import GameCard from "@/components/cards/GameCard";
+import CardStatsModal from "@/components/cards/CardStatsModal";
 import CreaturePicker from "@/components/generate/CreaturePicker";
 import AutoBuildOfferModal from "@/components/generate/AutoBuildOfferModal";
 import { Sparkles, Loader2, PlusCircle, RefreshCw, Coins } from "lucide-react";
@@ -28,6 +29,7 @@ export default function CardGenerate() {
   const [saving, setSaving] = useState(false);
   const [activeDeckId, setActiveDeckId] = useState(null);
   const [showOfferModal, setShowOfferModal] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [autoBuilding, setAutoBuilding] = useState(false);
   const [autoBuildProgress, setAutoBuildProgress] = useState(0);
 
@@ -203,7 +205,9 @@ export default function CardGenerate() {
             <AnimatePresence mode="wait">
               {previewCard && (
                 <motion.div key={previewCard.name} initial={{ rotateY: 180, scale: 0.5, opacity: 0 }} animate={{ rotateY: 0, scale: 1, opacity: 1 }} transition={{ duration: 0.6 }}>
-                  <GameCard card={previewCard} size="lg" />
+                  <button onClick={() => setShowStats(true)} className="active:scale-95 transition-transform" aria-label="Inspect card stats">
+                    <GameCard card={previewCard} size="lg" />
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -265,6 +269,7 @@ export default function CardGenerate() {
           <CreaturePicker creatures={creatures} selected={selectedCreature} onSelect={setSelectedCreature} />
         )}
       </div>
+      {showStats && previewCard && <CardStatsModal card={previewCard} onClose={() => setShowStats(false)} />}
     </div>
   );
 }
