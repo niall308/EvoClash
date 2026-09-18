@@ -50,16 +50,20 @@ export default async function (req: Request) {
     const bonusDamage = randomInt(TIER3.bonusMin, TIER3.bonusMax);
     const type = randomFrom(TYPES);
     const name = creature.eggBabyName || creature.baseName;
+    const typeBackgrounds = await base44.entities.TypeBackground.filter({ type });
 
-    // Recolour the admin-stored baby image to the card type's colour gradient.
-    // The stored image is the base — pose, anatomy, background, and composition
-    // stay IDENTICAL; only the creature's body colour shifts to match the type.
+    // Recolour the admin-stored baby image to the card type's colour gradient AND
+    // place it on a fitting type background (matching standard card creation).
+    // The stored image is the base — pose, anatomy, and face stay IDENTICAL; the
+    // creature's body colour shifts to the type gradient and the background is
+    // replaced with the elemental type background.
     const babyImage = randomFrom(creature.eggBabyImages || []);
     let cardArtUrl: string;
     if (babyImage) {
       const { prompt, existingImageUrls } = buildEggHatchRecolorPrompt(
         { baseName: creature.baseName, type, isHybrid: false },
-        babyImage
+        babyImage,
+        typeBackgrounds
       );
       const gen = await base44.asServiceRole.integrations.Core.GenerateImage({
         prompt,
@@ -68,7 +72,6 @@ export default async function (req: Request) {
       cardArtUrl = gen.url;
     } else {
       // No stored baby image — fall back to from-scratch generation.
-      const typeBackgrounds = await base44.entities.TypeBackground.filter({ type });
       const { prompt, existingImageUrls } = buildCardImagePrompt(
         { baseName: creature.baseName, type, isHybrid: false },
         { typeBackgrounds, creatureDescription: creature.description || '', referenceImageUrl: creature.referenceImageUrl || '' }

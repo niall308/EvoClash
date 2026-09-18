@@ -146,15 +146,26 @@ export function buildAiCardPrompt(cardData: CardArtInput) {
 }
 
 // Egg-hatch recolour: the admin-stored baby image is the base. The model must
-// keep the creature's pose, anatomy, face, background, composition, framing, and
-// art style COMPLETELY IDENTICAL to the provided image — the ONLY change is the
-// creature's body colour shifting to the card type's gradient. Used by hatchEgg
-// so a hatched card looks exactly like the stored egg-creature art, just recoloured.
-export function buildEggHatchRecolorPrompt(cardData: CardArtInput, eggBabyImageUrl: string) {
+// keep the creature's pose, anatomy, face, and art style IDENTICAL to the source
+// image, recolour the creature's body to the card type's gradient, AND place the
+// creature on a fitting elemental type background (matching standard card
+// creation). Used by hatchEgg so a hatched card looks like the stored egg-creature
+// art, recoloured, on the correct type background.
+export function buildEggHatchRecolorPrompt(
+  cardData: CardArtInput,
+  eggBabyImageUrl: string,
+  typeBackgrounds: { type: string; imageUrl: string }[] = []
+) {
   const gradient = TYPE_COLOR_GRADIENTS[cardData.type];
   const palette = gradient
     ? `a color gradient flowing through ${gradient.join(" → ")}`
     : randomFrom(CREATURE_COLOR_PALETTES);
-  const prompt = `Take this exact creature illustration as the source image. Keep the creature's pose, anatomy, body structure, face, background, composition, framing, and art style COMPLETELY IDENTICAL to the provided image — do not redesign or restructure anything. The ONLY change: recolor the creature's body (skin, scales, fur, feathers, hide) using ${palette} applied smoothly across the creature while preserving all shading, highlights, and texture detail. Do NOT change the background color or setting. Do NOT alter the creature's shape, pose, or face. Output the same image with only the creature's colours shifted to the new palette. No text, no border, no frame.`;
-  return { prompt, existingImageUrls: [eggBabyImageUrl] };
+  const bgRef = typeBackgrounds.find((b) => b.type === cardData.type && isPublicRefUrl(b.imageUrl));
+  const backgroundInstruction = bgRef
+    ? `Place the creature on a NEW background environment that matches the elemental mood, colors, and setting of the additional background reference image provided — use that reference ONLY for its environment style, do not copy any creature or object from it.`
+    : `Place the creature on a NEW background environment that fits a ${cardData.type} elemental setting (e.g. lava fields for Lava, icy tundra for Ice, storm clouds for Wind).`;
+  const prompt = `Take this exact creature illustration as the source image. Keep the creature's pose, anatomy, body structure, face, and art style IDENTICAL to the provided image — do not redesign or restructure the creature. Recolor the creature's body (skin, scales, fur, feathers, hide) using ${palette} applied smoothly across the creature while preserving all shading, highlights, and texture detail. REPLACE the original background with a fitting ${cardData.type} elemental background as described below — do NOT keep the source image's background. ${backgroundInstruction} The background must NOT reuse the creature's color gradient — keep it a separate, atmospheric, magical ${cardData.type} environment that contrasts with the creature so the creature stays the clear focal point. Output the recoloured creature on the new ${cardData.type} background. No text, no border, no frame.`;
+  const existingImageUrls = [eggBabyImageUrl];
+  if (bgRef) existingImageUrls.push(bgRef.imageUrl);
+  return { prompt, existingImageUrls };
 }
