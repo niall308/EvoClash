@@ -29,7 +29,7 @@ export default async function (req: Request) {
     if (!egg || egg.created_by_id !== user.id) {
       return Response.json({ error: 'Egg not found' }, { status: 404 });
     }
-    if ((egg.progress || 0) < EGG_HATCH_DAYS) {
+    if ((egg.progress || 0) < EGG_HATCH_DAYS && user.role !== 'admin') {
       return Response.json({ error: 'Egg is not ready to hatch yet' }, { status: 400 });
     }
 

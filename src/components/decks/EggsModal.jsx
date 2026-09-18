@@ -24,6 +24,7 @@ export default function EggsModal({ onClose, onUserUpdate }) {
   const [hatchingId, setHatchingId] = useState(null);
   const [sellingId, setSellingId] = useState(null);
   const [sellTarget, setSellTarget] = useState(null); // egg awaiting sell confirmation
+  const [isAdmin, setIsAdmin] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
 
   const load = async () => {
@@ -38,6 +39,7 @@ export default function EggsModal({ onClose, onUserUpdate }) {
 
   useEffect(() => {
     load();
+    base44.auth.me().then((u) => setIsAdmin(u?.role === "admin")).catch(() => {});
   }, []);
 
   const pay = async (egg) => {
@@ -136,10 +138,10 @@ export default function EggsModal({ onClose, onUserUpdate }) {
                     </div>
                     <div className="mt-2 flex gap-2">
                       <button
-                        onClick={() => (ready ? hatch(egg) : pay(egg))}
-                        disabled={payingId === egg.id || hatchingId === egg.id || (!ready && paidToday)}
+                        onClick={() => (ready || isAdmin ? hatch(egg) : pay(egg))}
+                        disabled={payingId === egg.id || hatchingId === egg.id || (!ready && !isAdmin && paidToday)}
                         className={`flex-1 py-2 rounded-full text-xs font-bold flex items-center justify-center gap-1 ${
-                          ready
+                          ready || isAdmin
                             ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-black active:scale-95"
                             : paidToday
                               ? "bg-white/10 text-white/40"
@@ -150,6 +152,8 @@ export default function EggsModal({ onClose, onUserUpdate }) {
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : ready ? (
                           "Hatch!"
+                        ) : isAdmin ? (
+                          "Hatch (Admin)"
                         ) : paidToday ? (
                           "Paid today — come back tomorrow"
                         ) : (
