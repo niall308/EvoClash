@@ -11,6 +11,8 @@ export default function EggsModal({ onClose, onUserUpdate }) {
   const [eggs, setEggs] = useState(null);
   const [payingId, setPayingId] = useState(null);
   const [hatchingId, setHatchingId] = useState(null);
+  const [sellingId, setSellingId] = useState(null);
+  const [confirmSellId, setConfirmSellId] = useState(null);
   const today = new Date().toISOString().slice(0, 10);
 
   const load = async () => {
@@ -44,6 +46,21 @@ export default function EggsModal({ onClose, onUserUpdate }) {
       toast({ title: e.response?.data?.error || "Payment failed", variant: "destructive" });
     } finally {
       setPayingId(null);
+    }
+  };
+
+  const sell = async (egg) => {
+    setSellingId(egg.id);
+    setConfirmSellId(null);
+    try {
+      const res = await base44.functions.invoke("sellEgg", { eggId: egg.id });
+      if (res.data.user) onUserUpdate?.(res.data.user);
+      toast({ title: `Egg sold — +${(res.data.coinsEarned || 0).toLocaleString()} LC` });
+      setEggs((prev) => (prev || []).filter((e) => e.id !== egg.id));
+    } catch (e) {
+      toast({ title: e.response?.data?.error || "Sell failed", variant: "destructive" });
+    } finally {
+      setSellingId(null);
     }
   };
 
@@ -106,27 +123,46 @@ export default function EggsModal({ onClose, onUserUpdate }) {
                       </div>
                       <Progress value={pct} className="h-2 [&_>div]:bg-amber-500" />
                     </div>
-                    <button
-                      onClick={() => (ready ? hatch(egg) : pay(egg))}
-                      disabled={payingId === egg.id || hatchingId === egg.id || (!ready && paidToday)}
-                      className={`mt-2 w-full py-2 rounded-full text-xs font-bold flex items-center justify-center gap-1 ${
-                        ready
-                          ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-black active:scale-95"
-                          : paidToday
-                            ? "bg-white/10 text-white/40"
-                            : "bg-gradient-to-r from-amber-500 to-yellow-400 text-black active:scale-95"
-                      }`}
-                    >
-                      {payingId === egg.id || hatchingId === egg.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : ready ? (
-                        "Hatch!"
-                      ) : paidToday ? (
-                        "Paid today — come back tomorrow"
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => (ready ? hatch(egg) : pay(egg))}
+                        disabled={payingId === egg.id || hatchingId === egg.id || (!ready && paidToday)}
+                        className={`flex-1 py-2 rounded-full text-xs font-bold flex items-center justify-center gap-1 ${
+                          ready
+                            ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-black active:scale-95"
+                            : paidToday
+                              ? "bg-white/10 text-white/40"
+                              : "bg-gradient-to-r from-amber-500 to-yellow-400 text-black active:scale-95"
+                        }`}
+                      >
+                        {payingId === egg.id || hatchingId === egg.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : ready ? (
+                          "Hatch!"
+                        ) : paidToday ? (
+                          "Paid today — come back tomorrow"
+                        ) : (
+                          "Pay 250 LC (+1 day)"
+                        )}
+                      </button>
+                      {confirmSellId === egg.id ? (
+                        <button
+                          onClick={() => sell(egg)}
+                          disabled={sellingId === egg.id}
+                          className="px-3 py-2 rounded-full text-xs font-bold bg-red-500/90 text-white active:scale-95 whitespace-nowrap"
+                        >
+                          {sellingId === egg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Confirm sell"}
+                        </button>
                       ) : (
-                        "Pay 250 LC (+1 day)"
+                        <button
+                          onClick={() => setConfirmSellId(egg.id)}
+                          disabled={sellingId === egg.id}
+                          className="px-3 py-2 rounded-full text-xs font-bold bg-white/10 text-white/70 active:scale-95 whitespace-nowrap"
+                        >
+                          Sell
+                        </button>
                       )}
-                    </button>
+                    </div>
                   </div>
                 </div>
               );

@@ -15,6 +15,7 @@ export const EGG_BUY_COST = 500000;
 export const EGG_DAILY_COST = 250;
 export const EGG_MAX_OWNED = 5;
 export const EGG_HATCH_DAYS = 30;
+export const EGG_SELL_VALUE = 50000;
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
 // YYYY-MM-DD in UTC. Used by the server so "today" is timezone-stable across
