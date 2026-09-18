@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { canTradeWith } from '../../shared/tradeAccess.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -17,8 +18,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'You do not have enough LC coins to offer that amount' }, { status: 400 });
     }
 
-    const friendship = await base44.entities.Friend.filter({ created_by_id: user.id, friendUserId: toUserId });
-    if (friendship.length === 0) return Response.json({ error: 'Not friends with this player' }, { status: 403 });
+    const allowed = await canTradeWith(base44, user.id, toUserId);
+    if (!allowed) return Response.json({ error: 'You can only trade with friends or recent opponents' }, { status: 403 });
 
     // Verify caller actually owns the offered card (RLS-scoped read).
     const myCardMatches = await base44.entities.Card.filter({ id: fromCardId });

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { canTradeWith } from '../../shared/tradeAccess.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -9,8 +10,8 @@ Deno.serve(async (req) => {
     const { friendUserId } = await req.json();
     if (!friendUserId) return Response.json({ error: 'Missing friendUserId' }, { status: 400 });
 
-    const friendship = await base44.entities.Friend.filter({ created_by_id: user.id, friendUserId });
-    if (friendship.length === 0) return Response.json({ error: 'Not friends with this player' }, { status: 403 });
+    const allowed = await canTradeWith(base44, user.id, friendUserId);
+    if (!allowed) return Response.json({ error: 'You can only trade with friends or recent opponents' }, { status: 403 });
 
     const cards = await base44.asServiceRole.entities.Card.filter({ ownerId: friendUserId });
     const slim = cards.map((c) => ({

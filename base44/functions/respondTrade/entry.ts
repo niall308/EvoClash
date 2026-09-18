@@ -163,11 +163,11 @@ Deno.serve(async (req) => {
     const [fromSwap, toSwap] = await Promise.all([
       base44.asServiceRole.entities.Card.updateMany(
         { id: fromCard.id, ownerId: proposerId },
-        { $set: { ownerId: trade.toUserId, deckId: recipientDeckId } }
+        { $set: { ownerId: trade.toUserId, deckId: recipientDeckId, attackUpgradesUsed: 0, defenseUpgradesUsed: 0, bonusDamageUpgradesUsed: 0 } }
       ),
       base44.asServiceRole.entities.Card.updateMany(
         { id: toCard.id, ownerId: trade.toUserId },
-        { $set: { ownerId: proposerId, deckId: proposerDeckId } }
+        { $set: { ownerId: proposerId, deckId: proposerDeckId, attackUpgradesUsed: 0, defenseUpgradesUsed: 0, bonusDamageUpgradesUsed: 0 } }
       ),
     ]);
 

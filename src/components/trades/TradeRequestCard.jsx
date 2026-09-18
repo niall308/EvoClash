@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ArrowLeftRight, Check, X, Clock, Coins } from "lucide-react";
 import GameCard from "@/components/cards/GameCard";
+import CardStatsModal from "@/components/cards/CardStatsModal";
 import TradeDetailModal from "@/components/trades/TradeDetailModal";
 
 const STATUS_LABEL = {
@@ -14,6 +15,7 @@ const STATUS_LABEL = {
 
 export default function TradeRequestCard({ trade, direction, onAccept, onDecline, onCancel, onClaim, onCounter, busy }) {
   const [showDetail, setShowDetail] = useState(false);
+  const [inspectCard, setInspectCard] = useState(null);
   const [counterValue, setCounterValue] = useState(trade.coins || 0);
   const [countering, setCountering] = useState(false);
   const claimed = direction === "incoming" ? trade.recipientClaimed : trade.proposerClaimed;
@@ -65,12 +67,16 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
 
       <div className="flex items-center justify-center gap-3 mb-2">
         <div className="text-center">
-          <GameCard card={fromCard} size="xs" />
+          <button onClick={(e) => { e.stopPropagation(); setInspectCard(fromCard); }} className="active:scale-95 transition-transform" aria-label="Inspect card stats">
+            <GameCard card={fromCard} size="xs" />
+          </button>
           <p className="text-[11px] text-white/60 mt-1">{direction === "incoming" ? "They offer" : "You offer"}</p>
         </div>
         <ArrowLeftRight className="w-4 h-4 text-amber-400 shrink-0" />
         <div className="text-center">
-          <GameCard card={toCard} size="xs" />
+          <button onClick={(e) => { e.stopPropagation(); setInspectCard(toCard); }} className="active:scale-95 transition-transform" aria-label="Inspect card stats">
+            <GameCard card={toCard} size="xs" />
+          </button>
           <p className="text-[11px] text-white/60 mt-1">{direction === "incoming" ? "For your" : "You receive"}</p>
         </div>
       </div>
@@ -161,6 +167,10 @@ export default function TradeRequestCard({ trade, direction, onAccept, onDecline
           direction={direction}
           onClose={() => setShowDetail(false)}
         />
+      )}
+
+      {inspectCard && (
+        <CardStatsModal card={inspectCard} onClose={() => setInspectCard(null)} />
       )}
     </div>
   );

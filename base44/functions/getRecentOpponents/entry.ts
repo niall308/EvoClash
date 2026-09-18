@@ -8,8 +8,8 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const [asP1, asP2] = await Promise.all([
-      base44.asServiceRole.entities.PvpMatch.filter({ player1Id: user.id }, '-created_date', 50),
-      base44.asServiceRole.entities.PvpMatch.filter({ player2Id: user.id }, '-created_date', 50),
+      base44.asServiceRole.entities.PvpMatch.filter({ player1Id: user.id }, '-created_date', 100),
+      base44.asServiceRole.entities.PvpMatch.filter({ player2Id: user.id }, '-created_date', 100),
     ]);
     const matches = [...asP1, ...asP2].sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime());
 
@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
       if (!opponentId || opponentId === user.id || seen.has(opponentId)) continue;
       seen.add(opponentId);
       opponents.push({ id: opponentId, full_name: opponentName || 'Anonymous' });
-      if (opponents.length >= 20) break;
+      if (opponents.length >= 50) break;
     }
 
     return Response.json({ opponents });
