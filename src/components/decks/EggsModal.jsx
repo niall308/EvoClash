@@ -13,6 +13,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import HatchResultModal from "@/components/decks/HatchResultModal";
 
 const EGG_IMG = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/78ba2e7fa_Egg-design.png";
 const EGG_SELL_VALUE = 50000;
@@ -25,6 +26,8 @@ export default function EggsModal({ onClose, onUserUpdate }) {
   const [sellingId, setSellingId] = useState(null);
   const [sellTarget, setSellTarget] = useState(null); // egg awaiting sell confirmation
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hatchedCard, setHatchedCard] = useState(null);
+  const [resolving, setResolving] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
 
   const load = async () => {
@@ -81,12 +84,44 @@ export default function EggsModal({ onClose, onUserUpdate }) {
     setHatchingId(egg.id);
     try {
       const res = await base44.functions.invoke("hatchEgg", { eggId: egg.id });
-      toast({ title: "Egg hatched!", description: `${res.data.card.name} added to your deck.` });
+      setHatchedCard(res.data.card);
       load();
     } catch (e) {
       toast({ title: e.response?.data?.error || "Hatch failed", variant: "destructive" });
     } finally {
       setHatchingId(null);
+    }
+  };
+
+  const addToDeck = async (card) => {
+    setResolving(true);
+    try {
+      const decks = await base44.entities.Deck.filter({});
+      let active = decks.find((d) => d.isActive) || decks[0];
+      if (!active) active = await base44.entities.Deck.create({ name: "Deck 1", isActive: true });
+      await base44.entities.Card.update(card.id, { deckId: active.id });
+      toast({ title: `${card.name} added to your deck!` });
+      setHatchedCard(null);
+      load();
+    } catch (e) {
+      toast({ title: e.response?.data?.error || "Couldn't add to deck", variant: "destructive" });
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  const sellHatched = async (card) => {
+    setResolving(true);
+    try {
+      const res = await base44.functions.invoke("sellHatchling", { cardId: card.id });
+      if (res.data.user) onUserUpdate?.(res.data.user);
+      toast({ title: `Sold ${card.name} for 100,000 LC!` });
+      setHatchedCard(null);
+      load();
+    } catch (e) {
+      toast({ title: e.response?.data?.error || "Sell failed", variant: "destructive" });
+    } finally {
+      setResolving(false);
     }
   };
 
@@ -200,6 +235,15 @@ export default function EggsModal({ onClose, onUserUpdate }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {hatchedCard && (
+        <HatchResultModal
+          card={hatchedCard}
+          onAddToDeck={() => addToDeck(hatchedCard)}
+          onSell={() => sellHatched(hatchedCard)}
+          busy={resolving}
+        />
+      )}
     </div>
   );
 }
