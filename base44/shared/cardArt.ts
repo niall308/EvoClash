@@ -144,3 +144,17 @@ export function buildAiCardPrompt(cardData: CardArtInput) {
   const prompt = `A ${cardData.type}-type ${cardData.baseName}, dynamic full-body creature illustration, matching the exact art style, color palette, lighting, and mystical trading-card aesthetic of the reference image, centered on a plain background, no text, no border, no frame`;
   return { prompt, existingImageUrls: [STYLE_REFERENCE_URL] };
 }
+
+// Egg-hatch recolour: the admin-stored baby image is the base. The model must
+// keep the creature's pose, anatomy, face, background, composition, framing, and
+// art style COMPLETELY IDENTICAL to the provided image — the ONLY change is the
+// creature's body colour shifting to the card type's gradient. Used by hatchEgg
+// so a hatched card looks exactly like the stored egg-creature art, just recoloured.
+export function buildEggHatchRecolorPrompt(cardData: CardArtInput, eggBabyImageUrl: string) {
+  const gradient = TYPE_COLOR_GRADIENTS[cardData.type];
+  const palette = gradient
+    ? `a color gradient flowing through ${gradient.join(" → ")}`
+    : randomFrom(CREATURE_COLOR_PALETTES);
+  const prompt = `Take this exact creature illustration as the source image. Keep the creature's pose, anatomy, body structure, face, background, composition, framing, and art style COMPLETELY IDENTICAL to the provided image — do not redesign or restructure anything. The ONLY change: recolor the creature's body (skin, scales, fur, feathers, hide) using ${palette} applied smoothly across the creature while preserving all shading, highlights, and texture detail. Do NOT change the background color or setting. Do NOT alter the creature's shape, pose, or face. Output the same image with only the creature's colours shifted to the new palette. No text, no border, no frame.`;
+  return { prompt, existingImageUrls: [eggBabyImageUrl] };
+}

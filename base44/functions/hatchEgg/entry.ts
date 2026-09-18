@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { EGG_HATCH_DAYS } from "../../shared/eggHatch.ts";
-import { buildCardImagePrompt } from "../../shared/cardArt.ts";
+import { buildCardImagePrompt, buildEggHatchRecolorPrompt } from "../../shared/cardArt.ts";
 
 // Hatches a ready (30/30) egg into a baby creature card. Picks a random
 // eligible creature (one that has at least one eggBabyImages entry), uses a
@@ -51,23 +51,34 @@ export default async function (req: Request) {
     const type = randomFrom(TYPES);
     const name = creature.eggBabyName || creature.baseName;
 
-    // Generate proper card art following the standard card-creation rules: a
-    // per-type colour gradient applied to the creature and an elemental type
-    // background, using the creature's admin-authored description + reference
-    // image. This replaces the static baby-image fallback.
-    const typeBackgrounds = await base44.entities.TypeBackground.filter({ type });
-    const { prompt, existingImageUrls } = buildCardImagePrompt(
-      { baseName: creature.baseName, type, isHybrid: false },
-      {
-        typeBackgrounds,
-        creatureDescription: creature.description || '',
-        referenceImageUrl: creature.referenceImageUrl || '',
-      }
-    );
-    const { url: cardArtUrl } = await base44.asServiceRole.integrations.Core.GenerateImage({
-      prompt,
-      existing_image_urls: existingImageUrls,
-    });
+    // Recolour the admin-stored baby image to the card type's colour gradient.
+    // The stored image is the base — pose, anatomy, background, and composition
+    // stay IDENTICAL; only the creature's body colour shifts to match the type.
+    const babyImage = randomFrom(creature.eggBabyImages || []);
+    let cardArtUrl: string;
+    if (babyImage) {
+      const { prompt, existingImageUrls } = buildEggHatchRecolorPrompt(
+        { baseName: creature.baseName, type, isHybrid: false },
+        babyImage
+      );
+      const gen = await base44.asServiceRole.integrations.Core.GenerateImage({
+        prompt,
+        existing_image_urls: existingImageUrls,
+      });
+      cardArtUrl = gen.url;
+    } else {
+      // No stored baby image — fall back to from-scratch generation.
+      const typeBackgrounds = await base44.entities.TypeBackground.filter({ type });
+      const { prompt, existingImageUrls } = buildCardImagePrompt(
+        { baseName: creature.baseName, type, isHybrid: false },
+        { typeBackgrounds, creatureDescription: creature.description || '', referenceImageUrl: creature.referenceImageUrl || '' }
+      );
+      const gen = await base44.asServiceRole.integrations.Core.GenerateImage({
+        prompt,
+        existing_image_urls: existingImageUrls,
+      });
+      cardArtUrl = gen.url;
+    }
 
     // The card is created unassigned; the player chooses to add it to a deck or
     // sell it from the hatch-result popup.
