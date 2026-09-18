@@ -3,8 +3,19 @@ import { base44 } from "@/api/base44Client";
 import { X, Loader2, Egg } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 const EGG_IMG = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/78ba2e7fa_Egg-design.png";
+const EGG_SELL_VALUE = 50000;
 
 export default function EggsModal({ onClose, onUserUpdate }) {
   const { toast } = useToast();
@@ -12,7 +23,7 @@ export default function EggsModal({ onClose, onUserUpdate }) {
   const [payingId, setPayingId] = useState(null);
   const [hatchingId, setHatchingId] = useState(null);
   const [sellingId, setSellingId] = useState(null);
-  const [confirmSellId, setConfirmSellId] = useState(null);
+  const [sellTarget, setSellTarget] = useState(null); // egg awaiting sell confirmation
   const today = new Date().toISOString().slice(0, 10);
 
   const load = async () => {
@@ -51,7 +62,7 @@ export default function EggsModal({ onClose, onUserUpdate }) {
 
   const sell = async (egg) => {
     setSellingId(egg.id);
-    setConfirmSellId(null);
+    setSellTarget(null);
     try {
       const res = await base44.functions.invoke("sellEgg", { eggId: egg.id });
       if (res.data.user) onUserUpdate?.(res.data.user);
@@ -145,23 +156,13 @@ export default function EggsModal({ onClose, onUserUpdate }) {
                           "Pay 250 LC (+1 day)"
                         )}
                       </button>
-                      {confirmSellId === egg.id ? (
-                        <button
-                          onClick={() => sell(egg)}
-                          disabled={sellingId === egg.id}
-                          className="px-3 py-2 rounded-full text-xs font-bold bg-red-500/90 text-white active:scale-95 whitespace-nowrap"
-                        >
-                          {sellingId === egg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Confirm sell"}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setConfirmSellId(egg.id)}
-                          disabled={sellingId === egg.id}
-                          className="px-3 py-2 rounded-full text-xs font-bold bg-white/10 text-white/70 active:scale-95 whitespace-nowrap"
-                        >
-                          Sell
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setSellTarget(egg)}
+                        disabled={sellingId === egg.id}
+                        className="px-3 py-2 rounded-full text-xs font-bold bg-white/10 text-white/70 active:scale-95 whitespace-nowrap"
+                      >
+                        Sell
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -170,6 +171,31 @@ export default function EggsModal({ onClose, onUserUpdate }) {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!sellTarget} onOpenChange={(open) => !open && setSellTarget(null)}>
+        <AlertDialogContent className="max-w-sm bg-[#0D1B2A] border-white/15">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white flex items-center gap-2">
+              <Egg className="w-5 h-5 text-amber-400" /> Sell this egg?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-white/70">
+              You'll receive <span className="font-bold text-amber-300">{EGG_SELL_VALUE.toLocaleString()} LC</span> for selling this egg. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-white/10 text-white border-white/15 hover:bg-white/20">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!!sellingId}
+              onClick={() => sellTarget && sell(sellTarget)}
+              className="bg-red-500 text-white hover:bg-red-600"
+            >
+              {sellingId ? <Loader2 className="w-4 h-4 animate-spin" /> : `Yes, sell for ${EGG_SELL_VALUE.toLocaleString()} LC`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
