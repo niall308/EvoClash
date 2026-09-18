@@ -12,7 +12,7 @@ export default function ProposeTradeModal({ friend, myCards, maxCoins = 0, onClo
   const [step, setStep] = useState(1); // 1: pick cards, 2: confirm
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [inspectCard, setInspectCard] = useState(null);
+  const [inspect, setInspect] = useState(null); // { card, side: 'mine' | 'friend' }
 
   useEffect(() => {
     base44.functions.invoke("getFriendCards", { friendUserId: friend.friendUserId }).then(({ data }) => {
@@ -59,21 +59,13 @@ export default function ProposeTradeModal({ friend, myCards, maxCoins = 0, onClo
             <p className="text-white/50 text-xs mb-2">Choose one of your cards to offer</p>
             <div className="grid grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
               {myCards.map((c) => (
-                <div key={c.id} className="relative">
-                  <button
-                    onClick={() => setMyCardId(c.id)}
-                    className={myCardId === c.id ? "ring-2 ring-amber-400 rounded-2xl block" : "block"}
-                  >
-                    <GameCard card={c} size="xs" />
-                  </button>
-                  <button
-                    onClick={() => setInspectCard(c)}
-                    className="absolute top-0 right-0 bg-black/70 rounded-full p-1 text-white/80 active:scale-90 transition-transform"
-                    aria-label="Inspect card stats"
-                  >
-                    <X className="w-3 h-3 rotate-45" />
-                  </button>
-                </div>
+                <button
+                  key={c.id}
+                  onClick={() => setInspect({ card: c, side: "mine" })}
+                  className={myCardId === c.id ? "ring-2 ring-amber-400 rounded-2xl block" : "block"}
+                >
+                  <GameCard card={c} size="xs" />
+                </button>
               ))}
             </div>
 
@@ -87,21 +79,13 @@ export default function ProposeTradeModal({ friend, myCards, maxCoins = 0, onClo
             ) : (
               <div className="grid grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
                 {friendCards.map((c) => (
-                  <div key={c.id} className="relative">
-                    <button
-                      onClick={() => setFriendCardId(c.id)}
-                      className={friendCardId === c.id ? "ring-2 ring-amber-400 rounded-2xl block" : "block"}
-                    >
-                      <GameCard card={c} size="xs" />
-                    </button>
-                    <button
-                      onClick={() => setInspectCard(c)}
-                      className="absolute top-0 right-0 bg-black/70 rounded-full p-1 text-white/80 active:scale-90 transition-transform"
-                      aria-label="Inspect card stats"
-                    >
-                      <X className="w-3 h-3 rotate-45" />
-                    </button>
-                  </div>
+                  <button
+                    key={c.id}
+                    onClick={() => setInspect({ card: c, side: "friend" })}
+                    className={friendCardId === c.id ? "ring-2 ring-amber-400 rounded-2xl block" : "block"}
+                  >
+                    <GameCard card={c} size="xs" />
+                  </button>
                 ))}
               </div>
             )}
@@ -169,8 +153,17 @@ export default function ProposeTradeModal({ friend, myCards, maxCoins = 0, onClo
             </div>
           </>
         )}
-      {inspectCard && (
-        <CardStatsModal card={inspectCard} onClose={() => setInspectCard(null)} />
+      {inspect && (
+        <CardStatsModal
+          card={inspect.card}
+          actionLabel="Trade card"
+          onAction={() => {
+            if (inspect.side === "mine") setMyCardId(inspect.card.id);
+            else setFriendCardId(inspect.card.id);
+            setInspect(null);
+          }}
+          onClose={() => setInspect(null)}
+        />
       )}
       </div>
     </div>

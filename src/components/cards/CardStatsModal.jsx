@@ -12,7 +12,7 @@ function Row({ label, value }) {
   );
 }
 
-export default function CardStatsModal({ card, onClose }) {
+export default function CardStatsModal({ card, onClose, actionLabel, onAction }) {
   if (!card) return null;
   const ua = cardUniqueAttack(card);
   return (
@@ -54,6 +54,14 @@ export default function CardStatsModal({ card, onClose }) {
           <Row label="Games Played" value={card.totalGames || 0} />
           <Row label="Match Wins" value={card.matchWins || 0} />
         </div>
+        {actionLabel && onAction && (
+          <button
+            onClick={onAction}
+            className="w-full bg-amber-500 text-black font-bold py-3 rounded-full active:scale-95 transition-transform"
+          >
+            {actionLabel}
+          </button>
+        )}
       </div>
     </div>
   );
