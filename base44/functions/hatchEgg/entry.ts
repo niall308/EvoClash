@@ -1,35 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { EGG_HATCH_DAYS } from "../../shared/eggHatch.ts";
 import { buildCardImagePrompt, buildEggHatchRecolorPrompt } from "../../shared/cardArt.ts";
-import { flattenImageOntoSolid, hasCheckerboardAtUrl } from "../../shared/imageFlatten.ts";
-
-// Generates card art, then re-rolls if the output contains a transparency
-// checkerboard pattern (which the model sometimes paints even from an opaque
-// reference). Up to maxAttempts; returns the first clean image, or the last
-// attempt if none are clean so a hatch never fails purely on detection.
-async function generateCleanArt(
-  base44: any,
-  prompt: string,
-  existingImageUrls: string[],
-  maxAttempts = 4
-): Promise<{ url: string; clean: boolean }> {
-  let url = '';
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const gen = await base44.asServiceRole.integrations.Core.GenerateImage({
-      prompt,
-      existing_image_urls: existingImageUrls,
-    });
-    url = gen.url;
-    const grid = await hasCheckerboardAtUrl(url);
-    if (grid) {
-      console.log(`hatchEgg: checkerboard detected on attempt ${attempt + 1}/${maxAttempts}, regenerating`);
-      if (attempt < maxAttempts - 1) continue;
-      return { url, clean: false };
-    }
-    return { url, clean: true };
-  }
-  return { url, clean: false };
-}
+import { flattenImageOntoSolid } from "../../shared/imageFlatten.ts";
+import { generateCleanArt } from "../../shared/generateCleanArt.ts";
 
 // Hatches a ready (30/30) egg into a baby creature card. Picks a random
 // eligible creature (one that has at least one eggBabyImages entry), uses a
