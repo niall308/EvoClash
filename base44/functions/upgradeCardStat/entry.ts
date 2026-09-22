@@ -42,6 +42,7 @@ Deno.serve(async (req) => {
 
     const card = await base44.entities.Card.get(cardId);
     if (!card || card.ownerId !== user.id) return Response.json({ error: 'Card not found' }, { status: 404 });
+    if (card.isEggHatchling) return Response.json({ error: 'Egg hatchlings cannot be stat-upgraded' }, { status: 400 });
 
     const upg = STAT_UPGRADES.find((u) => u.key === statKey);
     const usedField = USED_FIELD[statKey];

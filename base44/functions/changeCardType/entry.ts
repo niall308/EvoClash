@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
     const card = await base44.entities.Card.get(cardId);
     if (!card || card.ownerId !== user.id) return Response.json({ error: 'Card not found' }, { status: 404 });
     if (card.isHybrid) return Response.json({ error: 'Cannot change a hybrid card type' }, { status: 400 });
+    if (card.isEggHatchling) return Response.json({ error: 'Cannot change an egg hatchling type' }, { status: 400 });
     if (card.typeChanged) return Response.json({ error: 'Type can only be changed once' }, { status: 400 });
     if (card.type === newType) return Response.json({ error: 'Card is already this type' }, { status: 400 });
     if ((user.coins || 0) < TYPE_CHANGE_COST) return Response.json({ error: 'Not enough coins' }, { status: 400 });

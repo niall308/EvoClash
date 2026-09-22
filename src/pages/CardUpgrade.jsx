@@ -117,33 +117,37 @@ export default function CardUpgrade() {
       <div className="flex justify-center mb-6">
         <GameCard card={card} size="lg" />
       </div>
-      <h2 className="text-lg font-bold mb-3">Stat Upgrades</h2>
-      <div className="space-y-3">
-        {STAT_UPGRADES.map((upg) => {
-          const usesInTier = card[USED_FIELD[upg.key]] || 0;
-          const maxUses = getStatUpgradeMaxUses(card.tier);
-          return (
-            <StatUpgradeRow
-              key={upg.key}
-              upgrade={upg}
-              card={card}
-              coins={user.coins || 0}
-              purchasing={purchasing === upg.key}
-              onPurchase={handlePurchase}
-              capValue={upg.key === "bonusDamage" ? range.bonusMax : range.statMax}
-              cost={getStatUpgradeCost(card.tier, upg.key, usesInTier)}
-              usesInTier={usesInTier}
-              maxUses={maxUses}
-            />
-          );
-        })}
-      </div>
-      {!card.isHybrid && (
-        <TypeChangeSection card={card} coins={user.coins || 0} purchasing={typePurchasing} onChangeType={handleChangeType} />
+      {!card.isEggHatchling && (
+        <>
+          <h2 className="text-lg font-bold mb-3">Stat Upgrades</h2>
+          <div className="space-y-3">
+            {STAT_UPGRADES.map((upg) => {
+              const usesInTier = card[USED_FIELD[upg.key]] || 0;
+              const maxUses = getStatUpgradeMaxUses(card.tier);
+              return (
+                <StatUpgradeRow
+                  key={upg.key}
+                  upgrade={upg}
+                  card={card}
+                  coins={user.coins || 0}
+                  purchasing={purchasing === upg.key}
+                  onPurchase={handlePurchase}
+                  capValue={upg.key === "bonusDamage" ? range.bonusMax : range.statMax}
+                  cost={getStatUpgradeCost(card.tier, upg.key, usesInTier)}
+                  usesInTier={usesInTier}
+                  maxUses={maxUses}
+                />
+              );
+            })}
+          </div>
+          {!card.isHybrid && (
+            <TypeChangeSection card={card} coins={user.coins || 0} purchasing={typePurchasing} onChangeType={handleChangeType} />
+          )}
+        </>
       )}
       {card.isEggHatchling && !card.eggUpgraded ? (
         <EggHatchlingEvolveSection
-          cost={TIER_UPGRADE_COST}
+          cost={500000}
           coins={user.coins || 0}
           evolving={eggEvolving}
           onEvolve={handleEggEvolve}

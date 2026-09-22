@@ -9,7 +9,7 @@ import { generateCleanArt } from "../../shared/generateCleanArt.ts";
 // 10,000–12,500 while the other + bonus follow the normal Tier 4 ranges. Charges
 // the standard tier-upgrade cost and mirrors evolveCard's user bookkeeping
 // (creaturesEvolved + evolvedCardIds) so the upgrade counts toward milestones.
-const TIER_UPGRADE_COST = 150000;
+const TIER_UPGRADE_COST = 500000;
 const TIER4 = { statMin: 7501, statMax: 10000, bonusMin: 251, bonusMax: 300 };
 const UPGRADE_STAT_MIN = 10000;
 const UPGRADE_STAT_MAX = 12500;
