@@ -47,14 +47,23 @@ export default async function (req: Request) {
     const creature: any = card.eggCreatureId
       ? await base44.entities.Creature.get(card.eggCreatureId)
       : null;
-    if (!creature || (creature.eggUpgradedImages || []).length === 0) {
+    const goodImages = (creature?.eggUpgradedGoodImages || []);
+    const evilImages = (creature?.eggUpgradedEvilImages || []);
+    if (goodImages.length === 0 && evilImages.length === 0) {
       return Response.json({ error: 'No upgraded image configured for this creature.' }, { status: 400 });
     }
     if ((user.coins || 0) < TIER_UPGRADE_COST) {
       return Response.json({ error: 'Not enough coins' }, { status: 400 });
     }
 
-    const upgradedImage = randomFrom(creature.eggUpgradedImages);
+    // 50/50 Good vs Evil alignment. If the chosen alignment has no images, fall
+    // back to whichever side has art (keeps the upgrade working if the admin
+    // only configured one side for this creature).
+    let alignment: 'good' | 'evil';
+    if (goodImages.length === 0) alignment = 'evil';
+    else if (evilImages.length === 0) alignment = 'good';
+    else alignment = Math.random() < 0.5 ? 'good' : 'evil';
+    const upgradedImage = randomFrom(alignment === 'good' ? goodImages : evilImages);
     // One stat lands in 10,000–12,500 (the "special" stat); the other + bonus
     // follow the Tier 4 range. Which stat is the special one is random.
     const higherIsAttack = Math.random() < 0.5;
@@ -110,6 +119,13 @@ export default async function (req: Request) {
       cardArtUrl = result.url;
     }
 
+    // The upgraded form's Unique Attack is fixed by alignment (not per-creature):
+    //   Good = Blessed Strike: 110% damage + heal all active cards 35% max HP.
+    //   Evil  = Cursed Strike: 175% damage + all active cards lose 15% current HP.
+    const ua = alignment === 'good'
+      ? { uniqueAttackName: 'Blessed Strike', uniqueAttackPercent: 110, uniqueAttackTarget: 'single', uniqueAttackEffect: 'Deals 110% attack damage and heals all of your active cards (including itself) by 35% of their total health.', uniqueAttackEffectType: 'healAll35' }
+      : { uniqueAttackName: 'Cursed Strike', uniqueAttackPercent: 175, uniqueAttackTarget: 'single', uniqueAttackEffect: 'Deals 175% attack damage but all of your active cards on the field lose 15% of their current health.', uniqueAttackEffectType: 'sacrificeAll15' };
+
     const updated: any = {
       tier: 4,
       name,
@@ -118,6 +134,8 @@ export default async function (req: Request) {
       bonusDamage,
       imageUrl: cardArtUrl,
       eggUpgraded: true,
+      eggAlignment: alignment,
+      ...ua,
       attackUpgradesUsed: 0,
       defenseUpgradesUsed: 0,
       bonusDamageUpgradesUsed: 0,

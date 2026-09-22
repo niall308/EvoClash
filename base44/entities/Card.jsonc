@@ -132,6 +132,11 @@
       "default": "",
       "description": "Additional effect description for the Unique Attack, stamped from the Creature entity."
     },
+    "uniqueAttackEffectType": {
+      "type": "string",
+      "default": "",
+      "description": "Explicit engine effect type for this card's Unique Attack, taking precedence over text mapping. Used by egg-hatchling cards (baby/good/evil) to map to deterministic mechanics."
+    },
     "isEggHatchling": {
       "type": "boolean",
       "default": false,
@@ -146,6 +151,16 @@
       "type": "boolean",
       "default": false,
       "description": "True once an egg hatchling has been evolved into its special upgraded (Tier 4) form. Prevents re-upgrading."
+    },
+    "eggAlignment": {
+      "type": "string",
+      "enum": [
+        "",
+        "good",
+        "evil"
+      ],
+      "default": "",
+      "description": "Alignment chosen at upgrade time for an egg hatchling's upgraded (Tier 4) form. 'good' = Blessed Strike (110% dmg + heal team 35%), 'evil' = Cursed Strike (175% dmg + sacrifice team 15%). Empty for baby hatchlings and non-egg cards."
     }
   },
   "required": [

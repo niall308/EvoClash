@@ -381,8 +381,11 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
         const damage = result.damage;
         setEffect({ from: aIdx, to: tIdx, side: "player", value: damage, blocked: false, crit: result.isCrit, recoil: result.recoil, key: Date.now() });
         if (damage > 0) matchDamageRef.current += damage;
+        // Egg Burst (baby hatchling): 5% chance to completely destroy the target card.
+        const eggDestroyRoll = def.effectType === "destroyChance5" && Math.random() < 0.05;
         await sleep(600);
-        const newHp = Math.max(0, tSlot.hp - damage);
+        const newHp = eggDestroyRoll ? 0 : Math.max(0, tSlot.hp - damage);
+        if (eggDestroyRoll) setLog(`${aSlot.card.name}'s Egg Burst destroyed ${tSlot.card.name}!`);
         setAiSlots((slots) => {
           const next = [...slots];
           if (next[tIdx]) next[tIdx] = { ...next[tIdx], hp: newHp };
@@ -404,6 +407,12 @@ export default function useBattle3v3(playerCards, onMatchEnd, difficulty = "Norm
         });
       } else if (et === "healAll30") {
         setPlayerSlots((slots) => slots.map((s) => (s ? { ...s, hp: Math.min(s.maxHp, s.hp + Math.round(s.maxHp * 0.3)) } : s)));
+      } else if (et === "healAll35") {
+        // Blessed Strike: heal all active player cards by 35% of their total (max) health.
+        setPlayerSlots((slots) => slots.map((s) => (s ? { ...s, hp: Math.min(s.maxHp, s.hp + Math.round(s.maxHp * 0.35)) } : s)));
+      } else if (et === "sacrificeAll15") {
+        // Cursed Strike: all active player cards lose 15% of their current health.
+        setPlayerSlots((slots) => slots.map((s) => (s ? { ...s, hp: Math.max(0, Math.round(s.hp * 0.85)) } : s)));
       } else if (et === "halfAttackTarget1" && def.target === "single" && chosenTargetIdx != null && aiSlots[chosenTargetIdx]) {
         setAiDebuffs((d) => {
           const next = [...d];

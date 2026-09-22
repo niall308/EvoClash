@@ -110,6 +110,9 @@ export default async function (req: Request) {
 
     // The card is created unassigned; the player chooses to add it to a deck or
     // sell it from the hatch-result popup.
+    // Baby egg hatchlings get a fixed Unique Attack (Egg Burst): 95% attack
+    // damage with a 5% chance to completely destroy the target card. This
+    // overrides any per-creature unique-attack config for egg hatchlings.
     const card = await base44.entities.Card.create({
       name,
       baseName: creature.baseName,
@@ -123,10 +126,12 @@ export default async function (req: Request) {
       ownerId: user.id,
       isEggHatchling: true,
       eggCreatureId: creature.id,
-      uniqueAttackName: creature.uniqueAttackName || '',
-      uniqueAttackPercent: Math.max(0, Math.min(250, Number(creature.uniqueAttackPercent) || 0)),
-      uniqueAttackTarget: creature.uniqueAttackTarget === 'multi' ? 'multi' : 'single',
-      uniqueAttackEffect: creature.uniqueAttackEffect || '',
+      eggAlignment: '',
+      uniqueAttackName: 'Egg Burst',
+      uniqueAttackPercent: 95,
+      uniqueAttackTarget: 'single',
+      uniqueAttackEffect: 'Deals 95% attack damage with a 5% chance to completely destroy the target card.',
+      uniqueAttackEffectType: 'destroyChance5',
       winsVsBonus: 0,
       winsVsNonBonus: 0,
       gamesPlayed: 0,

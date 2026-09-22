@@ -67,7 +67,7 @@
     "eggUpgradedName": {
       "type": "string",
       "default": "",
-      "description": "Display name for the upgraded (Tier 4) form of this creature's egg hatchling. Falls back to the baby name if empty."
+      "description": "Display name for the upgraded (Tier 4) form of this creature's egg hatchling. Falls back to the baby name if empty. Shared by both Good and Evil upgraded forms."
     },
     "eggBabyImages": {
       "type": "array",
@@ -77,13 +77,21 @@
       "default": [],
       "description": "Card-art image URLs for the baby form. One is chosen at random when an egg hatches. A creature needs at least one to be eligible as an egg hatch."
     },
-    "eggUpgradedImages": {
+    "eggUpgradedGoodImages": {
       "type": "array",
       "items": {
         "type": "string"
       },
       "default": [],
-      "description": "Card-art image URLs for the upgraded form. One is chosen at random when a hatchling is upgraded."
+      "description": "Card-art image URLs for the Good upgraded (Tier 4) form. When a hatchling is upgraded there is a 50/50 chance of Good vs Evil; one Good image is chosen at random."
+    },
+    "eggUpgradedEvilImages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Card-art image URLs for the Evil upgraded (Tier 4) form. When a hatchling is upgraded there is a 50/50 chance of Good vs Evil; one Evil image is chosen at random."
     }
   },
   "required": [

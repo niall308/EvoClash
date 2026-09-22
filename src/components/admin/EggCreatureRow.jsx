@@ -5,17 +5,33 @@ import { useToast } from "@/components/ui/use-toast";
 import EggCreaturePreview from "@/components/admin/EggCreaturePreview";
 
 // One row in the Egg Creatures admin page. Lets the admin edit the baby +
-// upgraded display names and add/remove baby + upgraded card-art images for a
-// single creature. Each change saves immediately to the Creature entity.
+// upgraded display names and add/remove baby + upgraded (Good/Evil) card-art
+// images for a single creature. Each change saves immediately to the Creature
+// entity. On upgrade, a hatchling has a 50/50 chance of becoming Good or Evil,
+// and one image from the chosen side is picked at random.
+const SLOT_FIELD = {
+  baby: "eggBabyImages",
+  good: "eggUpgradedGoodImages",
+  evil: "eggUpgradedEvilImages",
+};
+
 export default function EggCreatureRow({ creature, onUpdate }) {
   const { toast } = useToast();
   const [babyName, setBabyName] = useState(creature.eggBabyName || "");
   const [upgradedName, setUpgradedName] = useState(creature.eggUpgradedName || "");
   const [babyImages, setBabyImages] = useState(creature.eggBabyImages || []);
-  const [upgradedImages, setUpgradedImages] = useState(creature.eggUpgradedImages || []);
+  const [goodImages, setGoodImages] = useState(creature.eggUpgradedGoodImages || []);
+  const [evilImages, setEvilImages] = useState(creature.eggUpgradedEvilImages || []);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(null); // "baby" | "upgraded"
+  const [uploading, setUploading] = useState(null); // "baby" | "good" | "evil"
   const [showPreview, setShowPreview] = useState(false);
+
+  const imagesFor = (slot) => (slot === "baby" ? babyImages : slot === "good" ? goodImages : evilImages);
+  const setImagesFor = (slot, val) => {
+    if (slot === "baby") setBabyImages(val);
+    else if (slot === "good") setGoodImages(val);
+    else setEvilImages(val);
+  };
 
   const save = async (fields) => {
     setSaving(true);
@@ -24,13 +40,15 @@ export default function EggCreatureRow({ creature, onUpdate }) {
         eggBabyName: fields.eggBabyName !== undefined ? fields.eggBabyName : babyName,
         eggUpgradedName: fields.eggUpgradedName !== undefined ? fields.eggUpgradedName : upgradedName,
         eggBabyImages: fields.eggBabyImages !== undefined ? fields.eggBabyImages : babyImages,
-        eggUpgradedImages: fields.eggUpgradedImages !== undefined ? fields.eggUpgradedImages : upgradedImages,
+        eggUpgradedGoodImages: fields.eggUpgradedGoodImages !== undefined ? fields.eggUpgradedGoodImages : goodImages,
+        eggUpgradedEvilImages: fields.eggUpgradedEvilImages !== undefined ? fields.eggUpgradedEvilImages : evilImages,
       };
       const updated = await base44.entities.Creature.update(creature.id, merged);
       setBabyName(updated.eggBabyName || "");
       setUpgradedName(updated.eggUpgradedName || "");
       setBabyImages(updated.eggBabyImages || []);
-      setUpgradedImages(updated.eggUpgradedImages || []);
+      setGoodImages(updated.eggUpgradedGoodImages || []);
+      setEvilImages(updated.eggUpgradedEvilImages || []);
       onUpdate?.(updated);
     } catch (e) {
       toast({ title: "Save failed", variant: "destructive" });
@@ -44,11 +62,9 @@ export default function EggCreatureRow({ creature, onUpdate }) {
     setUploading(slot);
     try {
       const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
-      const list = slot === "baby" ? babyImages : upgradedImages;
-      const next = [...list, file_url];
-      if (slot === "baby") setBabyImages(next);
-      else setUpgradedImages(next);
-      await save({ [slot === "baby" ? "eggBabyImages" : "eggUpgradedImages"]: next });
+      const next = [...imagesFor(slot), file_url];
+      setImagesFor(slot, next);
+      await save({ [SLOT_FIELD[slot]]: next });
     } catch (e) {
       toast({ title: "Upload failed", variant: "destructive" });
     } finally {
@@ -57,11 +73,9 @@ export default function EggCreatureRow({ creature, onUpdate }) {
   };
 
   const removeImage = (slot, idx) => {
-    const list = slot === "baby" ? babyImages : upgradedImages;
-    const next = list.filter((_, i) => i !== idx);
-    if (slot === "baby") setBabyImages(next);
-    else setUpgradedImages(next);
-    save({ [slot === "baby" ? "eggBabyImages" : "eggUpgradedImages"]: next });
+    const next = imagesFor(slot).filter((_, i) => i !== idx);
+    setImagesFor(slot, next);
+    save({ [SLOT_FIELD[slot]]: next });
   };
 
   return (
@@ -86,7 +100,12 @@ export default function EggCreatureRow({ creature, onUpdate }) {
           </button>
         </div>
       </div>
-      {showPreview && <EggCreaturePreview creature={{ ...creature, eggBabyName: babyName, eggUpgradedName: upgradedName, eggBabyImages: babyImages, eggUpgradedImages: upgradedImages }} onClose={() => setShowPreview(false)} />}
+      {showPreview && (
+        <EggCreaturePreview
+          creature={{ ...creature, eggBabyName: babyName, eggUpgradedName: upgradedName, eggBabyImages: babyImages, eggUpgradedGoodImages: goodImages, eggUpgradedEvilImages: evilImages }}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-2 mb-3">
         <label className="block">
@@ -100,7 +119,7 @@ export default function EggCreatureRow({ creature, onUpdate }) {
           />
         </label>
         <label className="block">
-          <span className="text-[10px] text-white/50">Upgraded name</span>
+          <span className="text-[10px] text-white/50">Upgraded name (shared)</span>
           <input
             value={upgradedName}
             onChange={(e) => setUpgradedName(e.target.value)}
@@ -113,15 +132,23 @@ export default function EggCreatureRow({ creature, onUpdate }) {
 
       <ImageSlot label="Baby card image(s) — one is picked at random on hatch" slot="baby" images={babyImages} uploading={uploading} onUpload={upload} onRemove={removeImage} />
       <div className="h-3" />
-      <ImageSlot label="Upgraded card image(s) — one is picked at random on upgrade" slot="upgraded" images={upgradedImages} uploading={uploading} onUpload={upload} onRemove={removeImage} />
+      <ImageSlot label="Upgraded — Good image(s) — 50% chance on upgrade" slot="good" images={goodImages} uploading={uploading} onUpload={upload} onRemove={removeImage} accent="good" />
+      <div className="h-3" />
+      <ImageSlot label="Upgraded — Evil image(s) — 50% chance on upgrade" slot="evil" images={evilImages} uploading={uploading} onUpload={upload} onRemove={removeImage} accent="evil" />
     </div>
   );
 }
 
-function ImageSlot({ label, slot, images, uploading, onUpload, onRemove }) {
+function ImageSlot({ label, slot, images, uploading, onUpload, onRemove, accent }) {
+  const accentClass =
+    accent === "good"
+      ? "text-emerald-300"
+      : accent === "evil"
+      ? "text-rose-300"
+      : "text-white/50";
   return (
     <div>
-      <p className="text-[10px] text-white/50 mb-1.5">{label}</p>
+      <p className={`text-[10px] mb-1.5 ${accentClass}`}>{label}</p>
       <div className="flex flex-wrap gap-2">
         {images.map((url, i) => (
           <div key={i} className="relative w-20 h-28 rounded-lg overflow-hidden border border-white/10">

@@ -389,8 +389,11 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         const reflected = Math.round(damage * 0.25);
         setAiHP((h) => Math.max(0, h - reflected));
       }
+      // Egg Burst (baby hatchling): 5% chance to completely destroy the target card.
+      const eggDestroyRoll = usingUniqueAttack && opts.uniqueAttack?.effectType === "destroyChance5" && Math.random() < 0.05;
       await sleep(600);
-      let newTargetHP = Math.max(0, targetHP - damage);
+      let newTargetHP = eggDestroyRoll ? 0 : Math.max(0, targetHP - damage);
+      if (eggDestroyRoll) setLog(`${playerCard.name}'s Egg Burst destroyed ${aiCard?.name || "the opponent"}!`);
       if (targetSide === "player" && newTargetHP <= 0 && pfx.surviveWith1HP) {
         newTargetHP = 1;
         patchPfx({ surviveWith1HP: false });
@@ -438,6 +441,13 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         } else if (et === "halfAttackTarget1" && aiCard) {
           halfAttackCardRef.current = aiCard;
           setHalfAttackTurnsLeft(1);
+        } else if (et === "healAll35") {
+          // Blessed Strike: heal the active card by 35% of its total (max) health.
+          const max = maxHealth(playerCard) + (pfx.maxHPBonus || 0);
+          setPlayerHP((hp) => Math.min(max, hp + Math.round(max * 0.35)));
+        } else if (et === "sacrificeAll15") {
+          // Cursed Strike: the active card loses 15% of its current health.
+          setPlayerHP((hp) => Math.max(0, Math.round(hp * 0.85)));
         }
       }
       if (newTargetHP <= 0) {

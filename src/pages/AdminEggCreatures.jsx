@@ -43,7 +43,7 @@ export default function AdminEggCreatures() {
         <Egg className="w-6 h-6 text-amber-400" /> Egg Creatures
       </h1>
       <p className="text-white/50 text-xs mb-6">
-        Configure the baby &amp; upgraded card art and names for creatures that can hatch from eggs. A creature needs at least one baby image to be eligible.
+        Configure the baby &amp; upgraded (Good/Evil) card art and names for creatures that can hatch from eggs. A creature needs at least one baby image to be eligible. On upgrade, a hatchling has a 50/50 chance of becoming Good or Evil.
       </p>
 
       {creatures && (

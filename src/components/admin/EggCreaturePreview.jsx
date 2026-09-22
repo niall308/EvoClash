@@ -6,7 +6,8 @@ import { Image } from "@/components/ui/image";
 // a single creature, shown when the admin taps "Preview" on an egg creature row.
 export default function EggCreaturePreview({ creature, onClose }) {
   const babyImages = creature.eggBabyImages || [];
-  const upgradedImages = creature.eggUpgradedImages || [];
+  const goodImages = creature.eggUpgradedGoodImages || [];
+  const evilImages = creature.eggUpgradedEvilImages || [];
   const babyName = creature.eggBabyName || creature.baseName;
   const upgradedName = creature.eggUpgradedName || `Upgraded ${creature.baseName}`;
 
@@ -33,22 +34,31 @@ export default function EggCreaturePreview({ creature, onClose }) {
           />
           <PreviewCard
             tier={4}
-            tierLabel="T4"
+            tierLabel="T4 · Good"
             name={upgradedName}
-            image={upgradedImages[0]}
-            placeholder="No upgraded image yet"
+            image={goodImages[0]}
+            placeholder="No Good image yet"
+            badgeClass="bg-emerald-500 text-white"
+          />
+          <PreviewCard
+            tier={4}
+            tierLabel="T4 · Evil"
+            name={upgradedName}
+            image={evilImages[0]}
+            placeholder="No Evil image yet"
+            badgeClass="bg-rose-600 text-white"
           />
         </div>
 
         <p className="text-[10px] text-white/40 text-center mt-4">
-          Shows the first of each image set. The live hatch/upgrade flow picks one at random.
+          Shows the first of each image set. The live hatch/upgrade flow picks one at random. Good/Evil is a 50/50 roll on upgrade.
         </p>
       </div>
     </div>
   );
 }
 
-function PreviewCard({ tier, tierLabel, name, image, placeholder }) {
+function PreviewCard({ tier, tierLabel, name, image, placeholder, badgeClass }) {
   return (
     <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/30 flex flex-col">
       <div className="relative w-full aspect-[3/4]">
@@ -61,7 +71,7 @@ function PreviewCard({ tier, tierLabel, name, image, placeholder }) {
         )}
         <span
           className={`absolute top-1.5 left-1.5 text-[10px] font-black px-1.5 py-0.5 rounded-md ${
-            tier === 3 ? "bg-blue-500 text-white" : "bg-amber-500 text-black"
+            badgeClass || (tier === 3 ? "bg-blue-500 text-white" : "bg-amber-500 text-black")
           }`}
         >
           {tierLabel}
