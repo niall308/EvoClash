@@ -18,7 +18,8 @@ const SLOT_FIELD = {
 export default function EggCreatureRow({ creature, onUpdate }) {
   const { toast } = useToast();
   const [babyName, setBabyName] = useState(creature.eggBabyName || "");
-  const [upgradedName, setUpgradedName] = useState(creature.eggUpgradedName || "");
+  const [goodName, setGoodName] = useState(creature.eggUpgradedGoodName || "");
+  const [evilName, setEvilName] = useState(creature.eggUpgradedEvilName || "");
   const [babyImages, setBabyImages] = useState(creature.eggBabyImages || []);
   const [goodImages, setGoodImages] = useState(creature.eggUpgradedGoodImages || []);
   const [evilImages, setEvilImages] = useState(creature.eggUpgradedEvilImages || []);
@@ -38,14 +39,16 @@ export default function EggCreatureRow({ creature, onUpdate }) {
     try {
       const merged = {
         eggBabyName: fields.eggBabyName !== undefined ? fields.eggBabyName : babyName,
-        eggUpgradedName: fields.eggUpgradedName !== undefined ? fields.eggUpgradedName : upgradedName,
+        eggUpgradedGoodName: fields.eggUpgradedGoodName !== undefined ? fields.eggUpgradedGoodName : goodName,
+        eggUpgradedEvilName: fields.eggUpgradedEvilName !== undefined ? fields.eggUpgradedEvilName : evilName,
         eggBabyImages: fields.eggBabyImages !== undefined ? fields.eggBabyImages : babyImages,
         eggUpgradedGoodImages: fields.eggUpgradedGoodImages !== undefined ? fields.eggUpgradedGoodImages : goodImages,
         eggUpgradedEvilImages: fields.eggUpgradedEvilImages !== undefined ? fields.eggUpgradedEvilImages : evilImages,
       };
       const updated = await base44.entities.Creature.update(creature.id, merged);
       setBabyName(updated.eggBabyName || "");
-      setUpgradedName(updated.eggUpgradedName || "");
+      setGoodName(updated.eggUpgradedGoodName || "");
+      setEvilName(updated.eggUpgradedEvilName || "");
       setBabyImages(updated.eggBabyImages || []);
       setGoodImages(updated.eggUpgradedGoodImages || []);
       setEvilImages(updated.eggUpgradedEvilImages || []);
@@ -102,12 +105,12 @@ export default function EggCreatureRow({ creature, onUpdate }) {
       </div>
       {showPreview && (
         <EggCreaturePreview
-          creature={{ ...creature, eggBabyName: babyName, eggUpgradedName: upgradedName, eggBabyImages: babyImages, eggUpgradedGoodImages: goodImages, eggUpgradedEvilImages: evilImages }}
+          creature={{ ...creature, eggBabyName: babyName, eggUpgradedGoodName: goodName, eggUpgradedEvilName: evilName, eggBabyImages: babyImages, eggUpgradedGoodImages: goodImages, eggUpgradedEvilImages: evilImages }}
           onClose={() => setShowPreview(false)}
         />
       )}
 
-      <div className="grid grid-cols-2 gap-2 mb-3">
+      <div className="grid grid-cols-1 gap-2 mb-3">
         <label className="block">
           <span className="text-[10px] text-white/50">Baby name</span>
           <input
@@ -119,13 +122,23 @@ export default function EggCreatureRow({ creature, onUpdate }) {
           />
         </label>
         <label className="block">
-          <span className="text-[10px] text-white/50">Upgraded name (shared)</span>
+          <span className="text-[10px] text-emerald-300/70">Good upgraded name</span>
           <input
-            value={upgradedName}
-            onChange={(e) => setUpgradedName(e.target.value)}
-            onBlur={() => upgradedName !== (creature.eggUpgradedName || "") && save({ eggUpgradedName: upgradedName })}
-            placeholder={`Upgraded ${creature.baseName}`}
-            className="w-full mt-1 bg-black/30 rounded-lg px-2 py-1.5 text-xs text-white outline-none border border-white/10 focus:border-amber-400"
+            value={goodName}
+            onChange={(e) => setGoodName(e.target.value)}
+            onBlur={() => goodName !== (creature.eggUpgradedGoodName || "") && save({ eggUpgradedGoodName: goodName })}
+            placeholder={`Blessed ${creature.baseName}`}
+            className="w-full mt-1 bg-black/30 rounded-lg px-2 py-1.5 text-xs text-white outline-none border border-white/10 focus:border-emerald-400"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[10px] text-rose-300/70">Evil upgraded name</span>
+          <input
+            value={evilName}
+            onChange={(e) => setEvilName(e.target.value)}
+            onBlur={() => evilName !== (creature.eggUpgradedEvilName || "") && save({ eggUpgradedEvilName: evilName })}
+            placeholder={`Cursed ${creature.baseName}`}
+            className="w-full mt-1 bg-black/30 rounded-lg px-2 py-1.5 text-xs text-white outline-none border border-white/10 focus:border-rose-400"
           />
         </label>
       </div>

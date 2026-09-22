@@ -67,7 +67,17 @@
     "eggUpgradedName": {
       "type": "string",
       "default": "",
-      "description": "Display name for the upgraded (Tier 4) form of this creature's egg hatchling. Falls back to the baby name if empty. Shared by both Good and Evil upgraded forms."
+      "description": "Legacy shared upgraded (Tier 4) display name. Retained as a fallback when the per-alignment name is empty. Prefer eggUpgradedGoodName / eggUpgradedEvilName."
+    },
+    "eggUpgradedGoodName": {
+      "type": "string",
+      "default": "",
+      "description": "Display name for the Good upgraded (Tier 4) form of this creature's egg hatchling. Falls back to eggUpgradedName, then to the baby name."
+    },
+    "eggUpgradedEvilName": {
+      "type": "string",
+      "default": "",
+      "description": "Display name for the Evil upgraded (Tier 4) form of this creature's egg hatchling. Falls back to eggUpgradedName, then to the baby name."
     },
     "eggBabyImages": {
       "type": "array",

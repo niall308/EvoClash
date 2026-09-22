@@ -9,7 +9,8 @@ export default function EggCreaturePreview({ creature, onClose }) {
   const goodImages = creature.eggUpgradedGoodImages || [];
   const evilImages = creature.eggUpgradedEvilImages || [];
   const babyName = creature.eggBabyName || creature.baseName;
-  const upgradedName = creature.eggUpgradedName || `Upgraded ${creature.baseName}`;
+  const goodName = creature.eggUpgradedGoodName || creature.eggUpgradedName || `Blessed ${creature.baseName}`;
+  const evilName = creature.eggUpgradedEvilName || creature.eggUpgradedName || `Cursed ${creature.baseName}`;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
@@ -35,7 +36,7 @@ export default function EggCreaturePreview({ creature, onClose }) {
           <PreviewCard
             tier={4}
             tierLabel="T4 · Good"
-            name={upgradedName}
+            name={goodName}
             image={goodImages[0]}
             placeholder="No Good image yet"
             badgeClass="bg-emerald-500 text-white"
@@ -43,7 +44,7 @@ export default function EggCreaturePreview({ creature, onClose }) {
           <PreviewCard
             tier={4}
             tierLabel="T4 · Evil"
-            name={upgradedName}
+            name={evilName}
             image={evilImages[0]}
             placeholder="No Evil image yet"
             badgeClass="bg-rose-600 text-white"

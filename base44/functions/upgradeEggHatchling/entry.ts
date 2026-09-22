@@ -72,7 +72,9 @@ export default async function (req: Request) {
     const attack = higherIsAttack ? bigStat : smallStat;
     const defense = higherIsAttack ? smallStat : bigStat;
     const bonusDamage = randomInt(TIER4.bonusMin, TIER4.bonusMax);
-    const name = creature.eggUpgradedName || card.name;
+    const name = (alignment === 'good'
+      ? (creature.eggUpgradedGoodName || creature.eggUpgradedName)
+      : (creature.eggUpgradedEvilName || creature.eggUpgradedName)) || card.name;
 
     // Recolour the admin-stored upgraded image to the card's type gradient AND
     // place it on a fitting type background, matching the hatch flow. The stored
