@@ -76,6 +76,7 @@ export default function StoryBattle() {
             stageDone: data.stageDone,
             allDone: data.allDone,
             bossName: matchData.bossName,
+            bonusReward: data.bonusReward || null,
           });
         } else {
           setEndState({ win: false, bossName: matchData.bossName });

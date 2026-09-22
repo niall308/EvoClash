@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Lock, Check, Crown, BookOpen, Trophy } from "lucide-react";
+import { ArrowLeft, Lock, Check, Crown, BookOpen, Trophy, Gift, Egg } from "lucide-react";
 import { STORY_STAGES, getOrCreateStoryProgress } from "@/lib/storyConfig";
 
 export default function StoryMap() {
@@ -47,6 +47,19 @@ export default function StoryMap() {
                   <span className="text-xs font-bold text-white/70 truncate">{stage.bossName}</span>
                   {stageDone && <Check className="w-4 h-4 text-emerald-400 ml-auto" />}
                 </div>
+                {(stage.stage === 5 || stage.stage === 10) && (
+                  <div className="flex items-center gap-1 mb-3 text-[10px] font-bold">
+                    {stage.stage === 5 ? (
+                      <span className="inline-flex items-center gap-1 bg-gradient-to-r from-fuchsia-500/40 to-amber-400/40 text-amber-200 px-2 py-1 rounded-full border border-amber-400/40">
+                        <Gift className="w-3 h-3" /> Boss Reward: Hybrid Card
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 bg-gradient-to-r from-cyan-500/40 to-emerald-400/40 text-cyan-100 px-2 py-1 rounded-full border border-cyan-400/40">
+                        <Egg className="w-3 h-3" /> Boss Reward: Creature Egg
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="grid grid-cols-4 gap-2">
                   {stage.matches.map((mt) => {
                     const key = `${stage.stage}-${mt.matchNumber}`;

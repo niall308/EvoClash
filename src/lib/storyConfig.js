@@ -64,6 +64,8 @@ export const STORY_STAGES = STAGE_PROFILES.map((profile, idx) => {
       // Bosses are meaningfully stronger; non-bosses scale gently with stage.
       aiStatMultiplier: isBoss ? 1.15 + (stage - 1) * 0.04 : 1 + (stage - 1) * 0.03,
       reward: stage * 100,
+      // Stage-5 boss awards a free Hybrid card; stage-10 boss awards a free Egg.
+      bonusReward: isBoss && stage === 5 ? "hybrid" : isBoss && stage === 10 ? "egg" : null,
     });
   }
   return { stage, bossName: BOSS_NAMES[idx], matches };
