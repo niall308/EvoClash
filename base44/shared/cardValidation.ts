@@ -3,7 +3,7 @@
 // since backend functions can't import frontend source.
 
 export const TYPES = ["Fire", "Lava", "Water", "Ice", "Rock", "Wind", "Earth", "Magic"];
-export const CATEGORIES = ["Dinosaur", "Extinct Animal", "Mythical Creature"];
+export const CATEGORIES = ["Dinosaur", "Extinct Animal", "Mythical Creature", "Prototype"];
 export const HYPER_RARE_TYPE = "Hyper Rare";
 export const HYBRID_MIN_ATTACK = 7300;
 export const HYBRID_MIN_DEFENSE = 5000;

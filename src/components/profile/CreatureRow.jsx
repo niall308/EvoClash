@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { Trash2, Pencil, Check, ChevronDown } from "lucide-react";
+import { Trash2, Pencil, Check, ChevronDown, Loader2, ImagePlus, X } from "lucide-react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { base44 } from "@/api/base44Client";
+import { useToast } from "@/components/ui/use-toast";
 
 const TARGET_OPTIONS = [
   { value: "single", label: "Single" },
@@ -47,13 +49,41 @@ function TargetPicker({ value, onSelect }) {
   );
 }
 
+const TIERS = [1, 2, 3, 4];
+
 export default function CreatureRow({ creature, onDelete, onUpdate }) {
+  const { toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [description, setDescription] = useState(creature.description || "");
   const [uaName, setUaName] = useState(creature.uniqueAttackName || "");
   const [uaPercent, setUaPercent] = useState(creature.uniqueAttackPercent?.toString() || "");
   const [uaTarget, setUaTarget] = useState(creature.uniqueAttackTarget || "single");
   const [uaEffect, setUaEffect] = useState(creature.uniqueAttackEffect || "");
+  const [tierImages, setTierImages] = useState({
+    1: creature.tier1Image || "",
+    2: creature.tier2Image || "",
+    3: creature.tier3Image || "",
+    4: creature.tier4Image || "",
+  });
+  const [uploadingTier, setUploadingTier] = useState(null);
+  const [viewImage, setViewImage] = useState(null);
+
+  const uploadTierImage = async (tier, file) => {
+    if (!file) return;
+    setUploadingTier(tier);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+      setTierImages((prev) => ({ ...prev, [tier]: file_url }));
+    } catch (e) {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally {
+      setUploadingTier(null);
+    }
+  };
+
+  const removeTierImage = (tier) => {
+    setTierImages((prev) => ({ ...prev, [tier]: "" }));
+  };
 
   const save = async () => {
     await onUpdate(creature.id, {
@@ -62,6 +92,10 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
       uniqueAttackPercent: Math.max(0, Math.min(250, Number(uaPercent) || 0)),
       uniqueAttackTarget: uaTarget,
       uniqueAttackEffect: uaEffect.trim(),
+      tier1Image: tierImages[1],
+      tier2Image: tierImages[2],
+      tier3Image: tierImages[3],
+      tier4Image: tierImages[4],
     });
     setEditing(false);
   };
@@ -126,6 +160,50 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
               className="w-full bg-white/10 rounded-md px-2.5 py-2 text-xs outline-none mt-1.5"
             />
           </div>
+          <div className="pt-1 border-t border-white/10">
+            <p className="text-[11px] font-bold text-amber-400/80 pt-1.5 pb-1">Tier Images</p>
+            <div className="grid grid-cols-2 gap-2">
+              {TIERS.map((t) => (
+                <div key={t} className="rounded-lg border border-white/10 bg-black/20 p-1.5">
+                  <p className="text-[10px] text-white/50 mb-1">Tier {t}</p>
+                  {tierImages[t] ? (
+                    <div className="relative w-full aspect-[3/4] rounded-md overflow-hidden">
+                      <img
+                        src={tierImages[t]}
+                        alt={`Tier ${t}`}
+                        onClick={() => setViewImage(tierImages[t])}
+                        className="w-full h-full object-cover cursor-pointer"
+                      />
+                      <button
+                        onClick={() => removeTierImage(t)}
+                        className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center"
+                        aria-label={`Remove Tier ${t} image`}
+                      >
+                        <X className="w-3 h-3 text-white" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="w-full aspect-[3/4] rounded-md border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-amber-400 transition-colors">
+                      {uploadingTier === t ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-white/50" />
+                      ) : (
+                        <>
+                          <ImagePlus className="w-4 h-4 text-white/50" />
+                          <span className="text-[9px] text-white/40">Upload</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => uploadTierImage(t, e.target.files?.[0])}
+                      />
+                    </label>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
           <button onClick={save} className="flex items-center gap-1 bg-purple-600 rounded-md px-2.5 py-1.5 text-xs font-semibold">
             <Check className="w-3.5 h-3.5" /> Save
           </button>
@@ -144,6 +222,23 @@ export default function CreatureRow({ creature, onDelete, onUpdate }) {
             </div>
           ) : null}
         </>
+      )}
+      {viewImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setViewImage(null)}
+        >
+          <div className="relative max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setViewImage(null)}
+              className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-black/80 flex items-center justify-center z-10"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4 text-white" />
+            </button>
+            <img src={viewImage} alt="Tier image" className="max-w-[90vw] max-h-[80vh] rounded-lg object-contain" />
+          </div>
+        </div>
       )}
     </div>
   );

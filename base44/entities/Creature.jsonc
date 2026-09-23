@@ -11,7 +11,8 @@
         "Dinosaur",
         "Extinct Animal",
         "Mythical Creature",
-        "Hybrid"
+        "Hybrid",
+        "Prototype"
       ]
     },
     "role": {
@@ -32,6 +33,26 @@
       "type": "string",
       "default": "",
       "description": "Admin-approved generated image used as an anatomy reference for future AI card art of this creature."
+    },
+    "tier1Image": {
+      "type": "string",
+      "default": "",
+      "description": "Admin-uploaded reference card image for this creature's Tier 1 form."
+    },
+    "tier2Image": {
+      "type": "string",
+      "default": "",
+      "description": "Admin-uploaded reference card image for this creature's Tier 2 form."
+    },
+    "tier3Image": {
+      "type": "string",
+      "default": "",
+      "description": "Admin-uploaded reference card image for this creature's Tier 3 form."
+    },
+    "tier4Image": {
+      "type": "string",
+      "default": "",
+      "description": "Admin-uploaded reference card image for this creature's Tier 4 form."
     },
     "uniqueAttackName": {
       "type": "string",

@@ -22,7 +22,7 @@ export const TYPE_ADVANTAGES = {
   Magic: ["Rock", "Fire", "Lava"],
 };
 
-export const CATEGORIES = ["Dinosaur", "Extinct Animal", "Mythical Creature"];
+export const CATEGORIES = ["Dinosaur", "Extinct Animal", "Mythical Creature", "Prototype"];
 export const HYBRID_CATEGORY = "Hybrid";
 export const HYPER_RARE_TYPE = "Hyper Rare";
 export const HYBRID_CHANCE = 0.005; // 0.5% chance per generation
@@ -35,6 +35,7 @@ export const CREATURES = {
   Dinosaur: ["Tyrannosaurus Rex", "Velociraptor", "Triceratops", "Stegosaurus", "Spinosaurus", "Brachiosaurus", "Ankylosaurus", "Pterodactyl"],
   "Extinct Animal": ["Woolly Mammoth", "Saber-Tooth Tiger", "Dodo Bird", "Giant Sloth", "Cave Bear", "Irish Elk", "Dire Wolf", "Moa Bird"],
   "Mythical Creature": ["Fire Dragon", "Phoenix", "Griffin", "Kraken", "Chimera", "Hydra", "Basilisk", "Unicorn"],
+  "Prototype": [],
 };
 
 // Real anatomy/body-plan description for each creature, used to keep AI-generated art
