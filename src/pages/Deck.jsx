@@ -249,6 +249,10 @@ export default function Deck() {
             setCompareIndex(pos >= 0 ? pos : 0);
             setSelectedId(null);
           }}
+          onDelete={(c) => {
+            handleDelete(c.id);
+            setSelectedId(null);
+          }}
         />
       )}
 
