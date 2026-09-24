@@ -63,7 +63,7 @@ export async function flattenImageOntoSolid(
   }
   const png = new PNG({ width, height });
   png.data = data;
-  const out = PNG.sync.encode(png) as Uint8Array;
+  const out = PNG.sync.write(png) as Uint8Array;
   return new Uint8Array(out.buffer, out.byteOffset, out.byteLength);
 }
 
