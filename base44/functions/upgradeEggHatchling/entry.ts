@@ -1,7 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { buildCardImagePrompt, buildEggHatchRecolorPrompt } from "../../shared/cardArt.ts";
-import { flattenImageOntoSolid } from "../../shared/imageFlatten.ts";
-import { generateCleanArt } from "../../shared/generateCleanArt.ts";
+// The admin-curated upgraded card art is stamped onto the card directly — no
+// AI regeneration step. This removes the fragile flatten → recolour →
+// GenerateImage → checkerboard re-roll pipeline that caused intermittent
+// upgrade failures.
 
 // Upgrades an egg-hatchling baby card (Tier 3) into its special upgraded form
 // (Tier 4): uses a random eggUpgradedImages entry for the art, the creature's
@@ -76,50 +77,8 @@ export default async function (req: Request) {
       ? (creature.eggUpgradedGoodName || creature.eggUpgradedName)
       : (creature.eggUpgradedEvilName || creature.eggUpgradedName)) || card.name;
 
-    // Recolour the admin-stored upgraded image to the card's type gradient AND
-    // place it on a fitting type background, matching the hatch flow. The stored
-    // image is the base — pose, anatomy, and face stay IDENTICAL; the creature's
-    // body colour shifts to the type gradient and the background is replaced with
-    // the elemental type background. The source is flattened onto an opaque white
-    // background first so the generator never paints a transparency checkerboard.
-    const typeBackgrounds = await base44.entities.TypeBackground.filter({ type: card.type });
-    let cardArtUrl: string;
-    if (upgradedImage) {
-      let refUrl = upgradedImage;
-      try {
-        const flatBytes = await flattenImageOntoSolid(upgradedImage, [255, 255, 255]);
-        if (flatBytes) {
-          const file = new File([flatBytes], `upgraded-${creature.baseName}.png`, { type: 'image/png' });
-          const up: any = await base44.asServiceRole.integrations.Core.UploadPublicFile({ file });
-          if (up?.file_url) refUrl = up.file_url;
-        }
-      } catch (e) {
-        console.error('flatten upgraded image failed, using original:', e);
-      }
-      const { prompt, existingImageUrls } = buildEggHatchRecolorPrompt(
-        { baseName: creature.baseName, type: card.type, isHybrid: false },
-        refUrl,
-        typeBackgrounds
-      );
-      const result = await generateCleanArt(base44, prompt, existingImageUrls);
-      cardArtUrl = result.url;
-      if (!result.clean) {
-        console.log('upgradeEggHatchling: all recolor attempts had checkerboard, falling back to from-scratch art');
-        const fallback = buildCardImagePrompt(
-          { baseName: creature.baseName, type: card.type, isHybrid: false },
-          { typeBackgrounds, creatureDescription: creature.description || '', referenceImageUrl: creature.referenceImageUrl || '' }
-        );
-        const fb = await generateCleanArt(base44, fallback.prompt, fallback.existingImageUrls, 2);
-        cardArtUrl = fb.url;
-      }
-    } else {
-      const fallback = buildCardImagePrompt(
-        { baseName: creature.baseName, type: card.type, isHybrid: false },
-        { typeBackgrounds, creatureDescription: creature.description || '', referenceImageUrl: creature.referenceImageUrl || '' }
-      );
-      const result = await generateCleanArt(base44, fallback.prompt, fallback.existingImageUrls);
-      cardArtUrl = result.url;
-    }
+    // Use the admin-curated upgraded card art directly as the card's image.
+    const cardArtUrl = upgradedImage;
 
     // The upgraded form's Unique Attack is fixed by alignment (not per-creature):
     //   Good = Blessed Strike: 110% damage + heal all active cards 35% max HP.
