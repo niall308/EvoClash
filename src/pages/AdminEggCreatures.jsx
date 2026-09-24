@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import EggCreatureRow from "@/components/admin/EggCreatureRow";
+import DownloadAllEggImagesButton from "@/components/admin/DownloadAllEggImagesButton";
 
 // Admin page for configuring which creatures can hatch from eggs and what they
 // look like. Lists every creature in the game and lets the admin set baby +
@@ -42,9 +43,15 @@ export default function AdminEggCreatures() {
       <h1 className="text-2xl font-black mb-1 flex items-center gap-2">
         <Egg className="w-6 h-6 text-amber-400" /> Egg Creatures
       </h1>
-      <p className="text-white/50 text-xs mb-6">
+      <p className="text-white/50 text-xs mb-4">
         Configure the baby &amp; upgraded (Good/Evil) card art and names for creatures that can hatch from eggs. A creature needs at least one baby image to be eligible. On upgrade, a hatchling has a 50/50 chance of becoming Good or Evil.
       </p>
+
+      {creatures && (
+        <div className="mb-4">
+          <DownloadAllEggImagesButton creatures={visible} />
+        </div>
+      )}
 
       {creatures && (
         <div className="mb-4">
