@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Loader2, X, ImagePlus, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import EggCreaturePreview from "@/components/admin/EggCreaturePreview";
+import EggImagesDownloadButton from "@/components/admin/EggImagesDownloadButton";
 
 // One row in the Egg Creatures admin page. Lets the admin edit the baby +
 // upgraded display names and add/remove baby + upgraded (Good/Evil) card-art
@@ -101,6 +102,7 @@ export default function EggCreatureRow({ creature, onUpdate }) {
           >
             <Eye className="w-3.5 h-3.5" /> Preview
           </button>
+          <EggImagesDownloadButton creature={creature} />
         </div>
       </div>
       {showPreview && (
