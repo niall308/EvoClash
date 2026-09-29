@@ -35,7 +35,7 @@ export const CREATURES = {
   Dinosaur: ["Tyrannosaurus Rex", "Velociraptor", "Triceratops", "Stegosaurus", "Spinosaurus", "Brachiosaurus", "Ankylosaurus", "Pterodactyl"],
   "Extinct Animal": ["Woolly Mammoth", "Saber-Tooth Tiger", "Dodo Bird", "Giant Sloth", "Cave Bear", "Irish Elk", "Dire Wolf", "Moa Bird"],
   "Mythical Creature": ["Fire Dragon", "Phoenix", "Griffin", "Kraken", "Chimera", "Hydra", "Basilisk", "Unicorn"],
-  "Prototype": [],
+  "Prototype": ["Obsidion"],
 };
 
 // Real anatomy/body-plan description for each creature, used to keep AI-generated art
@@ -121,6 +121,7 @@ export const CREATURE_ROLES = {
   "Hydra": "predator",
   "Basilisk": "predator",
   "Unicorn": "prey",
+  "Obsidion": "balanced",
 };
 
 export const TIER_RANGES = {
