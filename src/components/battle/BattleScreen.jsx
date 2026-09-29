@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import GameCard from "@/components/cards/GameCard";
 import HealthBar from "@/components/battle/HealthBar";
@@ -90,6 +90,35 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
     }
   }, [phase, turn, cancelUniqueAttack]);
 
+  // PERFORMANCE: memoize the two heavy GameCard subtrees. BattleScreen re-renders
+  // on every turn-pipeline state change (log text, turn timer, damage-number
+  // key, effect flags), but the card art/badges only actually change when the
+  // card, its HP ratio, status effects, or boost change. Memoizing skips
+  // re-rendering the image and all its badges on the frequent non-card updates
+  // — the main source of jank during AI turns and power-up chains. The motion
+  // key still includes `round` so the enter animation re-fires per round.
+  const aiCardEl = useMemo(
+    () =>
+      aiCard ? (
+        <>
+          <motion.div key={(aiCard.id || aiCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }} className={options?.isBoss ? "ring-2 ring-amber-400 rounded-2xl" : ""}>
+            <GameCard card={aiCard} size="md" glow={matchResult && phase === "matchEnd"} faceDown={faceDown} statusEffects={aiEffects} hpRatio={aiHpRatio} />
+          </motion.div>
+          {options?.isBoss && <span className="text-amber-400 text-[10px] font-black tracking-widest">BOSS</span>}
+        </>
+      ) : null,
+    [aiCard, aiEffects, aiHpRatio, faceDown, matchResult, phase, round, options]
+  );
+  const playerCardEl = useMemo(
+    () =>
+      playerCard ? (
+        <motion.div key={(playerCard.id || playerCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
+          <GameCard card={playerCard} size="md" faceDown={faceDown} statusEffects={playerEffects} hpRatio={playerHpRatio} boost={boostPreview} uniqueAttackUsed={uniqueAttackUsed} />
+        </motion.div>
+      ) : null,
+    [playerCard, playerEffects, playerHpRatio, faceDown, boostPreview, uniqueAttackUsed, round]
+  );
+
   return (
     <div className="min-h-screen flex flex-col text-white" style={{ background: "linear-gradient(180deg, #0D1B2A 0%, #1A2E45 100%)" }}>
       <div
@@ -114,16 +143,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
 
       <div className="flex flex-col items-center pt-2 gap-2">
         <LivesIndicator lives={aiLives} />
-        <AnimatePresence mode="wait">
-          {aiCard && (
-            <>
-              <motion.div key={(aiCard.id || aiCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }} className={options?.isBoss ? "ring-2 ring-amber-400 rounded-2xl" : ""}>
-                <GameCard card={aiCard} size="md" glow={matchResult && phase === "matchEnd"} faceDown={faceDown} statusEffects={aiEffects} hpRatio={aiHpRatio} />
-              </motion.div>
-              {options?.isBoss && <span className="text-amber-400 text-[10px] font-black tracking-widest">BOSS</span>}
-            </>
-          )}
-        </AnimatePresence>
+        <AnimatePresence mode="wait">{aiCardEl}</AnimatePresence>
         {aiCard && (
           <div className="w-40">
             <HealthBar current={aiHP} max={maxHealth(aiCard)} label="Opponent" />
@@ -215,13 +235,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
                 <HealthBar current={playerHP} max={playerMaxHP} label="You" />
               </div>
             )}
-            <AnimatePresence mode="wait">
-              {playerCard && (
-                <motion.div key={(playerCard.id || playerCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-                  <GameCard card={playerCard} size="md" faceDown={faceDown} statusEffects={playerEffects} hpRatio={playerHpRatio} boost={boostPreview} uniqueAttackUsed={uniqueAttackUsed} />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <AnimatePresence mode="wait">{playerCardEl}</AnimatePresence>
           </div>
           <div className="flex-1 flex flex-col items-end justify-end">
             <DeckStack remaining={playerRemaining} />

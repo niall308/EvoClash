@@ -13,6 +13,7 @@ import { isTimestampReady, dailyMultiRemaining, DAY_MS, WEEK_MS } from "@/lib/po
 import { base44 } from "@/api/base44Client";
 import { play } from "@/lib/soundEngine";
 import { cardUniqueAttack } from "@/lib/uniqueAttacks";
+import { adaptiveDelay, nextFrame } from "@/lib/battlePerf";
 
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -241,7 +242,10 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       const newScore = { ...score, [winnerSide]: score[winnerSide] + 1 };
       setScore(newScore);
       setLog(winnerSide === "player" ? `You win round ${round}!` : `AI wins round ${round}!`);
-      await sleep(1600);
+      // PERFORMANCE: adaptive beat replaces the fixed 1600ms pause so the
+      // round-end banner lingers just long enough to read, then yields control
+      // back to the next draw phase without a hardcoded wait.
+      await sleep(adaptiveDelay(1100));
       const matchOver = newScore.player >= 3 || newScore.ai >= 3;
       if (matchOver) {
         await applyProgression(newScore.player > newScore.ai ? "player" : "ai", newScore);
@@ -331,14 +335,28 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       if (usingTierBoost) setTempTierBoost(null);
       if (usingHalfAttack) setHalfAttackTurnsLeft((n) => n - 1);
       if (usingBlock) setBlockActive(false);
-      if (usingIgnoreDefense || usingTrueDamage || usingGuaranteedCrit || usingDoubleBonusDamage || usingMaximizeAttack) {
-        patchPfx({ ignoreDefensePercent: 0, trueDamage: false, guaranteedCrit: false, doubleBonusDamage: false, maximizeAttackReady: false });
-      }
-      if (usingDoubleDefenseTurns) patchPfx((p) => ({ ...p, doubleDefenseTurns: Math.max(0, (p.doubleDefenseTurns || 0) - 1) }));
-      if (usingMaximizeDefense) patchPfx({ maximizeDefenseReady: false });
-      if (usingNegate) patchPfx({ negateNextAttack: false });
-      if (usingReduceDamage) patchPfx((p) => ({ ...p, reduceDamageTurns: Math.max(0, (p.reduceDamageTurns || 0) - 1) }));
-      if (usingDivineProtection) patchPfx((p) => ({ ...p, divineProtectionTurns: Math.max(0, (p.divineProtectionTurns || 0) - 1) }));
+      // PERFORMANCE: consume all one-shot power-up flags in a single setPfx
+      // update instead of 5–6 separate functional updates. React 18 batches
+      // synchronous setState into one render either way, but a single queued
+      // updater is less reconciler work and keeps the consumed-buffs commit
+      // tightly grouped. Each branch only touches its own key, so the merged
+      // result is identical to the original sequential patches.
+      patchPfx((p) => {
+        const next = { ...p };
+        if (usingIgnoreDefense || usingTrueDamage || usingGuaranteedCrit || usingDoubleBonusDamage || usingMaximizeAttack) {
+          next.ignoreDefensePercent = 0;
+          next.trueDamage = false;
+          next.guaranteedCrit = false;
+          next.doubleBonusDamage = false;
+          next.maximizeAttackReady = false;
+        }
+        if (usingDoubleDefenseTurns) next.doubleDefenseTurns = Math.max(0, (p.doubleDefenseTurns || 0) - 1);
+        if (usingMaximizeDefense) next.maximizeDefenseReady = false;
+        if (usingNegate) next.negateNextAttack = false;
+        if (usingReduceDamage) next.reduceDamageTurns = Math.max(0, (p.reduceDamageTurns || 0) - 1);
+        if (usingDivineProtection) next.divineProtectionTurns = Math.max(0, (p.divineProtectionTurns || 0) - 1);
+        return next;
+      });
 
       if (result.isCrit && !result.tie && !result.recoil) {
         const newDefense = Math.max(0, Math.round(defender.defense * 0.8));
@@ -347,13 +365,27 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       }
       if (result.isCrit && !result.tie) play("critical_hit");
 
+      // PERFORMANCE: yield to the browser before the heaviest visual
+      // resolution. Everything above (buff math, damage calc, the ~10
+      // power-consumption state updates, crit defense write, crit sound) ran
+      // in one synchronous tick. A next-frame paint here lets the consumed
+      // power-up state reach the screen before the damage number/HP change
+      // fire, spreading the work across two frames instead of janking
+      // through one giant block. This is a pure yield — no state or logic
+      // changes, so turn order and fairness are untouched.
+      await nextFrame();
+
       if (result.tie) {
+        // PERFORMANCE: adaptive beats replace the fixed 3000ms/1000ms tie
+        // pauses so the tie resolves briskly on fast devices and remains
+        // readable on slower ones.
         setEffect({ side: attackerSide, value: 0, tie: true, key: Date.now() });
-        await sleep(3000);
+        await sleep(adaptiveDelay(1500));
+        await nextFrame();
         setEffect(null);
         setLog("It's a tie! Both cards are destroyed.");
         setGraveyardCards((g) => [...g, playerCard, aiCard]);
-        await sleep(1000);
+        await sleep(adaptiveDelay(700));
         setPlayerCard(null);
         setAiCard(null);
         setPlayerHP(0);
@@ -391,7 +423,9 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
       }
       // Egg Burst (baby hatchling): 5% chance to completely destroy the target card.
       const eggDestroyRoll = usingUniqueAttack && opts.uniqueAttack?.effectType === "destroyChance5" && Math.random() < 0.05;
-      await sleep(600);
+      // PERFORMANCE: adaptive beat before the HP bar moves, so the damage
+      // number is visible but the hit lands snappily.
+      await sleep(adaptiveDelay(500));
       let newTargetHP = eggDestroyRoll ? 0 : Math.max(0, targetHP - damage);
       if (eggDestroyRoll) setLog(`${playerCard.name}'s Egg Burst destroyed ${aiCard?.name || "the opponent"}!`);
       if (targetSide === "player" && newTargetHP <= 0 && pfx.surviveWith1HP) {
@@ -409,7 +443,7 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         const finalHit = computeDamage(playerCard, attacker);
         if (!finalHit.tie && !finalHit.recoil && finalHit.damage > 0) setAiHP((h) => Math.max(0, h - finalHit.damage));
         setLog("Last Stand! Your card strikes one final time before falling!");
-        await sleep(800);
+        await sleep(adaptiveDelay(600));
       }
       if (targetSide === "player") {
         setPlayerHP(newTargetHP);
@@ -428,8 +462,14 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
         setPlayerCard((c) => (c ? { ...c, attack: Math.round(c.attack * 1.1), defense: Math.round(c.defense * 0.95) } : c));
       }
       if ((usingBlock || usingNegate || usingDivineProtection) && damage === 0) matchBlocksRef.current += 1;
-      await sleep(3000);
+      // PERFORMANCE: the old fixed 3000ms damage-display wait was the single
+      // biggest "feels slow" cost in the loop. The adaptive beat keeps it
+      // readable across device tiers, and the next-frame yield after clearing
+      // the effect lets the cleared-damage paint land before the unique-attack
+      // resolution / round-end commits start mutating state again.
+      await sleep(adaptiveDelay(1500));
       setEffect(null);
+      await nextFrame();
       // Apply the unique attack's mapped effect (mechanics that already exist in
       // the engine). Unmapped ("custom") effects are shown as descriptive text only.
       if (usingUniqueAttack && opts.uniqueAttack.effectType && opts.uniqueAttack.effectType !== "none") {
@@ -945,7 +985,10 @@ export default function useBattleMatch(playerCards, onMatchEnd, difficulty = "No
 
   useEffect(() => {
     if (phase === "battle" && turn === "ai" && !busyRef.current) {
-      const t = setTimeout(() => attack("ai"), 900);
+      // PERFORMANCE: adaptive AI "thinking" pause replaces the fixed 900ms,
+      // so AI turns kick in snappier on capable devices and a touch slower on
+      // low-end ones (where the heavier attack resolution also takes longer).
+      const t = setTimeout(() => attack("ai"), adaptiveDelay(700));
       return () => clearTimeout(t);
     }
   }, [phase, turn, attack]);
