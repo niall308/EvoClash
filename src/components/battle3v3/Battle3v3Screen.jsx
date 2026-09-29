@@ -12,6 +12,8 @@ import ReplaceCardModal from "@/components/battle3v3/ReplaceCardModal";
 import TypeChoiceModal from "@/components/battle/TypeChoiceModal";
 import UniqueAttackButton from "@/components/battle/UniqueAttackButton";
 import UniqueAttackModal from "@/components/battle/UniqueAttackModal";
+import AiTurnIndicator from "@/components/battle3v3/AiTurnIndicator";
+import TurnTransitionBanner from "@/components/battle3v3/TurnTransitionBanner";
 import useBattle3v3 from "@/hooks/useBattle3v3";
 import { Swords, Flag, Clock, Target, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -66,7 +68,11 @@ export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd })
         <>
           <div className="flex flex-col items-center pt-2">
             <LivesIndicator lives={v.aiLives} />
-            <div className="w-full flex items-start justify-center gap-2 px-2 py-2">
+            <div
+              className={`w-full flex items-start justify-center gap-2 px-2 py-2 rounded-2xl transition-colors ${
+                v.turn === "ai" && v.phase === "battle" ? "bg-rose-500/10" : ""
+              }`}
+            >
               {SLOTS.map((i) => (
                 <AiSlot
                   key={i}
@@ -75,6 +81,7 @@ export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd })
                   isTarget={v.targetIdx === i}
                   attackerSide={v.turn === "player"}
                   selectable={v.turn === "player" && v.attackerIdx !== null && v.phase === "battle"}
+                  aiActive={v.turn === "ai" && v.phase === "battle"}
                   onSelect={() => (v.awaitingUniqueTarget ? v.selectUniqueTarget(i) : v.selectTarget(i))}
                 />
               ))}
@@ -83,13 +90,17 @@ export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd })
 
           <div className="flex-1 relative flex flex-col items-center justify-center px-4 gap-2">
             {v.effect && <AttackOverlay effect={v.effect} rects={slotRects.current} />}
+            <TurnTransitionBanner turn={v.turn} phase={v.phase} />
+            <AiTurnIndicator
+              visible={v.turn === "ai" && v.phase === "battle"}
+              opponentName={v.opponentName}
+            />
             <p className="text-center text-sm text-white/70 max-w-xs">{v.log}</p>
             {v.doubleAttackActive && (
               <span className="flex items-center gap-1 text-yellow-300 text-xs font-bold">
                 <Zap className="w-3.5 h-3.5" /> Double Attack ready!
               </span>
             )}
-            {v.aiThinking && <span className="text-white/50 text-xs animate-pulse">AI is thinking...</span>}
             {v.phase === "battle" && v.turn === "player" && (
               <div className="flex flex-col items-center gap-2 mt-2">
                 {v.awaitingUniqueTarget ? (
@@ -196,18 +207,23 @@ export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd })
   );
 }
 
-function AiSlot({ idx, slot, isTarget, attackerSide, selectable, onSelect }) {
+function AiSlot({ idx, slot, isTarget, attackerSide, selectable, aiActive, onSelect }) {
   return (
     <div id={`ai-slot-${idx}`} className="flex flex-col items-center gap-1">
       {slot ? (
         <>
-          <button
-            onClick={onSelect}
-            disabled={!selectable}
-            className={`rounded-2xl transition-all ${isTarget ? "ring-4 ring-red-500 animate-pulse" : attackerSide ? "ring-2 ring-white/30" : ""} ${selectable ? "active:scale-95" : "cursor-default"}`}
-          >
-            <GameCard card={slot.card} size="sm" hpRatio={slot.hp / slot.maxHp} />
-          </button>
+          <div className={`relative rounded-2xl transition-all ${aiActive ? "ring-2 ring-rose-400/60" : ""}`}>
+            {aiActive && (
+              <span className="absolute inset-0 rounded-2xl ring-2 ring-rose-400/40 animate-ping pointer-events-none" />
+            )}
+            <button
+              onClick={onSelect}
+              disabled={!selectable}
+              className={`relative rounded-2xl transition-all ${isTarget ? "ring-4 ring-red-500 animate-pulse" : attackerSide ? "ring-2 ring-white/30" : ""} ${selectable ? "active:scale-95" : "cursor-default"}`}
+            >
+              <GameCard card={slot.card} size="sm" hpRatio={slot.hp / slot.maxHp} />
+            </button>
+          </div>
           <div className="w-20">
             <HealthBar current={slot.hp} max={slot.maxHp} label="" />
           </div>
