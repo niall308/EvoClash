@@ -2,35 +2,37 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import BattleScreen from "@/components/battle/BattleScreen";
-import { ensureActiveDeck } from "@/lib/decks";
-import { Loader2 } from "lucide-react";
+import BattleLoading from "@/components/battle/BattleLoading";
+import { prepareBattleDeck } from "@/lib/decks";
 
 export default function Battle() {
   const navigate = useNavigate();
   const location = useLocation();
   const difficulty = location.state?.difficulty || "Normal";
   const [cards, setCards] = useState(null);
+  const [status, setStatus] = useState("Finding your active deck…");
 
   useEffect(() => {
+    let alive = true;
     (async () => {
       const user = await base44.auth.me();
-      const { active } = await ensureActiveDeck(user.id);
-      const myCards = await base44.entities.Card.filter({ ownerId: user.id, deckId: active.id });
-      if (myCards.length < 15) {
+      if (!alive) return;
+      setStatus("Loading your cards…");
+      const { cards: deckCards, ready } = await prepareBattleDeck(user.id);
+      if (!alive) return;
+      if (!ready) {
+        // 15-card gate still enforced — send players back to build a deck.
         navigate("/play");
         return;
       }
-      setCards(myCards);
+      setCards(deckCards);
     })();
+    return () => {
+      alive = false;
+    };
   }, [navigate]);
 
-  if (!cards) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0D1B2A]">
-        <Loader2 className="w-8 h-8 text-white animate-spin" />
-      </div>
-    );
-  }
+  if (!cards) return <BattleLoading status={status} />;
 
   return <BattleScreen playerCards={cards} difficulty={difficulty} />;
 }
