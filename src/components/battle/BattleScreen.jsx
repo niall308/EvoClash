@@ -102,7 +102,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
       aiCard ? (
         <>
           <motion.div key={(aiCard.id || aiCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }} className={options?.isBoss ? "ring-2 ring-amber-400 rounded-2xl" : ""}>
-            <GameCard card={aiCard} size="md" glow={matchResult && phase === "matchEnd"} faceDown={faceDown} statusEffects={aiEffects} hpRatio={aiHpRatio} />
+            <GameCard card={aiCard} size="md" priority glow={matchResult && phase === "matchEnd"} faceDown={faceDown} statusEffects={aiEffects} hpRatio={aiHpRatio} />
           </motion.div>
           {options?.isBoss && <span className="text-amber-400 text-[10px] font-black tracking-widest">BOSS</span>}
         </>
@@ -113,7 +113,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
     () =>
       playerCard ? (
         <motion.div key={(playerCard.id || playerCard.name) + round} initial={{ x: 200, rotateY: 180, opacity: 0 }} animate={{ x: 0, rotateY: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-          <GameCard card={playerCard} size="md" faceDown={faceDown} statusEffects={playerEffects} hpRatio={playerHpRatio} boost={boostPreview} uniqueAttackUsed={uniqueAttackUsed} />
+          <GameCard card={playerCard} size="md" priority faceDown={faceDown} statusEffects={playerEffects} hpRatio={playerHpRatio} boost={boostPreview} uniqueAttackUsed={uniqueAttackUsed} />
         </motion.div>
       ) : null,
     [playerCard, playerEffects, playerHpRatio, faceDown, boostPreview, uniqueAttackUsed, round]

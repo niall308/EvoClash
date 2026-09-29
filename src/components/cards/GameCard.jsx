@@ -1,6 +1,7 @@
 import React from "react";
 import { Flame, Zap, Droplet, Snowflake, Mountain, Wind, Sprout, Sparkles, Trash2, HelpCircle } from "lucide-react";
 import { TYPE_COLORS, TYPE_ADVANTAGES, CARD_BACK_URL, TYPE_EFFECT_GROUP, MAX_STAT_UPGRADES_PER_TIER } from "@/lib/gameConstants";
+import { Image } from "@/components/ui/image";
 
 const TYPE_ICONS = { Fire: Flame, Lava: Zap, Water: Droplet, Ice: Snowflake, Rock: Mountain, Wind: Wind, Earth: Sprout, Magic: Sparkles };
 
@@ -27,7 +28,7 @@ const OrnateDivider = () => (
   </div>
 );
 
-export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1, boost = null, uniqueAttackUsed = false }) {
+export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1, boost = null, uniqueAttackUsed = false, priority = false }) {
   const isHybrid = card.isHybrid;
   const Icon = isHybrid ? HelpCircle : TYPE_ICONS[card.type] || Sparkles;
   const typeColor = isHybrid ? "#FFD700" : TYPE_COLORS[card.type];
@@ -120,7 +121,13 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
       <div className="relative flex-1 flex items-center justify-center overflow-hidden" style={{ maxHeight: "70%" }}>
         {card.imageUrl ? (
           <>
-            <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover" />
+            <Image
+              src={card.imageUrl}
+              alt={card.name}
+              fittingType="fill"
+              priority={priority}
+              className="w-full h-full block"
+            />
             <span className="pointer-events-none absolute inset-1 rounded-md" style={{ boxShadow: "inset 0 0 0 1px rgba(197,160,89,0.35)" }} />
           </>
         ) : (
