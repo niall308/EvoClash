@@ -11,6 +11,9 @@ export default function Battle() {
   const difficulty = location.state?.difficulty || "Normal";
   const [cards, setCards] = useState(null);
   const [status, setStatus] = useState("Finding your active deck…");
+  // Bumping this key remounts BattleScreen with a fresh battle-hook state,
+  // giving the player an instant same-difficulty rematch from the end modal.
+  const [restartKey, setRestartKey] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -34,5 +37,12 @@ export default function Battle() {
 
   if (!cards) return <BattleLoading status={status} />;
 
-  return <BattleScreen playerCards={cards} difficulty={difficulty} />;
+  return (
+    <BattleScreen
+      key={restartKey}
+      playerCards={cards}
+      difficulty={difficulty}
+      onPlayAgain={() => setRestartKey((k) => k + 1)}
+    />
+  );
 }

@@ -10,6 +10,9 @@ export default function Battle3v3() {
   const location = useLocation();
   const difficulty = location.state?.difficulty || "Normal";
   const [cards, setCards] = useState(null);
+  // Bumping this key remounts Battle3v3Screen with fresh hook state for an
+  // instant same-difficulty rematch from the end-of-match modal.
+  const [restartKey, setRestartKey] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -32,5 +35,12 @@ export default function Battle3v3() {
     );
   }
 
-  return <Battle3v3Screen playerCards={cards} difficulty={difficulty} />;
+  return (
+    <Battle3v3Screen
+      key={restartKey}
+      playerCards={cards}
+      difficulty={difficulty}
+      onPlayAgain={() => setRestartKey((k) => k + 1)}
+    />
+  );
 }

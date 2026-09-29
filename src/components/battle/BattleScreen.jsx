@@ -22,7 +22,7 @@ import { Swords, Flag, Play, Zap, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import useBattleMatch from "@/hooks/useBattleMatch";
 
-export default function BattleScreen({ playerCards, onMatchEnd, difficulty, options, matchEnd }) {
+export default function BattleScreen({ playerCards, onMatchEnd, difficulty, options, matchEnd, onPlayAgain }) {
   const navigate = useNavigate();
   const {
     round,
@@ -267,7 +267,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
           onCancel={cancelUniqueAttack}
         />
       )}
-      {phase === "matchEnd" && (matchEnd || <MatchEndModal won={matchResult === "player"} coinsBreakdown={coinsBreakdown} />)}
+      {phase === "matchEnd" && (matchEnd || <MatchEndModal won={matchResult === "player"} coinsBreakdown={coinsBreakdown} onPlayAgain={onPlayAgain} />)}
       {showForfeitModal && (
         <ForfeitModal
           onConfirm={async () => {

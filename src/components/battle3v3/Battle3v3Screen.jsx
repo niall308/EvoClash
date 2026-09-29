@@ -20,7 +20,7 @@ import { useNavigate } from "react-router-dom";
 
 const SLOTS = [0, 1, 2];
 
-export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd }) {
+export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd, onPlayAgain }) {
   const navigate = useNavigate();
   const v = useBattle3v3(playerCards, onMatchEnd, difficulty);
   const [showForfeit, setShowForfeit] = useState(false);
@@ -196,7 +196,7 @@ export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd })
         />
       )}
 
-      {v.phase === "matchEnd" && (onMatchEnd ? null : <MatchEndModal won={v.matchResult === "player"} coinsBreakdown={v.coinsBreakdown} />)}
+      {v.phase === "matchEnd" && (onMatchEnd ? null : <MatchEndModal won={v.matchResult === "player"} coinsBreakdown={v.coinsBreakdown} onPlayAgain={onPlayAgain} />)}
       {showForfeit && (
         <ForfeitModal
           onConfirm={async () => { await v.forfeitMatch(); navigate("/play"); }}
