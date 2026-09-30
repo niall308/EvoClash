@@ -46,6 +46,7 @@ export default function PvpBattleScreen({ matchCode }) {
     boostPreview,
     turnTimeLeft,
     effect,
+    syncing,
   } = usePvpMatch(matchCode);
   const [showForfeitModal, setShowForfeitModal] = useState(false);
   const [readied, setReadied] = useState(false);
@@ -107,6 +108,12 @@ export default function PvpBattleScreen({ matchCode }) {
           <span className={turnTimeLeft <= 30 ? "text-red-400" : "text-white/50"}>
             {isMyTurn ? "Your turn: " : `${oppName}'s turn: `}{turnTimeLeft}s
           </span>
+        </div>
+      )}
+      {syncing && (
+        <div className="flex justify-center items-center gap-1.5 pb-1 text-[10px] font-bold text-sky-300/90">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          Syncing match…
         </div>
       )}
 

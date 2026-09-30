@@ -18,6 +18,11 @@ const CLEARED_BUFFS = (role) => ({
   [`${role}TempTierBoost`]: {},
 });
 
+// How long an optimistic write stays overlaid on incoming server snapshots
+// before we give up waiting for a confirming echo and trust the server instead.
+// Covers a dropped socket / failed persist without permanently desyncing state.
+const PENDING_TIMEOUT_MS = 6000;
+
 // Real-time, synced 1v1 PvP duel. Both clients read the same PvpMatch record and
 // each only ever writes their own side's fields, except player1 (the host) also
 // drives shared phase transitions (draw->rps->battle) to avoid write races.
@@ -31,8 +36,20 @@ export default function usePvpMatch(matchCode) {
   const [powerUsedThisTurn, setPowerUsedThisTurn] = useState(false);
   const [reshuffleModalOpen, setReshuffleModalOpen] = useState(false);
   const [effect, setEffect] = useState(null);
+  const [syncing, setSyncing] = useState(false);
   const prevHpRef = useRef({ my: null, opp: null, round: null });
   const finalizedRef = useRef(false);
+  // Mirror of `match` for use inside event callbacks (subscribe/poll) so they
+  // always read the latest committed state without stale closures.
+  const matchRef = useRef(null);
+  // Per-field optimistic writes awaiting server confirmation: { fieldName: { value, issuedAt } }.
+  // Lets us overlay our own pending values on top of a stale server snapshot so
+  // an out-of-order poll can never revert HP/score/turn/card fields we just wrote.
+  const pendingWritesRef = useRef({});
+  // Guards `attack` against a rapid second tap re-entering with a stale `match`
+  // (turn still reads as mine) before the first call flips the turn — which would
+  // compute damage a second time against the old HP and double-apply it.
+  const attackInFlightRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -40,26 +57,62 @@ export default function usePvpMatch(matchCode) {
       setMyId(me.id);
       setUser(me);
       const matches = await base44.entities.PvpMatch.filter({ code: matchCode });
-      setMatch(matches[0] || null);
+      const initial = matches[0] || null;
+      matchRef.current = initial;
+      setMatch(initial);
     })();
   }, [matchCode]);
 
-  // Realtime events and the poll fallback below can arrive out of order (a poll
-  // in flight can resolve with a snapshot taken before a realtime update already
-  // applied locally). Applying an older snapshot on top of newer state makes HP/
-  // card fields momentarily "revert" — which the hit-detection effect below then
-  // misreads as a real attack, flashing a bogus damage number/arrow, or briefly
-  // showing a card as missing (NaN damage if the player attacks during that blip).
-  // Guard every incoming snapshot so it's only applied when it's not older than
-  // what we already have.
+  // Keep matchRef in sync with the latest committed match state so event
+  // callbacks (subscribe/poll) always read current values without stale closures.
+  useEffect(() => {
+    matchRef.current = match;
+  }, [match]);
+
+  // Reconcile an incoming server snapshot against any optimistic writes we have
+  // outstanding. A realtime push and the 1.5s poll can land out of order, and a
+  // poll in flight can resolve with a snapshot taken BEFORE a write we already
+  // applied locally. Naively replacing state with that snapshot makes HP/card
+  // fields briefly revert — which the hit-detection effect misreads as a real
+  // attack (bogus damage number) and can re-trigger a drop a second time once
+  // the correct snapshot arrives (duplicate effect). We instead overlay every
+  // still-pending optimistic field on top of the server snapshot, so our own
+  // unconfirmed writes can never be reverted. A pending field is dropped the
+  // moment the server echoes back the same value (confirmed), or after
+  // PENDING_TIMEOUT_MS if no echo ever arrives (lost write — trust the server).
   const applyIncoming = useCallback((incoming) => {
     if (!incoming) return;
-    setMatch((prev) => {
-      if (!prev || prev.id !== incoming.id) return incoming;
+    const prev = matchRef.current;
+    if (!prev || prev.id !== incoming.id) {
+      pendingWritesRef.current = {};
+      setSyncing(false);
+      matchRef.current = incoming;
+      setMatch(incoming);
+      return;
+    }
+    const pending = pendingWritesRef.current;
+    if (Object.keys(pending).length === 0) {
       const prevTime = new Date(prev.updated_date || prev.created_date).getTime();
-      const incomingTime = new Date(incoming.updated_date || incoming.created_date).getTime();
-      return incomingTime >= prevTime ? incoming : prev;
-    });
+      const incTime = new Date(incoming.updated_date || incoming.created_date).getTime();
+      if (incTime < prevTime) return; // stale snapshot, ignore
+      matchRef.current = incoming;
+      setMatch(incoming);
+      return;
+    }
+    const now = Date.now();
+    const reconciled = { ...incoming };
+    const remaining = {};
+    for (const [k, entry] of Object.entries(pending)) {
+      const confirmed = JSON.stringify(incoming[k]) === JSON.stringify(entry.value);
+      const expired = now - entry.issuedAt > PENDING_TIMEOUT_MS;
+      if (confirmed || expired) continue; // server caught up (or gave up) — drop overlay
+      reconciled[k] = entry.value; // keep our optimistic value on top of the stale snapshot
+      remaining[k] = entry;
+    }
+    pendingWritesRef.current = remaining;
+    setSyncing(Object.keys(remaining).length > 0);
+    matchRef.current = reconciled;
+    setMatch(reconciled);
   }, []);
 
   useEffect(() => {
@@ -81,12 +134,29 @@ export default function usePvpMatch(matchCode) {
   }, [matchCode, applyIncoming]);
 
   // Applies a change to the match instantly in local state (so the acting player
-  // sees the result immediately, with no round-trip wait), then persists it in
-  // the background. The realtime subscription will later deliver the same data
-  // back to us, which is a harmless no-op re-render.
+  // sees the result immediately, with no round-trip wait), records each field as a
+  // pending optimistic write, then persists it in the background. applyIncoming
+  // later drops a field from the pending overlay once the server echoes the same
+  // value back — a harmless no-op re-render — or after the pending timeout.
   const updateMatch = useCallback((matchId, updates) => {
+    const keys = Object.keys(updates);
+    if (keys.length > 0) {
+      const issuedAt = Date.now();
+      const pending = { ...pendingWritesRef.current };
+      for (const k of keys) pending[k] = { value: updates[k], issuedAt };
+      pendingWritesRef.current = pending;
+      setSyncing(true);
+    }
     setMatch((prev) => (prev && prev.id === matchId ? { ...prev, ...updates } : prev));
-    return base44.entities.PvpMatch.update(matchId, updates);
+    return base44.entities.PvpMatch.update(matchId, updates).catch((err) => {
+      // The write failed (network/server) — drop these fields from the overlay so
+      // the server's truth wins instead of holding a phantom optimistic value.
+      const cur = { ...pendingWritesRef.current };
+      for (const k of keys) delete cur[k];
+      pendingWritesRef.current = cur;
+      setSyncing(Object.keys(cur).length > 0);
+      throw err;
+    });
   }, []);
 
   // A single client may only finalize a match once per session — guards against a
@@ -151,28 +221,28 @@ export default function usePvpMatch(matchCode) {
     if (myCard?.id || pendingHybrid?.id) return;
     if (myHand.length < 5 && myPool.length > 0) {
       const needed = Math.min(5 - myHand.length, myPool.length);
-      base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         [`${myRole}Hand`]: [...myHand, ...myPool.slice(0, needed)],
         [`${myRole}Pool`]: myPool.slice(needed),
       });
     }
-  }, [match, myRole]);
+  }, [match, myRole, updateMatch]);
 
   // Host drives the phase transition once both cards are drawn.
   useEffect(() => {
     if (!match || myRole !== "player1" || match.status !== "active" || match.phase !== "draw") return;
     if (match.player1Card?.id && match.player2Card?.id) {
       if (!match.rpsDone) {
-        base44.entities.PvpMatch.update(match.id, { phase: "rps", log: "Pick rock, paper, or scissors!" });
+        updateMatch(match.id, { phase: "rps", log: "Pick rock, paper, or scissors!" });
       } else {
-        base44.entities.PvpMatch.update(match.id, {
+        updateMatch(match.id, {
           phase: "battle",
           turnStartedAt: new Date().toISOString(),
           log: match.turn === "player1" ? `${match.player1Name} attacks first!` : `${match.player2Name} attacks first!`,
         });
       }
     }
-  }, [match, myRole]);
+  }, [match, myRole, updateMatch]);
 
   // If I have no active card, no cards left in hand, and no cards left in my deck to draw,
   // I have no way to continue and forfeit — the safe finishPvpMatch fallback treats the
@@ -180,21 +250,21 @@ export default function usePvpMatch(matchCode) {
   useEffect(() => {
     if (!match || !myRole || match.status !== "active" || match.phase !== "draw") return;
     if (myCard?.id || pendingHybrid?.id || myHand.length > 0 || myPool.length > 0) return;
-    base44.entities.PvpMatch.update(match.id, { phase: "matchEnd", log: "Ran out of cards!" }).then(() => {
+    updateMatch(match.id, { phase: "matchEnd", log: "Ran out of cards!" }).then(() => {
       finalizeOnce();
     });
-  }, [match, myRole, myCard, myHand, myPool, pendingHybrid]);
+  }, [match, myRole, myCard, myHand, myPool, pendingHybrid, updateMatch]);
 
   // Host resolves RPS once both players have picked.
   useEffect(() => {
     if (!match || myRole !== "player1" || match.phase !== "rps") return;
     if (match.player1Rps && match.player2Rps) {
       if (match.player1Rps === match.player2Rps) {
-        base44.entities.PvpMatch.update(match.id, { player1Rps: "", player2Rps: "", log: "Tie! Pick again." });
+        updateMatch(match.id, { player1Rps: "", player2Rps: "", log: "Tie! Pick again." });
         return;
       }
       const winner = RPS_BEATS[match.player1Rps] === match.player2Rps ? "player1" : "player2";
-      base44.entities.PvpMatch.update(match.id, {
+      updateMatch(match.id, {
         turn: winner,
         rpsDone: true,
         phase: "battle",
@@ -206,7 +276,7 @@ export default function usePvpMatch(matchCode) {
         if (match.matchType === "offline") base44.functions.invoke("notifyTurnChange", { matchCode: match.code });
       });
     }
-  }, [match, myRole]);
+  }, [match, myRole, updateMatch]);
 
   const pickRps = useCallback(
     (choice) => {
@@ -250,6 +320,11 @@ export default function usePvpMatch(matchCode) {
 
   const attack = useCallback(async (timingMultiplier = 1) => {
     if (!match || match.phase !== "battle" || match.turn !== myRole) return;
+    // Block a second tap from re-entering with this same (stale) `match` before
+    // the first call flips the turn optimistically — prevents double damage.
+    if (attackInFlightRef.current) return;
+    attackInFlightRef.current = true;
+    try {
     play("attack");
     let attacker = match[`${myRole}Card`];
     const defender = match[`${oppRole}Card`];
@@ -347,6 +422,9 @@ export default function usePvpMatch(matchCode) {
     }).then(() => {
       if (match.matchType === "offline") base44.functions.invoke("notifyTurnChange", { matchCode: match.code });
     });
+    } finally {
+      attackInFlightRef.current = false;
+    }
   }, [match, myRole, oppRole, updateMatch]);
 
   // Turn timer for 'live' matches only ('offline' matches have no time limit).
@@ -368,12 +446,12 @@ export default function usePvpMatch(matchCode) {
         timeoutFiredRef.current = match.turnStartedAt;
         const timeouts = (match[`${myRole}Timeouts`] || 0) + 1;
         if (timeouts >= MAX_CONSECUTIVE_TURN_TIMEOUTS) {
-          base44.entities.PvpMatch.update(match.id, {
+          updateMatch(match.id, {
             phase: "matchEnd",
             log: "You ran out of time 3 times in a row — you forfeit the match!",
           }).then(() => finalizeOnce());
         } else {
-          base44.entities.PvpMatch.update(match.id, {
+          updateMatch(match.id, {
             turn: oppRole,
             turnStartedAt: new Date().toISOString(),
             [`${myRole}Timeouts`]: timeouts,
@@ -385,7 +463,7 @@ export default function usePvpMatch(matchCode) {
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [match, myRole, oppRole]);
+  }, [match, myRole, oppRole, updateMatch]);
 
   // Record this player's own Battle History entry once the match finishes.
   // BattleHistory's created_by_id can only ever be the calling user, so each
@@ -612,6 +690,7 @@ export default function usePvpMatch(matchCode) {
 
   return {
     match,
+    syncing,
     myRole,
     oppRole,
     pickRps,
