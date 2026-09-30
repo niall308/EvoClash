@@ -1,25 +1,60 @@
 import { base44 } from "@/api/base44Client";
 
-// Singleton sound engine (no React) — loads SoundAsset records once, manages the
-// two looping background-music tracks (menu vs in-game) and plays one-shot action
-// SFX. Components import `play` directly; SoundProvider drives lifecycle/toggles.
+// Singleton sound engine (no React). Loads SoundAsset records once, manages the
+// two looping BGM tracks (menu / in-game) and plays one-shot action SFX through a
+// priority + concurrency model so intense battles don't clip, stack into a wall
+// of noise, or drain battery on mobile. Components import `play`; SoundProvider
+// drives lifecycle/toggles.
 
 let assets = {}; // key -> { fileUrl, isLoop }
 let settings = { menuMusic: true, inGameMusic: true, actions: true };
 let bgmAudio = null; // current BGM HTMLAudioElement
 let currentBgmKey = null;
 let loaded = false;
-let lastActionKey = null;
-let lastActionTime = 0;
-// Holds strong refs to in-flight one-shot Audio elements so the browser can't
-// garbage-collect them before the (async) media has loaded/finished. Without
-// this, rarely-fired SFX (card_defeat, win, lose, reward_claim) would get
-// collected mid-load and play silently while hot keys (button_tap, attack)
-// stayed cached and worked.
+
+// ---- SFX priority / concurrency policy -------------------------------------
+// Higher tier = always audible. Low tiers are dropped first when the concurrent
+// cap is hit and silenced first in low-power mode, so the sounds players care
+// about (hits, defeats, rewards, win/lose) always cut through.
+const PRIORITY = { critical: 3, normal: 2, low: 1 };
+const PRIORITY_FOR_KEY = {
+  win: "critical", lose: "critical", rank_up: "critical",
+  card_defeat: "critical", critical_hit: "critical", reward_claim: "critical",
+  attack: "normal", card_flip: "normal", card_gen: "normal",
+  unique_card_gen: "normal", card_upgrade: "normal",
+  button_tap: "low",
+};
+const VOLUME_FOR_PRIORITY = { critical: 0.7, normal: 0.55, low: 0.4 };
+
+const MAX_CONCURRENT_SFX = 6;       // hard cap on simultaneous one-shots
+const LOW_POWER_MAX_CONCURRENT = 3; // cap while in low-power mode
+const SAME_KEY_THROTTLE_MS = 70;     // same key re-fired within this window is dropped
+const LOW_PRIORITY_THROTTLE_MS = 110; // low-priority keys throttle a bit harder
+const BGM_NORMAL_VOLUME = 0.35;
+const BGM_DUCK_VOLUME = 0.12;       // BGM volume while a critical SFX is playing
+const BGM_DUCK_HOLD_MS = 700;        // how long the duck holds after the critical SFX
+// Auto low-power: if this many SFX fire inside the window, throttle low-priority
+// sounds for the cooldown to protect battery and tame a noisy burst.
+const BURST_THRESHOLD = 12;
+const BURST_WINDOW_MS = 1000;
+const BURST_COOLDOWN_MS = 3000;
+
+// Per-key last-fire timestamp (throttle), rolling fire history (burst detect),
+// and the active one-shot pool: { audio, key, priority, startedAt, release }.
+const lastFireAt = {};
+const recentFires = [];
+let lowPowerMode = false;        // manual override (e.g. battery saver / setting)
+let burstLowPowerUntil = 0;     // auto-cooldown expiry timestamp
+let bgmDucked = false;
+let bgmDuckTimer = null;
 const playingPool = new Set();
 
 export function isSoundLoaded() {
   return loaded;
+}
+
+function isLowPowerActive() {
+  return lowPowerMode || Date.now() < burstLowPowerUntil;
 }
 
 // (Re)fetch all SoundAsset records and rebuild the in-memory map. Called on app
@@ -32,7 +67,7 @@ export async function loadSoundAssets() {
     assets = next;
     loaded = true;
     refreshBgm();
-  } catch (e) {
+  } catch {
     // First run before any assets exist, or a transient read error — stay silent.
   }
 }
@@ -42,12 +77,18 @@ export function setSoundSettings(s) {
   settings = {
     menuMusic: s.menuMusic !== false,
     inGameMusic: s.inGameMusic !== false,
-    // The user field is `actionSounds` (see NotificationSettings). Gate every
+    // The user field is `actionSounds` (see NotificationSettings). Gates every
     // one-shot SFX except the win/lose stingers, which ride the in-game music
     // toggle instead.
     actions: s.actionSounds !== false,
   };
   refreshBgm();
+}
+
+// Manual low-power toggle (e.g. wired to a battery-saver setting). While on,
+// low-priority SFX are dropped and the concurrent cap tightens.
+export function setLowPowerMode(on) {
+  lowPowerMode = !!on;
 }
 
 // Start (or respawn) the BGM track for the given route path.
@@ -71,15 +112,20 @@ export function stopBgm() {
     bgmAudio.pause();
     bgmAudio = null;
   }
+  if (bgmDuckTimer) {
+    clearTimeout(bgmDuckTimer);
+    bgmDuckTimer = null;
+  }
+  bgmDucked = false;
   currentBgmKey = null;
 }
 
-// Play a one-shot action SFX by key. Throttles the same key to avoid stacking
-// when an event fires rapidly (e.g. quick taps).
+// Play a one-shot action SFX by key. Throttles repeat keys, enforces a concurrent
+// cap with priority-based eviction (important cues preempt lesser ones), ducks
+// BGM during critical events, and auto-enters low-power mode during bursts.
 export function play(key) {
   // Win/lose are match-end stingers that belong with the in-game music toggle;
-  // every other one-shot SFX (button taps, attacks, flips, rewards, etc.) is
-  // gated by the action-sounds toggle.
+  // every other one-shot SFX is gated by the action-sounds toggle.
   if (key === "win" || key === "lose") {
     if (!settings.inGameMusic) return;
   } else if (!settings.actions) {
@@ -87,16 +133,67 @@ export function play(key) {
   }
   const asset = assets[key];
   if (!asset) return;
+
+  const priority = PRIORITY_FOR_KEY[key] || "normal";
+  const priorityVal = PRIORITY[priority];
   const now = Date.now();
-  if (key === lastActionKey && now - lastActionTime < 70) return;
-  lastActionKey = key;
-  lastActionTime = now;
+
+  // Throttle the same key so rapid re-fires (quick taps, multi-hit effects) don't stack.
+  const throttleMs = priority === "low" ? LOW_PRIORITY_THROTTLE_MS : SAME_KEY_THROTTLE_MS;
+  if (now - (lastFireAt[key] || 0) < throttleMs) return;
+  lastFireAt[key] = now;
+
+  // Burst detection: too many SFX in a short window auto-enables low-power for
+  // the cooldown, protecting battery and keeping the mix readable on mobile.
+  recentFires.push(now);
+  while (recentFires.length && now - recentFires[0] > BURST_WINDOW_MS) recentFires.shift();
+  if (recentFires.length >= BURST_THRESHOLD) burstLowPowerUntil = now + BURST_COOLDOWN_MS;
+
+  const lowPower = isLowPowerActive();
+  // Low-power drops low-priority SFX entirely so the device only spends audio on
+  // things the player needs to hear.
+  if (lowPower && priorityVal <= PRIORITY.low) return;
+
+  const maxConcurrent = lowPower ? LOW_POWER_MAX_CONCURRENT : MAX_CONCURRENT_SFX;
+
+  // Enforce the concurrent cap. When full, evict the lowest-priority oldest entry
+  // that ranks below the incoming sound. If nothing lower exists, the incoming
+  // sound yields — which keeps a slot free so a later critical cue always lands.
+  if (playingPool.size >= maxConcurrent) {
+    let victim = null;
+    for (const entry of playingPool) {
+      if (PRIORITY[entry.priority] >= priorityVal) continue; // not lower than incoming
+      if (
+        !victim ||
+        PRIORITY[entry.priority] < PRIORITY[victim.priority] ||
+        (PRIORITY[entry.priority] === PRIORITY[victim.priority] && entry.startedAt < victim.startedAt)
+      ) {
+        victim = entry;
+      }
+    }
+    if (victim) {
+      victim.release();
+    } else {
+      return; // nothing lower to preempt — drop this one
+    }
+  }
+
+  // Duck BGM so important cues cut through cleanly instead of fighting the music.
+  if (priority === "critical") duckBgm();
+
   try {
     const a = new Audio(asset.fileUrl);
     a.loop = false;
-    a.volume = 0.55;
-    playingPool.add(a);
-    const release = () => playingPool.delete(a);
+    a.volume = VOLUME_FOR_PRIORITY[priority];
+    const entry = { audio: a, key, priority, startedAt: now };
+    const release = () => {
+      if (entry.released) return;
+      entry.released = true;
+      playingPool.delete(entry);
+      try { a.pause(); a.src = ""; } catch { /* already torn down */ }
+    };
+    entry.release = release;
+    playingPool.add(entry);
     a.addEventListener("ended", release, { once: true });
     a.addEventListener("error", release, { once: true });
     a.play().catch(release);
@@ -121,7 +218,27 @@ export function playFileUrl(fileUrl, isLoop) {
   }
 }
 
-// Internal: make sure the current BGM track matches the active key + settings.
+// ---- BGM internals ---------------------------------------------------------
+
+function duckBgm() {
+  bgmDucked = true;
+  applyBgmVolume();
+  if (bgmDuckTimer) clearTimeout(bgmDuckTimer);
+  bgmDuckTimer = setTimeout(unduckBgm, BGM_DUCK_HOLD_MS);
+}
+
+function unduckBgm() {
+  bgmDucked = false;
+  bgmDuckTimer = null;
+  applyBgmVolume();
+}
+
+function applyBgmVolume() {
+  if (bgmAudio) bgmAudio.volume = bgmDucked ? BGM_DUCK_VOLUME : BGM_NORMAL_VOLUME;
+}
+
+// Make sure the current BGM track matches the active key + settings, and keep its
+// volume in sync with the current duck state.
 function refreshBgm() {
   if (!currentBgmKey) return;
   const settingKey = currentBgmKey === "menu_bgm" ? "menuMusic" : "inGameMusic";
@@ -136,9 +253,12 @@ function refreshBgm() {
     bgmAudio = new Audio(asset.fileUrl);
     bgmAudio.dataset.key = currentBgmKey;
     bgmAudio.loop = asset.isLoop !== false; // BGM defaults to looping
-    bgmAudio.volume = 0.35;
+    applyBgmVolume();
     bgmAudio.play().catch(() => {});
   } else if (bgmAudio.paused) {
+    applyBgmVolume();
     bgmAudio.play().catch(() => {});
+  } else {
+    applyBgmVolume(); // keep duck state in sync on re-evaluation
   }
 }
