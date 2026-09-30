@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { buildCardImagePrompt, buildEggHatchRecolorPrompt } from "../../shared/cardArt.ts";
-import { flattenImageOntoSolid } from "../../shared/imageFlatten.ts";
-import { generateCleanArt } from "../../shared/generateCleanArt.ts";
+import { buildCardImagePrompt } from "../../shared/cardArt.ts";
+import { detectCheckerboard } from "../../shared/imageFlatten.ts";
 
 // Upgrades an egg-hatchling baby card (Tier 3) into its special upgraded form
 // (Tier 4): uses a random eggUpgradedImages entry for the art, the creature's
@@ -76,49 +75,44 @@ export default async function (req: Request) {
       ? (creature.eggUpgradedGoodName || creature.eggUpgradedName)
       : (creature.eggUpgradedEvilName || creature.eggUpgradedName)) || card.name;
 
-    // Recolour the admin-stored upgraded image to the card's type gradient AND
-    // place it on a fitting type background, matching the hatch flow. The stored
-    // image is the base — pose, anatomy, and face stay IDENTICAL; the creature's
-    // body colour shifts to the type gradient and the background is replaced with
-    // the elemental type background. The source is flattened onto an opaque white
-    // background first so the generator never paints a transparency checkerboard.
-    const typeBackgrounds = await base44.entities.TypeBackground.filter({ type: card.type });
-    let cardArtUrl: string;
-    if (upgradedImage) {
-      let refUrl = upgradedImage;
-      try {
-        const flatBytes = await flattenImageOntoSolid(upgradedImage, [255, 255, 255]);
-        if (flatBytes) {
-          const file = new File([flatBytes], `upgraded-${creature.baseName}.png`, { type: 'image/png' });
-          const up: any = await base44.asServiceRole.integrations.Core.UploadPublicFile({ file });
-          if (up?.file_url) refUrl = up.file_url;
+    // Use the admin-stored upgraded image directly as the card art — the admin
+    // curates a finished good/evil upgraded image per creature, so it IS the
+    // canonical upgraded-form art. The previous implementation regenerated it via
+    // AI (recolor + up to 6 sequential GenerateImage calls + checkerboard
+    // re-rolls), which took 15–40s and exceeded the client function-invocation
+    // timeout — that is why upgrades "failed for all".
+    //
+    // Some admin-stored upgraded images are AI-generated JPEGs with a BAKED-IN
+    // transparency-checkerboard background (no alpha channel, so flattening can't
+    // remove it). When that's detected, regenerate clean from-scratch art in a
+    // SINGLE pass (with no reference to the checkerboard image) so the card never
+    // ships with a checkerboard — and one generation stays well under the client
+    // timeout. Good/evil mood is baked into the from-scratch prompt so the
+    // alignment still reads visually even without the admin's image.
+    let cardArtUrl: string = upgradedImage;
+    try {
+      const r = await fetch(upgradedImage);
+      if (r.ok) {
+        const bytes = new Uint8Array(await r.arrayBuffer());
+        if (detectCheckerboard(bytes)) {
+          console.log('upgradeEggHatchling: stored upgraded image has checkerboard, regenerating clean art');
+          const typeBackgrounds = await base44.entities.TypeBackground.filter({ type: card.type });
+          const fb = buildCardImagePrompt(
+            { baseName: creature.baseName, type: card.type, isHybrid: false },
+            { typeBackgrounds, creatureDescription: creature.description || '', referenceImageUrl: creature.referenceImageUrl || '' }
+          );
+          const mood = alignment === 'good'
+            ? ' Radiant, benevolent, glowing golden halo, angelic and noble mood.'
+            : ' Dark, corrupted, sinister, shadowy, demonic and menacing mood.';
+          const gen: any = await base44.asServiceRole.integrations.Core.GenerateImage({
+            prompt: fb.prompt + mood,
+            existing_image_urls: fb.existingImageUrls,
+          });
+          if (gen?.url) cardArtUrl = gen.url;
         }
-      } catch (e) {
-        console.error('flatten upgraded image failed, using original:', e);
       }
-      const { prompt, existingImageUrls } = buildEggHatchRecolorPrompt(
-        { baseName: creature.baseName, type: card.type, isHybrid: false },
-        refUrl,
-        typeBackgrounds
-      );
-      const result = await generateCleanArt(base44, prompt, existingImageUrls);
-      cardArtUrl = result.url;
-      if (!result.clean) {
-        console.log('upgradeEggHatchling: all recolor attempts had checkerboard, falling back to from-scratch art');
-        const fallback = buildCardImagePrompt(
-          { baseName: creature.baseName, type: card.type, isHybrid: false },
-          { typeBackgrounds, creatureDescription: creature.description || '', referenceImageUrl: creature.referenceImageUrl || '' }
-        );
-        const fb = await generateCleanArt(base44, fallback.prompt, fallback.existingImageUrls, 2);
-        cardArtUrl = fb.url;
-      }
-    } else {
-      const fallback = buildCardImagePrompt(
-        { baseName: creature.baseName, type: card.type, isHybrid: false },
-        { typeBackgrounds, creatureDescription: creature.description || '', referenceImageUrl: creature.referenceImageUrl || '' }
-      );
-      const result = await generateCleanArt(base44, fallback.prompt, fallback.existingImageUrls);
-      cardArtUrl = result.url;
+    } catch (e) {
+      console.error('upgradeEggHatchling: checkerboard check/regenerate failed, using stored image:', e);
     }
 
     // The upgraded form's Unique Attack is fixed by alignment (not per-creature):
