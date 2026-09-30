@@ -232,6 +232,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
                 canUseMap={canUseMap}
                 handlers={handlers}
                 battleContext={{
+                  inBattle: phase === "battle",
                   isPlayerTurn: phase === "battle" && turn === "player",
                   powerUsedThisTurn,
                   hasPlayerCard: !!playerCard,

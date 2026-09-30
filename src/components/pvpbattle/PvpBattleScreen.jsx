@@ -193,6 +193,7 @@ export default function PvpBattleScreen({ matchCode }) {
                 canUseMap={canUseMap}
                 handlers={handlers}
                 battleContext={{
+                  inBattle: match.phase === "battle",
                   isPlayerTurn: isMyTurn,
                   powerUsedThisTurn: false,
                   hasPlayerCard: !!myCard?.id,

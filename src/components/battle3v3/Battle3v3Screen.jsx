@@ -161,7 +161,8 @@ export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd, o
                     canUseMap={v.canUseMap}
                     handlers={v.handlers}
                     battleContext={{
-                      isPlayerTurn: true,
+                      inBattle: v.phase === "battle",
+                      isPlayerTurn: v.phase === "battle" && v.turn === "player",
                       powerUsedThisTurn: v.powerUsedThisTurn,
                       hasPlayerCard: v.attackerIdx !== null && !!v.playerSlots?.[v.attackerIdx],
                       hasAiCard: v.targetIdx !== null && !!v.aiSlots?.[v.targetIdx],
