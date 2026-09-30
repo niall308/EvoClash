@@ -24,7 +24,7 @@ export default function CardStatsModal({ card, onClose, actionLabel, onAction })
         <button onClick={onClose} className="self-end -mt-2 -mr-2 text-white/50">
           <X className="w-5 h-5" />
         </button>
-        <GameCard card={card} size="lg" />
+        <GameCard card={card} size="lg" reduceGlowAnimation />
         <div className="w-full space-y-2">
           <Row label="Name" value={card.name} />
           <Row label="Category" value={card.category} />

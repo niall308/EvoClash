@@ -28,7 +28,7 @@ const OrnateDivider = () => (
   </div>
 );
 
-export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1, boost = null, uniqueAttackUsed = false, priority = false }) {
+export default function GameCard({ card, size = "md", onDelete, glow, faceDown, statusEffects = [], hpRatio = 1, boost = null, uniqueAttackUsed = false, priority = false, reduceGlowAnimation = false }) {
   const isHybrid = card.isHybrid;
   const Icon = isHybrid ? HelpCircle : TYPE_ICONS[card.type] || Sparkles;
   const typeColor = isHybrid ? "#FFD700" : TYPE_COLORS[card.type];
@@ -49,7 +49,15 @@ export default function GameCard({ card, size = "md", onDelete, glow, faceDown, 
   const buffedDefense = boost?.defense || card.defense;
   const effectiveTier = boost?.tier || card.tier;
   const advantageTypes = TYPE_ADVANTAGES[card.type] || [];
-  const glowClass = glow || isMaxedT4 ? "shadow-[0_0_25px_6px_rgba(255,215,0,0.85)] animate-pulse" : "";
+  // reduceGlowAnimation keeps the premium static glow but drops the infinite
+  // opacity pulse — used in the hand (many cards on screen at once) and in quick
+  // stat-peek previews so low-end devices aren't compositing endless animations.
+  const glowClass =
+    glow || isMaxedT4
+      ? reduceGlowAnimation
+        ? "shadow-[0_0_25px_6px_rgba(255,215,0,0.85)]"
+        : "shadow-[0_0_25px_6px_rgba(255,215,0,0.85)] animate-pulse"
+      : "";
 
   // Scaled wrapper: footprint box + absolutely-positioned master-size inner.
   // shrink-0 keeps the card's true aspect footprint inside flex/modal parents
