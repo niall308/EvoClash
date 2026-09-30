@@ -155,7 +155,18 @@ export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd, o
             <div className="flex items-end justify-between px-3 gap-2">
               <div className="flex-1">
                 {v.phase === "battle" && v.turn === "player" && !readied && (
-                  <PowerButtons user={v.user} activeKeys={v.activePowerUps} canUseMap={v.canUseMap} handlers={v.handlers} />
+                  <PowerButtons
+                    user={v.user}
+                    activeKeys={v.activePowerUps}
+                    canUseMap={v.canUseMap}
+                    handlers={v.handlers}
+                    battleContext={{
+                      isPlayerTurn: true,
+                      powerUsedThisTurn: v.powerUsedThisTurn,
+                      hasPlayerCard: v.attackerIdx !== null && !!v.playerSlots?.[v.attackerIdx],
+                      hasAiCard: v.targetIdx !== null && !!v.aiSlots?.[v.targetIdx],
+                    }}
+                  />
                 )}
               </div>
               <div className="flex flex-col items-center gap-1">

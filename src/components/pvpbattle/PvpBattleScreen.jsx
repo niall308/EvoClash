@@ -187,7 +187,18 @@ export default function PvpBattleScreen({ matchCode }) {
         <div className="flex items-end justify-between px-4 gap-3">
           <div className="flex-1 flex justify-start">
             {match.phase !== "matchEnd" && !readied && (
-              <PowerButtons user={user} activeKeys={activePowerUps} canUseMap={canUseMap} handlers={handlers} />
+              <PowerButtons
+                user={user}
+                activeKeys={activePowerUps}
+                canUseMap={canUseMap}
+                handlers={handlers}
+                battleContext={{
+                  isPlayerTurn: isMyTurn,
+                  powerUsedThisTurn: false,
+                  hasPlayerCard: !!myCard?.id,
+                  hasAiCard: !!oppCard?.id,
+                }}
+              />
             )}
           </div>
           <div className="flex flex-col items-center gap-2">

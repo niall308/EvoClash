@@ -48,6 +48,7 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
     rpsDone,
     user,
     activePowerUps,
+    powerUsedThisTurn,
     doubleAttackActive,
     tripleDefenseActive,
     blockActive,
@@ -225,7 +226,18 @@ export default function BattleScreen({ playerCards, onMatchEnd, difficulty, opti
         <div className="flex items-end justify-between px-4 gap-3">
           <div className="flex-1 flex justify-start">
             {phase !== "matchEnd" && !readied && (
-              <PowerButtons user={user} activeKeys={activePowerUps} canUseMap={canUseMap} handlers={handlers} />
+              <PowerButtons
+                user={user}
+                activeKeys={activePowerUps}
+                canUseMap={canUseMap}
+                handlers={handlers}
+                battleContext={{
+                  isPlayerTurn: phase === "battle" && turn === "player",
+                  powerUsedThisTurn,
+                  hasPlayerCard: !!playerCard,
+                  hasAiCard: !!aiCard,
+                }}
+              />
             )}
           </div>
           <div className="flex flex-col items-center gap-2">

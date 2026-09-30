@@ -1,54 +1,75 @@
-import React from "react";
-import { Swords, Shield, HeartPulse, Shuffle, ArrowUpCircle, Sparkles } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
 import { POWER_DEFINITIONS } from "@/lib/gameConstants";
-import { isPowerAvailable, dailyMultiRemaining } from "@/lib/powerUps";
+import { getPowerBattleStatus } from "@/lib/powerUps";
+import PowerButton from "@/components/battle/PowerButton";
+import PowerInfoPopover from "@/components/battle/PowerInfoPopover";
 
-const CATEGORY_ICONS = {
-  attack: Swords,
-  defense: Shield,
-  health: HeartPulse,
-  control: Shuffle,
-  upgrade: ArrowUpCircle,
-  legendary: Sparkles,
-};
+// Container for the in-battle power-up buttons.
+//
+// Each button shows an explicit readiness state: a ready pulse when usable,
+// a live cooldown countdown badge, a multi-use remaining counter, or a lock
+// overlay with a tap-to-open popover that explains *why* the power can't be
+// used right now (opponent's turn, used this turn, needs a card in play, on
+// cooldown, not owned…). All of this is display-only — the underlying power
+// balance, cooldown logic, and `canUseMap` gating from the battle hook are
+// untouched.
+//
+// `battleContext` (optional) lets the UI explain battle-phase locks:
+//   { isPlayerTurn, powerUsedThisTurn, hasPlayerCard, hasAiCard }
+export default function PowerButtons({ user, activeKeys, canUseMap, handlers, battleContext }) {
+  // Tick every 30s so cooldown badges and the popover countdown stay fresh.
+  // The setter triggers a re-render; the value itself is unused (statuses are
+  // recomputed inline below on every render).
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
+  const [inspectKey, setInspectKey] = useState(null);
+  const inspectDef = useMemo(
+    () => POWER_DEFINITIONS.find((d) => d.key === inspectKey) || null,
+    [inspectKey]
+  );
+  const inspectStatus = useMemo(() => {
+    if (!inspectDef) return null;
+    return getPowerBattleStatus(user, inspectDef, {
+      hasHandler: !!handlers[inspectDef.key],
+      canUse: !!canUseMap[inspectDef.key],
+      battleContext,
+    });
+  }, [user, inspectDef, canUseMap, handlers, battleContext]);
 
-const CATEGORY_COLORS = {
-  attack: "from-red-600 to-orange-500",
-  defense: "from-emerald-600 to-teal-500",
-  health: "from-pink-600 to-rose-500",
-  control: "from-sky-500 to-cyan-500",
-  upgrade: "from-amber-600 to-yellow-500",
-  legendary: "from-purple-600 to-fuchsia-500",
-};
-
-export default function PowerButtons({ user, activeKeys, canUseMap, handlers }) {
   return (
-    <div className="flex flex-col gap-3 z-20">
-      {activeKeys.map((key) => {
-        const def = POWER_DEFINITIONS.find((d) => d.key === key);
-        if (!def) return null;
-        const hasHandler = !!handlers[key];
-        const ready = isPowerAvailable(user, def);
-        const disabled = !hasHandler || !ready || !canUseMap[key];
-        const Icon = CATEGORY_ICONS[def.category] || Sparkles;
-        return (
-          <button
-            key={key}
-            onClick={hasHandler ? handlers[key] : undefined}
-            disabled={disabled}
-            title={hasHandler ? def.label : `${def.label} (not available in this mode)`}
-            className={`relative flex flex-col items-center justify-center gap-0.5 bg-gradient-to-br ${CATEGORY_COLORS[def.category]} w-14 h-14 rounded-2xl shadow-lg active:scale-95 transition-transform disabled:opacity-30 disabled:grayscale`}
-          >
-            <Icon className="w-5 h-5 text-white" />
-            <span className="text-[7px] font-bold text-white leading-none text-center px-0.5">{def.label}</span>
-            {def.cooldownType === "dailyMulti" && (
-              <span className="absolute -top-1 -right-1 bg-black/70 text-white text-[8px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                {dailyMultiRemaining(user, def.usesField, def.resetField, def.maxPerDay)}
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
+    <>
+      <div className="flex flex-col gap-3 z-20">
+        {activeKeys.map((key) => {
+          const def = POWER_DEFINITIONS.find((d) => d.key === key);
+          if (!def) return null;
+          const status = getPowerBattleStatus(user, def, {
+            hasHandler: !!handlers[key],
+            canUse: !!canUseMap[key],
+            battleContext,
+          });
+          return (
+            <PowerButton
+              key={key}
+              powerKey={key}
+              user={user}
+              status={status}
+              onActivate={handlers[key]}
+              onInspect={() => setInspectKey(key)}
+            />
+          );
+        })}
+      </div>
+
+      {inspectDef && (
+        <PowerInfoPopover
+          powerDef={inspectDef}
+          status={inspectStatus}
+          onClose={() => setInspectKey(null)}
+        />
+      )}
+    </>
   );
 }
