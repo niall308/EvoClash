@@ -13,6 +13,10 @@ const BOSS_NAMES = [
   'Void Emperor', 'Omega Prime Devastator',
 ];
 
+// A real story battle takes well over this; a sub-20s settlement is treated as
+// a no-play attempt. Mirrors finalizeAIBattle's MIN_BATTLE_MS anti-farming gate.
+const MIN_STORY_MS = 20000;
+
 // Hybrid-card reward constants (mirrors src/lib/gameConstants.js — the only
 // values needed to mint a reward hybrid server-side).
 const HYPER_RARE_TYPE = 'Hyper Rare';
@@ -138,6 +142,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'not your current story match' }, { status: 400 });
     }
 
+    // Time gate: a win requires an active server-side session (started by
+    // startStoryBattle) that has aged past a playable minimum. A client can't
+    // loop finalizeStoryBattle with win=true to mint rewards without playing.
+    const startedAt = progress.storyBattleStartedAt ? new Date(progress.storyBattleStartedAt).getTime() : 0;
+    if (!startedAt || Date.now() - startedAt < MIN_STORY_MS) {
+      return Response.json({ error: 'Battle session not active or too short' }, { status: 400 });
+    }
+
     if (win) {
       const stageDone = m === 8;
       const allDone = stageDone && s === 10;
@@ -187,6 +199,7 @@ Deno.serve(async (req) => {
         storyCompleted,
         currentStage,
         currentMatch,
+        storyBattleStartedAt: '',
       });
 
       // Stage-5 boss → free hybrid card; stage-10 boss → free creature egg.
@@ -223,6 +236,7 @@ Deno.serve(async (req) => {
       if (!lostStages.includes(s)) u.storyBossLostStages = [...lostStages, s];
     }
     await base44.asServiceRole.entities.User.update(user.id, u);
+    await base44.asServiceRole.entities.StoryProgress.update(progress.id, { storyBattleStartedAt: '' });
     await base44.entities.BattleHistory.create({
       opponentName,
       outcome: 'loss',

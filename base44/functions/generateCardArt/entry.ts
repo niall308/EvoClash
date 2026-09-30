@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { buildCardImagePrompt } from '../../shared/cardArt.ts';
+import { enforceCardArtQuota } from '../../shared/cardArtQuota.ts';
 
 // POST { baseName, type, isHybrid }
 // Narrow, app-specific card-art generator. The caller supplies only the card
@@ -19,6 +20,11 @@ export default async function(req) {
 
     const { baseName, type, isHybrid } = await req.json().catch(() => ({}));
     if (!baseName || !type) return Response.json({ error: 'baseName and type are required' }, { status: 400 });
+
+    // Per-user daily quota: cap paid AI image-generation spend. Without this any
+    // signed-in user could loop this endpoint 24/7 without creating/paying for a
+    // card, driving unbounded third-party API cost.
+    await enforceCardArtQuota(base44, user);
 
     // Resolve the creature's admin-authored description + reference image.
     const creatures = await base44.entities.Creature.filter({ baseName });

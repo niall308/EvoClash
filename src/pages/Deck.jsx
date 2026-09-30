@@ -117,14 +117,18 @@ export default function Deck() {
 
   const handleCreateDeck = async (name) => {
     if (!user || decks.length >= MAX_DECKS || (user.coins || 0) < DECK_COST) return;
-    await base44.entities.Deck.update(activeDeckId, { isActive: false });
-    const newDeck = await base44.entities.Deck.create({ name, isActive: true });
-    const updatedUser = await base44.auth.updateMe({ coins: user.coins - DECK_COST });
-    setUser(updatedUser);
-    setDecks((prev) => [...prev.map((d) => ({ ...d, isActive: false })), newDeck]);
-    setActiveDeckId(newDeck.id);
-    setViewingDeckId(newDeck.id);
-    setShowNewDeckModal(false);
+    try {
+      // Server-authoritative purchase: buyDeck debits coins + creates the deck
+      // server-side, so the client no longer writes the coin balance itself.
+      const { data } = await base44.functions.invoke("buyDeck", { name });
+      setUser(data.user);
+      setDecks((prev) => [...prev.map((d) => ({ ...d, isActive: false })), data.deck]);
+      setActiveDeckId(data.deck.id);
+      setViewingDeckId(data.deck.id);
+      setShowNewDeckModal(false);
+    } catch (err) {
+      // Server rejected the purchase (e.g. insufficient coins / max decks); no UI change.
+    }
   };
 
   const handleDeleteDeck = async (deckId) => {

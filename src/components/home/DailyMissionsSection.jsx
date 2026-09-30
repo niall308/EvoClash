@@ -16,17 +16,13 @@ export default function DailyMissionsSection({ user, onUserUpdate }) {
     if (!user) return;
     const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
     if (user.dailyMissionsDate === today) return;
-    const baseline = {};
-    DAILY_MISSIONS.forEach((m) => {
-      baseline[m.metric] = user[m.metric] || 0;
-    });
-    base44.auth
-      .updateMe({
-        dailyMissionsDate: today,
-        dailyMissionsBaseline: baseline,
-        dailyMissionsClaimed: [],
-      })
-      .then(onUserUpdate);
+    // Server-authoritative baseline reset: ensureDailyMissions recomputes the
+    // baseline from authoritative lifetime metrics server-side, so the client
+    // no longer writes progression counters itself.
+    base44.functions
+      .invoke("ensureDailyMissions", {})
+      .then(({ data }) => onUserUpdate(data.user))
+      .catch(() => {});
   }, [user, onUserUpdate]);
 
   if (!user || !user.dailyMissionsDate) return null;
@@ -36,12 +32,15 @@ export default function DailyMissionsSection({ user, onUserUpdate }) {
 
   const handleClaim = async (mission) => {
     setClaimingId(mission.id);
-    const updated = await base44.auth.updateMe({
-      coins: (user.coins || 0) + mission.coinReward,
-      dailyMissionsClaimed: [...claimed, mission.id],
-    });
-    onUserUpdate(updated);
-    window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: updated.coins } }));
+    try {
+      // Server-authoritative claim: claimDailyMission verifies completion + not
+      // already claimed and grants the coin reward server-side.
+      const { data } = await base44.functions.invoke("claimDailyMission", { missionId: mission.id });
+      onUserUpdate(data.user);
+      window.dispatchEvent(new CustomEvent("coins-claimed", { detail: { newTotal: data.user.coins } }));
+    } catch (err) {
+      // Server rejected the claim (not completed / already claimed); no UI change.
+    }
     setClaimingId(null);
   };
 

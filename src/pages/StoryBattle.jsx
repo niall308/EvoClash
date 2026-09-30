@@ -42,6 +42,9 @@ export default function StoryBattle() {
         navigate("/story");
         return;
       }
+      // Start a server-side battle session so finalizeStoryBattle can gate the
+      // settlement on a real elapsed-time check (anti reward-farming).
+      await base44.functions.invoke("startStoryBattle", { stage: s, match: m });
       const aiPool = await buildStoryAiPool(matchData);
       if (cancelled) return;
       setReady({ playerCards: myCards, aiPool, matchData });

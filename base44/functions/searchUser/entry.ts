@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
       allUsers.find((u) => !u.username && (u.full_name || '').toLowerCase() === qLower);
 
     if (!match) {
-      for (const field of ['friendCode', 'email']) {
+      for (const field of ['friendCode']) {
         const results = await base44.asServiceRole.entities.User.filter({ [field]: q }, undefined, 1);
         if (results.length > 0) {
           match = results[0];

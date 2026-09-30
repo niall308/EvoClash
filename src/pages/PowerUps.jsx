@@ -60,16 +60,15 @@ export default function PowerUps() {
   const handleReplenish = async (def) => {
     if (!user || (user.coins || 0) < def.replenishCost || busyKey) return;
     setBusyKey(def.key);
-    const fields = { coins: (user.coins || 0) - def.replenishCost };
-    if (def.cooldownType === "dailyMulti") {
-      fields[def.usesField] = Math.max(0, (user[def.usesField] || 0) - 1);
-    } else if (def.cooldownType === "premium") {
-      fields[def.usedAtField] = true;
-    } else {
-      fields[def.usedAtField] = null;
+    try {
+      // Server-authoritative replenish: replenishPowerUp debits coins and resets
+      // the power-up server-side using a server-side cost/field map, so the
+      // client no longer writes the coin balance or arbitrary User fields.
+      const { data } = await base44.functions.invoke("replenishPowerUp", { key: def.key });
+      setUser(data.user);
+    } catch (err) {
+      // Server rejected the replenish (insufficient coins / invalid power); no UI change.
     }
-    const updated = await base44.auth.updateMe(fields);
-    setUser(updated);
     setBusyKey(null);
   };
 

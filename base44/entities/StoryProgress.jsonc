@@ -30,6 +30,11 @@
     "storyCompleted": {
       "type": "boolean",
       "default": false
+    },
+    "storyBattleStartedAt": {
+      "type": "string",
+      "default": "",
+      "description": "ISO timestamp of when the current story battle session started (set by startStoryBattle). finalizeStoryBattle requires this to exist and to have aged past a playable minimum before granting rewards, so a client can't farm story rewards without playing."
     }
   },
   "required": [

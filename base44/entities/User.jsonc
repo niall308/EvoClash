@@ -351,6 +351,16 @@
       "type": "boolean",
       "default": true,
       "description": "Play one-shot sound effects for game actions (tap, attack, win, etc.)."
+    },
+    "cardArtDailyCount": {
+      "type": "number",
+      "default": 0,
+      "description": "Daily count of AI card-art generations by this user, used by the generateCardArt per-user quota."
+    },
+    "cardArtResetAt": {
+      "type": "string",
+      "default": "",
+      "description": "ISO timestamp of the start of the current 24h card-art quota window."
     }
   }
 }

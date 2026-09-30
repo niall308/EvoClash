@@ -69,8 +69,13 @@ Deno.serve(async (req) => {
 
     const card = await base44.entities.Card.create({ ...safeCardData, ...uniqueAttackFields, deckId, ownerId: user.id });
 
+    // Persist the creation counters + coin debit via the service role, not the
+    // client-writable auth.updateMe path, so the coin balance stays server-managed.
     const userUpdate = buildCreationUpdate(user, ownedCards.length);
-    const updatedUser = Object.keys(userUpdate).length ? await base44.auth.updateMe(userUpdate) : user;
+    let updatedUser = user;
+    if (Object.keys(userUpdate).length) {
+      updatedUser = await base44.asServiceRole.entities.User.update(user.id, userUpdate);
+    }
 
     return Response.json({ card, user: updatedUser });
   } catch (error) {
