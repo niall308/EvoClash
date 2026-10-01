@@ -24,7 +24,13 @@ export default async function(req) {
     // Per-user daily quota: cap paid AI image-generation spend. Without this any
     // signed-in user could loop this endpoint 24/7 without creating/paying for a
     // card, driving unbounded third-party API cost.
-    await enforceCardArtQuota(base44, user);
+    // Admins are exempt: regenerating a 100-card AI deck (AdminAiDecks) calls this
+    // endpoint 100 times in a loop, far above the 40/day cap, and that spend is an
+    // admin-controlled operation. Without the exemption the regen aborts with a
+    // 500 at card #41 when the quota throws.
+    if (user.role !== 'admin') {
+      await enforceCardArtQuota(base44, user);
+    }
 
     // Resolve the creature's admin-authored description + reference image.
     const creatures = await base44.entities.Creature.filter({ baseName });
