@@ -1,10 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
-// Lets a player sell an egg-hatchling card they own for a flat 100,000 LC. The
-// card is deleted and the player's coins are increased by SELL_VALUE. Scoped to
-// egg hatchlings (isEggHatchling) so it can't be used to mint coins from any
-// ordinary card.
-const SELL_VALUE = 100000;
+// Lets a player sell an egg-hatchling card they own for LC. The card is deleted
+// and the player's coins are increased by the sell value. Scoped to egg
+// hatchlings (isEggHatchling) so it can't be used to mint coins from any
+// ordinary card. Upgraded (Tier 4) hatchlings are worth 200,000 LC; baby
+// hatchlings are worth 100,000 LC.
+const SELL_VALUE_BABY = 100000;
+const SELL_VALUE_UPGRADED = 200000;
 
 export default async function (req: Request) {
   try {
@@ -23,10 +25,12 @@ export default async function (req: Request) {
       return Response.json({ error: 'Only egg hatchlings can be sold here' }, { status: 400 });
     }
 
-    await base44.entities.Card.delete(cardId);
-    const updatedUser = await base44.auth.updateMe({ coins: (user.coins || 0) + SELL_VALUE });
+    const sellValue = card.eggUpgraded ? SELL_VALUE_UPGRADED : SELL_VALUE_BABY;
 
-    return Response.json({ cardId, user: updatedUser, coinsEarned: SELL_VALUE });
+    await base44.entities.Card.delete(cardId);
+    const updatedUser = await base44.auth.updateMe({ coins: (user.coins || 0) + sellValue });
+
+    return Response.json({ cardId, user: updatedUser, coinsEarned: sellValue });
   } catch (error) {
     console.error('sellHatchling error:', error);
     return Response.json({ error: (error as Error).message }, { status: 500 });

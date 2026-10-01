@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import GameCard from "@/components/cards/GameCard";
 import StatUpgradeRow from "@/components/upgrade/StatUpgradeRow";
 import EvolveSection from "@/components/upgrade/EvolveSection";
 import EggHatchlingEvolveSection from "@/components/upgrade/EggHatchlingEvolveSection";
+import EggHatchlingSellSection from "@/components/upgrade/EggHatchlingSellSection";
 import TypeChangeSection from "@/components/upgrade/TypeChangeSection";
 import { checkUpgradeEligible } from "@/lib/upgradeCheck";
 import { getStatUpgradeCost, getStatUpgradeMaxUses } from "@/lib/statUpgradeCost";
@@ -17,12 +18,14 @@ const USED_FIELD = { attack: "attackUpgradesUsed", defense: "defenseUpgradesUsed
 
 export default function CardUpgrade() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [card, setCard] = useState(null);
   const [user, setUser] = useState(null);
   const [purchasing, setPurchasing] = useState(null);
   const [evolving, setEvolving] = useState(false);
   const [eggEvolving, setEggEvolving] = useState(false);
+  const [selling, setSelling] = useState(false);
   const [typePurchasing, setTypePurchasing] = useState(null);
 
   useEffect(() => {
@@ -109,6 +112,21 @@ export default function CardUpgrade() {
     }
   };
 
+  const handleSell = async () => {
+    if (selling) return;
+    setSelling(true);
+    try {
+      const { data } = await base44.functions.invoke("sellHatchling", { cardId: card.id });
+      setUser(data.user);
+      play("coin");
+      toast({ title: "Card sold!", description: `+${data.coinsEarned.toLocaleString()} LC` });
+      navigate("/deck");
+    } catch (err) {
+      toast({ title: "Sell failed", description: err?.message || "Something went wrong.", variant: "destructive" });
+      setSelling(false);
+    }
+  };
+
   return (
     <div className="text-white px-6 py-6">
       <Link to="/deck" className="inline-flex items-center gap-1 text-white/60 text-sm mb-6 min-h-[44px] px-1 -ml-1">
@@ -152,6 +170,8 @@ export default function CardUpgrade() {
           evolving={eggEvolving}
           onEvolve={handleEggEvolve}
         />
+      ) : card.isEggHatchling && card.eggUpgraded ? (
+        <EggHatchlingSellSection sellValue={200000} busy={selling} onSell={handleSell} />
       ) : card.tier < 4 ? (
         <>
           <p className="text-[10px] text-white/40 mt-4">
