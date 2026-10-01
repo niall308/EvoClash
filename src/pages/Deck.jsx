@@ -51,6 +51,7 @@ export default function Deck() {
   }, [authUser?.id]);
 
   const deckCards = (cards || []).filter((c) => c.deckId === viewingDeckId);
+  const activeDeckCards = (cards || []).filter((c) => c.deckId === activeDeckId);
   const filteredCards = deckCards.filter(
     (c) =>
       (filterType === "all" || c.type === filterType) &&
@@ -153,7 +154,7 @@ export default function Deck() {
       <div className="px-6 py-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black">Your Deck</h1>
-          <p className="text-white/50 text-xs">{cards ? `${cards.length}/50 cards (min 15 to play)` : "Loading..."}</p>
+          <p className="text-white/50 text-xs">{cards ? `Active deck: ${activeDeckCards.length}/50 cards (min 15 to play)` : "Loading..."}</p>
         </div>
         <div className="flex items-center gap-2">
         <button

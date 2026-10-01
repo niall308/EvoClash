@@ -14,6 +14,8 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import HatchResultModal from "@/components/decks/HatchResultModal";
+import DeckFullModal from "@/components/decks/DeckFullModal";
+import { DECK_COST, MAX_CARDS_PER_DECK } from "@/lib/gameConstants";
 
 const EGG_IMG = "https://media.base44.com/images/public/6a4fdbc484df527c16219edb/78ba2e7fa_Egg-design.png";
 const EGG_SELL_VALUE = 50000;
@@ -26,8 +28,13 @@ export default function EggsModal({ onClose, onUserUpdate }) {
   const [sellingId, setSellingId] = useState(null);
   const [sellTarget, setSellTarget] = useState(null); // egg awaiting sell confirmation
   const [isAdmin, setIsAdmin] = useState(false);
+  const [coins, setCoins] = useState(0);
+  const [decksCount, setDecksCount] = useState(0);
   const [hatchedCard, setHatchedCard] = useState(null);
   const [resolving, setResolving] = useState(false);
+  // When the active deck is full, the hatched card can't be added directly —
+  // store { card, deckId } here and surface DeckFullModal to resolve it.
+  const [fullDeck, setFullDeck] = useState(null);
   const today = new Date().toISOString().slice(0, 10);
 
   const load = async () => {
@@ -40,9 +47,19 @@ export default function EggsModal({ onClose, onUserUpdate }) {
     setEggs(list);
   };
 
+  const refreshUser = async () => {
+    const me = await base44.auth.me().catch(() => null);
+    if (me) {
+      setCoins(me.coins || 0);
+      setIsAdmin(me.role === "admin");
+    }
+    const decks = await base44.entities.Deck.filter({});
+    setDecksCount(decks.length);
+  };
+
   useEffect(() => {
     load();
-    base44.auth.me().then((u) => setIsAdmin(u?.role === "admin")).catch(() => {});
+    refreshUser();
   }, []);
 
   const pay = async (egg) => {
@@ -99,12 +116,63 @@ export default function EggsModal({ onClose, onUserUpdate }) {
       const decks = await base44.entities.Deck.filter({});
       let active = decks.find((d) => d.isActive) || decks[0];
       if (!active) active = await base44.entities.Deck.create({ name: "Deck 1", isActive: true });
+      setDecksCount(decks.length);
+      // Hard per-deck cap: a full active deck can't receive the hatched card
+      // directly — hand off to DeckFullModal (remove a card or buy a new deck).
+      const deckCards = await base44.entities.Card.filter({ deckId: active.id }, undefined, 1000);
+      if (deckCards.length >= MAX_CARDS_PER_DECK) {
+        setFullDeck({ card, deckId: active.id });
+        return;
+      }
       await base44.entities.Card.update(card.id, { deckId: active.id });
       toast({ title: `${card.name} added to your deck!` });
       setHatchedCard(null);
       load();
     } catch (e) {
       toast({ title: e.response?.data?.error || "Couldn't add to deck", variant: "destructive" });
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  // DeckFullModal → "Remove a card to make room": delete the chosen deck card,
+  // then move the hatched card into the freed slot.
+  const replaceAndAdd = async (cardToRemove) => {
+    if (!fullDeck) return;
+    setResolving(true);
+    try {
+      await base44.entities.Card.delete(cardToRemove.id);
+      await base44.entities.Card.update(fullDeck.card.id, { deckId: fullDeck.deckId });
+      toast({ title: `${fullDeck.card.name} added to your deck!`, description: `${cardToRemove.name} was removed to make room.` });
+      setFullDeck(null);
+      setHatchedCard(null);
+      load();
+    } catch (e) {
+      toast({ title: e.response?.data?.error || "Couldn't add to deck", variant: "destructive" });
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  // DeckFullModal → "Buy a new deck": purchase a fresh deck (buyDeck marks it
+  // active) and move the hatched card into it.
+  const buyNewDeckAndAdd = async () => {
+    if (!fullDeck) return;
+    setResolving(true);
+    try {
+      const { data } = await base44.functions.invoke("buyDeck", { name: `Deck ${decksCount + 1}` });
+      if (data.user) {
+        onUserUpdate?.(data.user);
+        setCoins(data.user.coins || 0);
+      }
+      setDecksCount((c) => c + 1);
+      await base44.entities.Card.update(fullDeck.card.id, { deckId: data.deck.id });
+      toast({ title: "New deck purchased", description: `${fullDeck.card.name} was added to it.` });
+      setFullDeck(null);
+      setHatchedCard(null);
+      load();
+    } catch (e) {
+      toast({ title: e.response?.data?.error || "Couldn't buy deck", variant: "destructive" });
     } finally {
       setResolving(false);
     }
@@ -241,6 +309,19 @@ export default function EggsModal({ onClose, onUserUpdate }) {
           card={hatchedCard}
           onAddToDeck={() => addToDeck(hatchedCard)}
           onSell={() => sellHatched(hatchedCard)}
+          busy={resolving}
+        />
+      )}
+
+      {fullDeck && (
+        <DeckFullModal
+          newCard={fullDeck.card}
+          deckId={fullDeck.deckId}
+          decksCount={decksCount}
+          canAffordDeck={coins >= DECK_COST}
+          onReplace={replaceAndAdd}
+          onBuyNewDeck={buyNewDeckAndAdd}
+          onClose={() => setFullDeck(null)}
           busy={resolving}
         />
       )}

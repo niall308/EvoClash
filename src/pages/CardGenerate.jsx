@@ -4,10 +4,12 @@ import { generateRandomCard, generateHybridCard } from "@/lib/cardGenerator";
 import { HYBRID_CHANCE } from "@/lib/gameConstants";
 import { getCreationStatus, EXTRA_CREATURE_COST } from "@/lib/cardCreationLimits";
 import { ensureActiveDeck } from "@/lib/decks";
+import { MAX_CARDS_PER_DECK, MAX_DECKS, DECK_COST } from "@/lib/gameConstants";
 import GameCard from "@/components/cards/GameCard";
 import CardStatsModal from "@/components/cards/CardStatsModal";
 import CreaturePicker from "@/components/generate/CreaturePicker";
 import AutoBuildOfferModal from "@/components/generate/AutoBuildOfferModal";
+import DeckFullModal from "@/components/decks/DeckFullModal";
 import { Sparkles, Loader2, PlusCircle, RefreshCw, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/components/ui/use-toast";
@@ -28,6 +30,9 @@ export default function CardGenerate() {
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeDeckId, setActiveDeckId] = useState(null);
+  const [activeDeckCount, setActiveDeckCount] = useState(null);
+  const [decksCount, setDecksCount] = useState(0);
+  const [deckFull, setDeckFull] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [autoBuilding, setAutoBuilding] = useState(false);
@@ -37,12 +42,15 @@ export default function CardGenerate() {
     (async () => {
       const me = await base44.auth.me();
       setUser(me);
-      const cards = await base44.entities.Card.filter({ ownerId: me.id });
+      const cards = await base44.entities.Card.filter({ ownerId: me.id }, undefined, 1000);
       setCount(cards.length);
       const list = await base44.entities.Creature.list();
       setCreatures(list);
+      const decks = await base44.entities.Deck.filter({});
+      setDecksCount(decks.length);
       const { active } = await ensureActiveDeck(me.id);
       setActiveDeckId(active.id);
+      setActiveDeckCount(cards.filter((c) => c.deckId === active.id).length);
       if (cards.length === 0 && !me.autoBuildOffered) setShowOfferModal(true);
     })();
   }, []);
@@ -87,7 +95,7 @@ export default function CardGenerate() {
   };
 
   const handleGenerate = async () => {
-    if (count >= 50 || generating) return;
+    if (generating) return;
     setGenerating(true);
     setPreviewCard(null);
     const forced = user?.role === "admin" && selectedCreature ? selectedCreature : null;
@@ -123,29 +131,83 @@ export default function CardGenerate() {
 
   const status = user ? getCreationStatus(user, count) : null;
 
+  // Core save: creates the generated card into `deckId` and updates local
+  // owned-types + counters. Used by the normal add, the replace-card path, and
+  // the buy-new-deck path.
+  const createIntoDeck = async (deckId) => {
+    const { data } = await base44.functions.invoke("createGeneratedCard", { cardData: previewCard, deckId, forced: previewForced });
+    let updatedUser = data.user;
+    const ownedTypes = updatedUser.ownedElementTypesList || [];
+    if (!ownedTypes.includes(previewCard.type)) {
+      updatedUser = await base44.auth.updateMe({
+        ownedElementTypesList: [...ownedTypes, previewCard.type],
+        distinctTypesOwnedCount: ownedTypes.length + 1,
+      });
+    }
+    setUser(updatedUser);
+    setCount((c) => c + 1);
+    setPreviewCard(null);
+    setPreviewForced(false);
+    setPreviewCreatureId(null);
+    return data.card;
+  };
+
   const handleAddToDeck = async () => {
     if (!previewCard || saving || !user) return;
     if (status.needsPayment && (user.coins || 0) < EXTRA_CREATURE_COST) return;
+    // Hard per-deck cap: if the active deck is full, force the player to either
+    // remove a card or buy a new deck — never silently overflow the deck.
+    if ((activeDeckCount ?? 0) >= MAX_CARDS_PER_DECK) {
+      setDeckFull(true);
+      return;
+    }
     setSaving(true);
     try {
-      // Coin cost / free-limit counters are enforced and persisted server-side
-      // by createGeneratedCard; only the owned-types tracking is client-driven.
-      const { data } = await base44.functions.invoke("createGeneratedCard", { cardData: previewCard, deckId: activeDeckId, forced: previewForced });
-      let updatedUser = data.user;
-      const ownedTypes = updatedUser.ownedElementTypesList || [];
-      if (!ownedTypes.includes(previewCard.type)) {
-        updatedUser = await base44.auth.updateMe({
-          ownedElementTypesList: [...ownedTypes, previewCard.type],
-          distinctTypesOwnedCount: ownedTypes.length + 1,
-        });
-      }
-      setUser(updatedUser);
-      setCount((c) => c + 1);
-      setPreviewCard(null);
-      setPreviewForced(false);
-      setPreviewCreatureId(null);
+      await createIntoDeck(activeDeckId);
+      setActiveDeckCount((c) => (c ?? 0) + 1);
     } catch (err) {
-      toast({ title: "Couldn't add card", description: "Something went wrong saving this card. Please try again.", variant: "destructive" });
+      toast({ title: "Couldn't add card", description: err.response?.data?.error || "Something went wrong saving this card. Please try again.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // DeckFullModal → "Remove a card to make room": delete the chosen deck card,
+  // then create the new card into the same (now 49-card) deck.
+  const handleReplaceCard = async (cardToRemove) => {
+    if (!previewCard || saving) return;
+    setSaving(true);
+    try {
+      await base44.entities.Card.delete(cardToRemove.id);
+      await createIntoDeck(activeDeckId);
+      // Removed one, added one → active deck stays at MAX_CARDS_PER_DECK.
+      setActiveDeckCount(MAX_CARDS_PER_DECK);
+      setDeckFull(false);
+      toast({ title: "Card added", description: `${cardToRemove.name} was removed to make room.` });
+    } catch (err) {
+      toast({ title: "Couldn't add card", description: err.response?.data?.error || err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // DeckFullModal → "Buy a new deck": purchase a fresh deck (buyDeck marks it
+  // active) and create the new card into it.
+  const handleBuyNewDeckForCard = async () => {
+    if (!previewCard || saving) return;
+    setSaving(true);
+    try {
+      const { data } = await base44.functions.invoke("buyDeck", { name: `Deck ${decksCount + 1}` });
+      setUser(data.user);
+      setDecksCount((c) => c + 1);
+      setActiveDeckId(data.deck.id);
+      setActiveDeckCount(0);
+      await createIntoDeck(data.deck.id);
+      setActiveDeckCount(1);
+      setDeckFull(false);
+      toast({ title: "New deck purchased", description: "Your new card was added to it." });
+    } catch (err) {
+      toast({ title: "Couldn't buy deck", description: err.response?.data?.error || err.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -188,7 +250,7 @@ export default function CardGenerate() {
         </div>
       )}
       <h1 className="text-2xl font-black mb-1 mt-2">Creature Card Creation</h1>
-      <p className="text-white/50 text-xs mb-1">{count === null ? "Loading..." : `${count}/50 cards owned`}</p>
+      <p className="text-white/50 text-xs mb-1">{activeDeckCount === null ? "Loading..." : `Active deck: ${activeDeckCount}/${MAX_CARDS_PER_DECK} cards`}</p>
       <p className="text-[11px] mb-8 h-4">
         {status && !isAdmin && status.pastInitialFree && (
           status.needsPayment ? (
@@ -216,17 +278,17 @@ export default function CardGenerate() {
           {!previewCard ? (
             <button
               onClick={handleGenerate}
-              disabled={generating || count >= 50}
+              disabled={generating}
               className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-fuchsia-500 px-8 py-4 rounded-full font-bold shadow-lg active:scale-95 transition-transform disabled:opacity-40"
             >
               {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-              {count >= 50 ? "Deck Full" : "Generate Card"}
+              Generate Card
             </button>
           ) : (
             <div className="flex gap-3">
               <button
                 onClick={handleAddToDeck}
-                disabled={saving || count >= 50 || (status?.needsPayment && (user.coins || 0) < EXTRA_CREATURE_COST)}
+                disabled={saving || (status?.needsPayment && (user.coins || 0) < EXTRA_CREATURE_COST)}
                 className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-3 rounded-full font-bold shadow-lg active:scale-95 transition-transform disabled:opacity-40"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : status?.needsPayment ? <Coins className="w-4 h-4" /> : <PlusCircle className="w-4 h-4" />}
@@ -270,6 +332,19 @@ export default function CardGenerate() {
         )}
       </div>
       {showStats && previewCard && <CardStatsModal card={previewCard} onClose={() => setShowStats(false)} />}
+
+      {deckFull && previewCard && (
+        <DeckFullModal
+          newCard={previewCard}
+          deckId={activeDeckId}
+          decksCount={decksCount}
+          canAffordDeck={(user?.coins || 0) >= DECK_COST}
+          onReplace={handleReplaceCard}
+          onBuyNewDeck={handleBuyNewDeckForCard}
+          onClose={() => setDeckFull(false)}
+          busy={saving}
+        />
+      )}
     </div>
   );
 }

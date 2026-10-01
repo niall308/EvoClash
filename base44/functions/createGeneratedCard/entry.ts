@@ -67,6 +67,14 @@ Deno.serve(async (req) => {
     try { deck = await base44.entities.Deck.get(deckId); } catch {}
     if (!deck) return Response.json({ error: 'Invalid deck' }, { status: 400 });
 
+    // Hard per-deck cap: a deck holds at most 50 cards. The client offers a
+    // remove-or-buy-new-deck flow, but enforce it here too so a spoofed request
+    // can't overflow a deck. ownedCards is already fetched (limit 1000) above.
+    const deckCardCount = ownedCards.filter((c) => c.deckId === deckId).length;
+    if (deckCardCount >= 50) {
+      return Response.json({ error: 'This deck is full (50/50 cards). Remove a card or choose another deck.' }, { status: 400 });
+    }
+
     const card = await base44.entities.Card.create({ ...safeCardData, ...uniqueAttackFields, deckId, ownerId: user.id });
 
     // Persist the creation counters + coin debit via the service role, not the

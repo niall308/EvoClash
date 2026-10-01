@@ -206,6 +206,10 @@ export const TYPE_CHANGE_COST = 100000;
 
 export const DECK_COST = 250000;
 export const MAX_DECKS = 5;
+// Hard per-deck cap: a deck holds at most 50 cards. New cards (from the creature
+// generator or an egg hatch) can't be added to a full deck — the player must
+// remove a card to make room or buy a new deck for the new card.
+export const MAX_CARDS_PER_DECK = 50;
 
 // Card creation limits (Card Generate screen)
 export const FREE_CARDS_INITIAL = 15;
