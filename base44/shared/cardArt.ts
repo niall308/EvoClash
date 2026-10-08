@@ -174,3 +174,24 @@ export function buildEggHatchRecolorPrompt(
   if (bgRef) existingImageUrls.push(bgRef.imageUrl);
   return { prompt, existingImageUrls };
 }
+
+// Upgraded-egg background compositing. The admin-stored good/evil upgraded image
+// is the creature reference — its pose, anatomy, face, colours, and art style
+// stay IDENTICAL (the good/evil mood is already baked into that image, so it is
+// NOT recoloured). The model only paints a complete, fitting elemental [type]
+// background environment AROUND the creature so the upgraded card is not left on
+// a transparent/blank background. Used by upgradeEggHatchling.
+export function buildEggUpgradeBackgroundPrompt(
+  cardData: CardArtInput,
+  upgradedImageUrl: string,
+  typeBackgrounds: { type: string; imageUrl: string }[] = []
+) {
+  const bgRef = typeBackgrounds.find((b) => b.type === cardData.type && isPublicRefUrl(b.imageUrl));
+  const backgroundInstruction = bgRef
+    ? `Paint a NEW background environment that matches the elemental mood, colors, and setting of the additional background reference image provided — use that reference ONLY for its environment style, do not copy any creature or object from it.`
+    : `Paint a NEW background environment that fits a ${cardData.type} elemental setting (e.g. lava fields for Lava, icy tundra for Ice, storm clouds for Wind).`;
+  const prompt = `Use the provided creature illustration as the character reference. Keep the creature's pose, anatomy, body structure, face, colours, and art style IDENTICAL to the reference — do not redesign, restructure, or recolor the creature in any way. Then paint a complete, fully rendered, completely opaque ${cardData.type} elemental environment around the creature and place the creature standing within it. ${backgroundInstruction} The environment must be a separate, atmospheric, magical ${cardData.type} scene that contrasts with the creature so the creature stays the clear focal point. The entire image must be a finished, fully opaque painting with every area completely filled in — a complete illustration, nothing left blank. Output the creature within the ${cardData.type} environment. No text, no border, no frame.`;
+  const existingImageUrls: string[] = [upgradedImageUrl];
+  if (bgRef) existingImageUrls.push(bgRef.imageUrl);
+  return { prompt, existingImageUrls };
+}

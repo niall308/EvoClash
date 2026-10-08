@@ -1,4 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { buildEggUpgradeBackgroundPrompt } from "../../shared/cardArt.ts";
+import { generateCleanArt } from "../../shared/generateCleanArt.ts";
 
 
 // Upgrades an egg-hatchling baby card (Tier 3) into its special upgraded form
@@ -74,11 +76,26 @@ export default async function (req: Request) {
       ? (creature.eggUpgradedGoodName || creature.eggUpgradedName)
       : (creature.eggUpgradedEvilName || creature.eggUpgradedName)) || card.name;
 
-    // The admin-stored good/evil upgraded image has a clean background and IS the
-    // canonical upgraded-form art, so use it directly as the card art — no fetch,
-    // no checkerboard detection, no regeneration. One pass, well under the client
-    // function-invocation timeout.
-    const cardArtUrl: string = upgradedImage;
+    // The admin-stored good/evil upgraded image has a transparent/blank
+    // background, so composite it onto a fitting elemental type background: the
+    // stored image is the creature reference (pose, anatomy, face, colours, and
+    // art style stay IDENTICAL — the good/evil mood is already baked into it), and
+    // the model only paints the type environment around it. Single generation
+    // pass; falls back to the stored image if generation fails so the upgrade
+    // never blocks on art.
+    let cardArtUrl: string = upgradedImage;
+    try {
+      const typeBackgrounds = await base44.entities.TypeBackground.filter({ type: card.type });
+      const { prompt, existingImageUrls } = buildEggUpgradeBackgroundPrompt(
+        { baseName: creature.baseName, type: card.type, isHybrid: false },
+        upgradedImage,
+        typeBackgrounds
+      );
+      const art = await generateCleanArt(base44, prompt, existingImageUrls);
+      if (art?.url) cardArtUrl = art.url;
+    } catch (e) {
+      console.error('upgradeEggHatchling: background generation failed, using stored image:', e);
+    }
 
     // The upgraded form's Unique Attack is fixed by alignment (not per-creature):
     //   Good = Blessed Strike: 110% damage + heal all active cards 35% max HP.
