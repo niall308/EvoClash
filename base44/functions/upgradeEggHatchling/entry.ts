@@ -80,9 +80,16 @@ export default async function (req: Request) {
     // background, so composite it onto a fitting elemental type background: the
     // stored image is the creature reference (pose, anatomy, face, colours, and
     // art style stay IDENTICAL — the good/evil mood is already baked into it), and
-    // the model only paints the type environment around it. Single generation
-    // pass; falls back to the stored image if generation fails so the upgrade
-    // never blocks on art.
+    // the model only paints the type environment around it.
+    //
+    // The generation is BOUNDED: a slow or hung GenerateImage would otherwise run
+    // past the platform function-execution limit and kill the whole upgrade
+    // (card never saves, user sees an error). Race it against a timeout — if it
+    // wins, the upgraded card gets the type background; if it loses or throws,
+    // fall back to the stored image so the upgrade always completes (just without
+    // a background in the rare slow case). Most generations finish well under the
+    // bound, so the background is the common outcome.
+    const ART_TIMEOUT_MS = 15000;
     let cardArtUrl: string = upgradedImage;
     try {
       const typeBackgrounds = await base44.entities.TypeBackground.filter({ type: card.type });
@@ -91,10 +98,13 @@ export default async function (req: Request) {
         upgradedImage,
         typeBackgrounds
       );
-      const art = await generateCleanArt(base44, prompt, existingImageUrls);
+      const art: any = await Promise.race([
+        generateCleanArt(base44, prompt, existingImageUrls),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('art generation timeout')), ART_TIMEOUT_MS)),
+      ]);
       if (art?.url) cardArtUrl = art.url;
     } catch (e) {
-      console.error('upgradeEggHatchling: background generation failed, using stored image:', e);
+      console.error('upgradeEggHatchling: background generation failed/timed out, using stored image:', e);
     }
 
     // The upgraded form's Unique Attack is fixed by alignment (not per-creature):
