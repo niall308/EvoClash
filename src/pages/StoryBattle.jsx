@@ -26,6 +26,7 @@ export default function StoryBattle() {
         return;
       }
       const me = await base44.auth.me();
+      const isAdmin = me?.role === "admin";
       const { active } = await ensureActiveDeck(me.id);
       const myCards = await base44.entities.Card.filter({ ownerId: me.id, deckId: active.id });
       if (myCards.length < 15) {
@@ -39,7 +40,8 @@ export default function StoryBattle() {
         return;
       }
       const currentKey = `${progress.currentStage}-${progress.currentMatch}`;
-      if (key !== currentKey) {
+      // Admins may play any unplayed stage; everyone else must be at the current match.
+      if (key !== currentKey && !isAdmin) {
         navigate("/story");
         return;
       }

@@ -2,9 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Lock, Check, Crown, BookOpen, Trophy, Gift, Egg } from "lucide-react";
 import { STORY_STAGES, getOrCreateStoryProgress } from "@/lib/storyConfig";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function StoryMap() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [progress, setProgress] = useState(null);
 
   const load = async () => {
@@ -28,6 +31,11 @@ export default function StoryMap() {
         <h1 className="text-2xl font-black">Story Mode</h1>
       </div>
       <p className="text-white/50 text-xs mb-6">10 stages · 8 matches each · Beat every boss to complete the story!</p>
+      {isAdmin && (
+        <div className="mb-5 text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-400/30 rounded-lg px-3 py-2">
+          Admin access: every match is unlocked — tap any stage to play it.
+        </div>
+      )}
 
       {!progress ? (
         <div className="flex justify-center py-20">
@@ -65,15 +73,17 @@ export default function StoryMap() {
                     const key = `${stage.stage}-${mt.matchNumber}`;
                     const completed = storyCompleted || progress.completedMatches.includes(key);
                     const current = key === currentKey && !completed;
-                    const locked = !completed && !current;
+                    // Admins can jump into any match that isn't already completed.
+                    const playable = current || (isAdmin && !completed);
+                    const locked = !completed && !playable;
                     const boss = mt.isBoss;
                     return (
                       <button
                         key={mt.matchNumber}
                         disabled={locked}
-                        onClick={() => current && navigate(`/story-battle/${stage.stage}/${mt.matchNumber}`)}
+                        onClick={() => playable && navigate(`/story-battle/${stage.stage}/${mt.matchNumber}`)}
                         className={`relative aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-all
-                          ${completed ? "bg-emerald-600/80 text-white" : current ? "bg-purple-600 text-white ring-2 ring-amber-400 animate-pulse" : "bg-white/5 text-white/30"}
+                          ${completed ? "bg-emerald-600/80 text-white" : current ? "bg-purple-600 text-white ring-2 ring-amber-400 animate-pulse" : playable ? "bg-purple-700/70 text-white ring-1 ring-amber-400/60" : "bg-white/5 text-white/30"}
                           ${boss ? "ring-1 ring-amber-400/50" : ""}`}
                       >
                         {boss ? <Crown className="w-4 h-4 mb-0.5" /> : <span>{mt.matchNumber}</span>}

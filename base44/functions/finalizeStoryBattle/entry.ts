@@ -138,7 +138,8 @@ Deno.serve(async (req) => {
     // settlement must target the server-tracked current position. Win or loss.
     const curStage = Number(progress.currentStage) || 1;
     const curMatch = Number(progress.currentMatch) || 1;
-    if (s !== curStage || m !== curMatch) {
+    // Admins may settle a win/loss on any unplayed stage; everyone else must be at the current match.
+    if ((s !== curStage || m !== curMatch) && user.role !== 'admin') {
       return Response.json({ error: 'not your current story match' }, { status: 400 });
     }
 
