@@ -3,8 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { generateRandomCard, generateHybridCard } from "@/lib/cardGenerator";
 import { HYBRID_CHANCE } from "@/lib/gameConstants";
 import { getCreationStatus, EXTRA_CREATURE_COST } from "@/lib/cardCreationLimits";
-import { ensureActiveDeck } from "@/lib/decks";
-import { MAX_CARDS_PER_DECK, MAX_DECKS, DECK_COST } from "@/lib/gameConstants";
+import { getDecksAndActive } from "@/lib/decks";
+import { MAX_CARDS_PER_DECK, DECK_COST } from "@/lib/gameConstants";
 import GameCard from "@/components/cards/GameCard";
 import CardStatsModal from "@/components/cards/CardStatsModal";
 import CreaturePicker from "@/components/generate/CreaturePicker";
@@ -42,16 +42,26 @@ export default function CardGenerate() {
     (async () => {
       const me = await base44.auth.me();
       setUser(me);
-      const cards = await base44.entities.Card.filter({ ownerId: me.id }, undefined, 1000);
-      setCount(cards.length);
       const list = await base44.entities.Creature.list();
       setCreatures(list);
-      const decks = await base44.entities.Deck.filter({});
-      setDecksCount(decks.length);
-      const { active } = await ensureActiveDeck(me.id);
+      const { decks: userDecks, active } = await getDecksAndActive(me.id);
+      setDecksCount(userDecks.length);
       setActiveDeckId(active.id);
-      setActiveDeckCount(cards.filter((c) => c.deckId === active.id).length);
-      if (cards.length === 0 && !me.autoBuildOffered) setShowOfferModal(true);
+      // Bounded, deck-scoped fetches only — never the full collection.
+      // active-deck cards (capped at MAX_CARDS_PER_DECK) drive the deck-full
+      // gate; a limit-1 fetch detects an empty collection for the auto-build offer.
+      const activeCards = await base44.entities.Card.filter(
+        { ownerId: me.id, deckId: active.id },
+        undefined,
+        MAX_CARDS_PER_DECK + 1
+      );
+      const activeCount = activeCards.length;
+      setActiveDeckCount(activeCount);
+      setCount(activeCount); // fallback for getCreationStatus (totalCardsCreated is authoritative)
+      if (activeCount === 0) {
+        const anyCard = await base44.entities.Card.filter({ ownerId: me.id }, undefined, 1);
+        if (anyCard.length === 0 && !me.autoBuildOffered) setShowOfferModal(true);
+      }
     })();
   }, []);
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import CardGrid from "@/components/cards/CardGrid";
@@ -9,8 +9,8 @@ import CardStatsModal from "@/components/cards/CardStatsModal";
 import DeckCompareModal from "@/components/cards/DeckCompareModal";
 import DeckTabs from "@/components/decks/DeckTabs";
 import NewDeckModal from "@/components/decks/NewDeckModal";
-import { ensureActiveDeck } from "@/lib/decks";
-import { DECK_COST, MAX_DECKS } from "@/lib/gameConstants";
+import { getDecksAndActive } from "@/lib/decks";
+import { DECK_COST, MAX_CARDS_PER_DECK, MAX_DECKS } from "@/lib/gameConstants";
 import { Sparkles, Loader2, ListChecks, PlusCircle, Trash2, Star, LayoutGrid, List, Egg } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import PullToRefresh from "@/components/common/PullToRefresh";
@@ -24,6 +24,7 @@ export default function Deck() {
   const [activeDeckId, setActiveDeckId] = useState(null);
   const [viewingDeckId, setViewingDeckId] = useState(null);
   const [cards, setCards] = useState(null);
+  const [activeDeckCount, setActiveDeckCount] = useState(0);
   const [selectedId, setSelectedId] = useState(null);
   const [filterType, setFilterType] = useState("all");
   const [filterTier, setFilterTier] = useState("all");
@@ -36,37 +37,60 @@ export default function Deck() {
   const [viewMode, setViewMode] = useState("grid");
   const [showEggs, setShowEggs] = useState(false);
 
-  const load = async (me) => {
+  // Paginated, deck-scoped load: instead of fetching the ENTIRE collection and
+  // filtering client-side, we load only the cards for the deck being viewed
+  // (a deck is capped at MAX_CARDS_PER_DECK, so each fetch is bounded). The
+  // active-deck count is tracked separately so the header stays correct while
+  // a non-active deck is open. Switching decks re-fetches just that deck.
+  const loadDeckCards = useCallback(async (userId, deckId) => {
+    setCards(null);
+    const data = await base44.entities.Card.filter(
+      { ownerId: userId, deckId },
+      "-created_date",
+      MAX_CARDS_PER_DECK
+    );
+    setCards(data);
+    return data;
+  }, []);
+
+  const loadAll = useCallback(async (me) => {
     setUser(me);
-    const { decks: userDecks, active } = await ensureActiveDeck(me.id);
+    const { decks: userDecks, active } = await getDecksAndActive(me.id);
     setDecks(userDecks);
     setActiveDeckId(active.id);
     setViewingDeckId(active.id);
-    const data = await base44.entities.Card.filter({ ownerId: me.id }, "-created_date");
-    setCards(data);
-  };
+    const activeCards = await loadDeckCards(me.id, active.id);
+    setActiveDeckCount(activeCards.length);
+  }, [loadDeckCards]);
 
   useEffect(() => {
-    if (authUser) load(authUser);
-  }, [authUser?.id]);
+    if (authUser) loadAll(authUser);
+  }, [authUser?.id, loadAll]);
 
-  const deckCards = (cards || []).filter((c) => c.deckId === viewingDeckId);
-  const activeDeckCards = (cards || []).filter((c) => c.deckId === activeDeckId);
-  const filteredCards = deckCards.filter(
-    (c) =>
-      (filterType === "all" || c.type === filterType) &&
-      (filterTier === "all" || String(c.tier) === filterTier) &&
-      (!hybridOnly || c.isHybrid)
+  // `cards` now holds ONLY the viewed deck's cards, so the deckId filter is a
+  // no-op — memoize the type/tier/hybrid filter so large decks don't re-filter
+  // on every unrelated state tick.
+  const filteredCards = useMemo(
+    () =>
+      (cards || []).filter(
+        (c) =>
+          (filterType === "all" || c.type === filterType) &&
+          (filterTier === "all" || String(c.tier) === filterTier) &&
+          (!hybridOnly || c.isHybrid)
+      ),
+    [cards, filterType, filterTier, hybridOnly]
   );
 
   const handleDelete = async (id) => {
     const prevCards = cards;
     setCards((prev) => prev.filter((c) => c.id !== id));
+    if (viewingDeckId === activeDeckId) setActiveDeckCount((c) => Math.max(0, c - 1));
     if (selectedId === id) setSelectedId(null);
     try {
       await base44.entities.Card.delete(id);
     } catch (err) {
       setCards(prevCards);
+      if (viewingDeckId === activeDeckId) setActiveDeckCount((c) => c + 1);
     }
   };
 
@@ -90,20 +114,23 @@ export default function Deck() {
     const prevCards = cards;
     const idsToDelete = selectedIds;
     setCards((prev) => prev.filter((c) => !idsToDelete.includes(c.id)));
+    if (viewingDeckId === activeDeckId) setActiveDeckCount((c) => Math.max(0, c - idsToDelete.length));
     setSelectedIds([]);
     setBulkMode(false);
     try {
       await base44.entities.Card.deleteMany({ id: { $in: idsToDelete } });
     } catch (err) {
       setCards(prevCards);
+      if (viewingDeckId === activeDeckId) setActiveDeckCount((c) => c + idsToDelete.length);
     }
   };
 
-  const handleViewDeck = (deckId) => {
+  const handleViewDeck = async (deckId) => {
     if (deckId === viewingDeckId) return;
     setViewingDeckId(deckId);
     setSelectedId(null);
     setSelectedIds([]);
+    await loadDeckCards(user.id, deckId);
   };
 
   const handleSetActiveDeck = async (deckId) => {
@@ -114,6 +141,18 @@ export default function Deck() {
     ]);
     setDecks((prev) => prev.map((d) => ({ ...d, isActive: d.id === deckId })));
     setActiveDeckId(deckId);
+    // Active count now belongs to the new active deck. If we're viewing it,
+    // cards.length is authoritative; otherwise fetch just its count (bounded).
+    if (viewingDeckId === deckId) {
+      setActiveDeckCount((cards || []).length);
+    } else {
+      const newActiveCards = await base44.entities.Card.filter(
+        { ownerId: user.id, deckId },
+        undefined,
+        MAX_CARDS_PER_DECK
+      );
+      setActiveDeckCount(newActiveCards.length);
+    }
   };
 
   const handleCreateDeck = async (name) => {
@@ -126,6 +165,8 @@ export default function Deck() {
       setDecks((prev) => [...prev.map((d) => ({ ...d, isActive: false })), data.deck]);
       setActiveDeckId(data.deck.id);
       setViewingDeckId(data.deck.id);
+      setCards([]);
+      setActiveDeckCount(0);
       setShowNewDeckModal(false);
     } catch (err) {
       // Server rejected the purchase (e.g. insufficient coins / max decks); no UI change.
@@ -135,26 +176,39 @@ export default function Deck() {
   const handleDeleteDeck = async (deckId) => {
     if (deckId === activeDeckId) return;
     if (!window.confirm("Delete this deck? Its cards will be moved to your active deck.")) return;
-    const cardsToMove = (cards || []).filter((c) => c.deckId === deckId);
+    // Fetch the to-be-deleted deck's cards on demand (rare action) so we never
+    // hold every deck's cards in memory — only the one being viewed.
+    const cardsToMove = await base44.entities.Card.filter(
+      { ownerId: user.id, deckId },
+      undefined,
+      MAX_CARDS_PER_DECK
+    );
     if (cardsToMove.length) {
       await base44.entities.Card.bulkUpdate(cardsToMove.map((c) => ({ id: c.id, deckId: activeDeckId })));
-      setCards((prev) => prev.map((c) => (c.deckId === deckId ? { ...c, deckId: activeDeckId } : c)));
     }
     await base44.entities.Deck.delete(deckId);
     setDecks((prev) => prev.filter((d) => d.id !== deckId));
-    if (viewingDeckId === deckId) setViewingDeckId(activeDeckId);
+    if (viewingDeckId === deckId) {
+      // Switched to the active deck, which just absorbed the moved cards —
+      // reload it so the grid and the active count reflect the new total.
+      setViewingDeckId(activeDeckId);
+      const reloaded = await loadDeckCards(user.id, activeDeckId);
+      setActiveDeckCount(reloaded.length);
+    } else {
+      setActiveDeckCount((c) => c + cardsToMove.length);
+    }
   };
 
   const loading = !cards || !decks;
   const selectedCard = selectedId ? (cards || []).find((c) => c.id === selectedId) : null;
 
   return (
-    <PullToRefresh onRefresh={() => authUser && load(authUser)}>
+    <PullToRefresh onRefresh={() => authUser && loadAll(authUser)}>
     <div className="text-white pb-24">
       <div className="px-6 py-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black">Your Deck</h1>
-          <p className="text-white/50 text-xs">{cards ? `Active deck: ${activeDeckCards.length}/50 cards (min 15 to play)` : "Loading..."}</p>
+          <p className="text-white/50 text-xs">{decks ? `Active deck: ${activeDeckCount}/50 cards (min 15 to play)` : "Loading..."}</p>
         </div>
         <div className="flex items-center gap-2">
         <button
