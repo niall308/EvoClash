@@ -27,14 +27,32 @@ export default function CardUpgrade() {
   const [eggEvolving, setEggEvolving] = useState(false);
   const [selling, setSelling] = useState(false);
   const [typePurchasing, setTypePurchasing] = useState(null);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const [c, u] = await Promise.all([base44.entities.Card.get(id), base44.auth.me()]);
-      setCard(c);
-      setUser(u);
+      try {
+        const [c, u] = await Promise.all([base44.entities.Card.get(id), base44.auth.me()]);
+        setCard(c);
+        setUser(u);
+      } catch (err) {
+        // The card may have been deleted (sold hatchling, traded away, etc.) —
+        // show a friendly not-found state instead of crashing on a stale URL.
+        setNotFound(true);
+      }
     })();
   }, [id]);
+
+  if (notFound) {
+    return (
+      <div className="text-white px-6 py-6">
+        <Link to="/deck" className="inline-flex items-center gap-1 text-white/60 text-sm mb-6 min-h-[44px] px-1 -ml-1">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Link>
+        <p className="text-center text-white/60 py-24">This card no longer exists.</p>
+      </div>
+    );
+  }
 
   if (!card || !user) {
     return (
