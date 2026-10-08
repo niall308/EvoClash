@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { EGG_HATCH_DAYS } from "../../shared/eggHatch.ts";
 import { buildCardImagePrompt, buildEggHatchRecolorPrompt } from "../../shared/cardArt.ts";
-import { flattenImageOntoSolid } from "../../shared/imageFlatten.ts";
 import { generateCleanArt } from "../../shared/generateCleanArt.ts";
 
 // Hatches a ready (30/30) egg into a baby creature card. Picks a random
@@ -62,42 +61,19 @@ export default async function (req: Request) {
     const babyImage = randomFrom(creature.eggBabyImages || []);
     let cardArtUrl: string;
     if (babyImage) {
-      // The stored baby image is often a JPEG mislabeled as PNG, or a transparent
-      // PNG. In both cases, flatten it onto a solid white background and re-upload
-      // the opaque PNG to a public media.base44.com URL. This guarantees the
-      // generator receives a fully opaque, publicly fetchable reference (no alpha,
-      // no base44.app/api/apps private path), which is what stops it from painting
-      // a transparency-checkerboard into the output.
-      let refUrl = babyImage;
-      try {
-        const flatBytes = await flattenImageOntoSolid(babyImage, [255, 255, 255]);
-        if (flatBytes) {
-          const file = new File([flatBytes], `hatchling-${creature.baseName}.png`, { type: 'image/png' });
-          const up: any = await base44.asServiceRole.integrations.Core.UploadPublicFile({ file });
-          if (up?.file_url) refUrl = up.file_url;
-        }
-      } catch (e) {
-        console.error('flatten baby image failed, using original:', e);
-      }
+      // The admin-stored baby image has a clean background, so it is used directly
+      // as the reference. The model keeps the creature's pose, anatomy, face, and
+      // art style identical, recolours its body to the card type's colour gradient,
+      // and paints a fitting elemental type background around it (matching
+      // standard card creation). One single generation pass — no flatten, no
+      // checkerboard re-rolls.
       const { prompt, existingImageUrls } = buildEggHatchRecolorPrompt(
         { baseName: creature.baseName, type, isHybrid: false },
-        refUrl,
+        babyImage,
         typeBackgrounds
       );
       const result = await generateCleanArt(base44, prompt, existingImageUrls);
       cardArtUrl = result.url;
-      // If every recolor attempt still produced a grid, fall back to a from-scratch
-      // generation (which doesn't reference a plain-background source and so
-      // doesn't trigger the checkerboard artefact) rather than ship a grid image.
-      if (!result.clean) {
-        console.log('hatchEgg: all recolor attempts had checkerboard, falling back to from-scratch art');
-        const fallback = await buildCardImagePrompt(
-          { baseName: creature.baseName, type, isHybrid: false },
-          { typeBackgrounds, creatureDescription: creature.description || '', referenceImageUrl: creature.referenceImageUrl || '' }
-        );
-        const fb = await generateCleanArt(base44, fallback.prompt, fallback.existingImageUrls, 2);
-        cardArtUrl = fb.url;
-      }
     } else {
       // No stored baby image — fall back to from-scratch generation.
       const { prompt, existingImageUrls } = buildCardImagePrompt(

@@ -1,6 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { buildCardImagePrompt } from "../../shared/cardArt.ts";
-import { detectCheckerboard } from "../../shared/imageFlatten.ts";
+
 
 // Upgrades an egg-hatchling baby card (Tier 3) into its special upgraded form
 // (Tier 4): uses a random eggUpgradedImages entry for the art, the creature's
@@ -75,45 +74,11 @@ export default async function (req: Request) {
       ? (creature.eggUpgradedGoodName || creature.eggUpgradedName)
       : (creature.eggUpgradedEvilName || creature.eggUpgradedName)) || card.name;
 
-    // Use the admin-stored upgraded image directly as the card art — the admin
-    // curates a finished good/evil upgraded image per creature, so it IS the
-    // canonical upgraded-form art. The previous implementation regenerated it via
-    // AI (recolor + up to 6 sequential GenerateImage calls + checkerboard
-    // re-rolls), which took 15–40s and exceeded the client function-invocation
-    // timeout — that is why upgrades "failed for all".
-    //
-    // Some admin-stored upgraded images are AI-generated JPEGs with a BAKED-IN
-    // transparency-checkerboard background (no alpha channel, so flattening can't
-    // remove it). When that's detected, regenerate clean from-scratch art in a
-    // SINGLE pass (with no reference to the checkerboard image) so the card never
-    // ships with a checkerboard — and one generation stays well under the client
-    // timeout. Good/evil mood is baked into the from-scratch prompt so the
-    // alignment still reads visually even without the admin's image.
-    let cardArtUrl: string = upgradedImage;
-    try {
-      const r = await fetch(upgradedImage);
-      if (r.ok) {
-        const bytes = new Uint8Array(await r.arrayBuffer());
-        if (detectCheckerboard(bytes)) {
-          console.log('upgradeEggHatchling: stored upgraded image has checkerboard, regenerating clean art');
-          const typeBackgrounds = await base44.entities.TypeBackground.filter({ type: card.type });
-          const fb = buildCardImagePrompt(
-            { baseName: creature.baseName, type: card.type, isHybrid: false },
-            { typeBackgrounds, creatureDescription: creature.description || '', referenceImageUrl: creature.referenceImageUrl || '' }
-          );
-          const mood = alignment === 'good'
-            ? ' Radiant, benevolent, glowing golden halo, angelic and noble mood.'
-            : ' Dark, corrupted, sinister, shadowy, demonic and menacing mood.';
-          const gen: any = await base44.asServiceRole.integrations.Core.GenerateImage({
-            prompt: fb.prompt + mood,
-            existing_image_urls: fb.existingImageUrls,
-          });
-          if (gen?.url) cardArtUrl = gen.url;
-        }
-      }
-    } catch (e) {
-      console.error('upgradeEggHatchling: checkerboard check/regenerate failed, using stored image:', e);
-    }
+    // The admin-stored good/evil upgraded image has a clean background and IS the
+    // canonical upgraded-form art, so use it directly as the card art — no fetch,
+    // no checkerboard detection, no regeneration. One pass, well under the client
+    // function-invocation timeout.
+    const cardArtUrl: string = upgradedImage;
 
     // The upgraded form's Unique Attack is fixed by alignment (not per-creature):
     //   Good = Blessed Strike: 110% damage + heal all active cards 35% max HP.
