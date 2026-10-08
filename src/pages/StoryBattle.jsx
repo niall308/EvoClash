@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { getStoryMatch, buildStoryAiPool, getOrCreateStoryProgress } from "@/lib/storyConfig";
 import { ensureActiveDeck } from "@/lib/decks";
 import BattleScreen from "@/components/battle/BattleScreen";
+import Battle3v3Screen from "@/components/battle3v3/Battle3v3Screen";
 import StoryMatchEnd from "@/components/story/StoryMatchEnd";
 import { Loader2 } from "lucide-react";
 
@@ -99,6 +100,35 @@ export default function StoryBattle() {
     );
   }
 
+  // Stages 6-10 are fought as 3v3; stages 1-5 use the standard 1v1 battle.
+  const is3v3 = Number(stage) >= 6;
+  const matchEndOverlay = endState ? (
+    <StoryMatchEnd
+      {...endState}
+      onRetry={() => {
+        setEndState(null);
+        setBattleKey((k) => k + 1);
+      }}
+    />
+  ) : (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
+      <Loader2 className="w-8 h-8 text-white animate-spin" />
+    </div>
+  );
+
+  if (is3v3) {
+    return (
+      <Battle3v3Screen
+        key={battleKey}
+        playerCards={ready.playerCards}
+        difficulty={ready.matchData.aiDeckType}
+        options={{ aiPoolOverride: ready.aiPool, skipRewards: true, forfeitTo: "/story" }}
+        onMatchEnd={(winner) => handleEnd(winner, { powerUpsUsed: true })}
+        matchEnd={matchEndOverlay}
+      />
+    );
+  }
+
   return (
     <BattleScreen
       key={battleKey}
@@ -106,21 +136,7 @@ export default function StoryBattle() {
       difficulty={ready.matchData.aiDeckType}
       options={{ aiPoolOverride: ready.aiPool, skipRewards: true, isBoss: ready.matchData.isBoss, forfeitTo: "/story" }}
       onMatchEnd={handleEnd}
-      matchEnd={
-        endState ? (
-          <StoryMatchEnd
-            {...endState}
-            onRetry={() => {
-              setEndState(null);
-              setBattleKey((k) => k + 1);
-            }}
-          />
-        ) : (
-          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-white animate-spin" />
-          </div>
-        )
-      }
+      matchEnd={matchEndOverlay}
     />
   );
 }

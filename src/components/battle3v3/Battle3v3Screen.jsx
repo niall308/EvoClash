@@ -20,9 +20,9 @@ import { useNavigate } from "react-router-dom";
 
 const SLOTS = [0, 1, 2];
 
-export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd, onPlayAgain }) {
+export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd, onPlayAgain, options, matchEnd }) {
   const navigate = useNavigate();
-  const v = useBattle3v3(playerCards, onMatchEnd, difficulty);
+  const v = useBattle3v3(playerCards, onMatchEnd, difficulty, options);
   const [showForfeit, setShowForfeit] = useState(false);
   const [readied, setReadied] = useState(false);
   const slotRects = useRef([null, null, null, null, null, null]); // 0-2 ai, 3-5 player
@@ -208,10 +208,10 @@ export default function Battle3v3Screen({ playerCards, difficulty, onMatchEnd, o
         />
       )}
 
-      {v.phase === "matchEnd" && (onMatchEnd ? null : <MatchEndModal won={v.matchResult === "player"} coinsBreakdown={v.coinsBreakdown} onPlayAgain={onPlayAgain} />)}
+      {v.phase === "matchEnd" && (matchEnd || <MatchEndModal won={v.matchResult === "player"} coinsBreakdown={v.coinsBreakdown} onPlayAgain={onPlayAgain} />)}
       {showForfeit && (
         <ForfeitModal
-          onConfirm={async () => { await v.forfeitMatch(); navigate("/play"); }}
+          onConfirm={async () => { await v.forfeitMatch(); navigate(options?.forfeitTo || "/play"); }}
           onCancel={() => setShowForfeit(false)}
         />
       )}
