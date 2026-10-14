@@ -1,5 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { waitUntil } from 'base44:runtime';
 import { buildEggUpgradeBackgroundPrompt } from "../../shared/cardArt.ts";
 import { generateCleanArt } from "../../shared/generateCleanArt.ts";
 
@@ -11,14 +10,12 @@ import { generateCleanArt } from "../../shared/generateCleanArt.ts";
 // the standard tier-upgrade cost and mirrors evolveCard's user bookkeeping
 // (creaturesEvolved + evolvedCardIds) so the upgrade counts toward milestones.
 //
-// The card is saved and the response returned INSTANTLY with the stored upgraded
-// image. Compositing the creature onto a fitting elemental type background is
-// done AFTER the response via waitUntil, so a slow/hung GenerateImage can never
-// block or fail the upgrade (the client SDK call can't time out waiting on art).
-// The card is already upgraded and playable with the stored image; the
-// background is a cosmetic enhancement applied in the background a few seconds
-// later.
+// The stored upgraded image is composited onto an elemental type background
+// coloured by alignment (good = white/gold/silver, evil = black/red/orange/purple)
+// BEFORE the card is saved, so it never appears blank. Generation is bounded by
+// ART_TIMEOUT_MS and falls back to the stored image so the upgrade always completes.
 const TIER_UPGRADE_COST = 500000;
+const ART_TIMEOUT_MS = 40000;
 const TIER4 = { statMin: 7501, statMax: 10000, bonusMin: 251, bonusMax: 300 };
 const UPGRADE_STAT_MIN = 10000;
 const UPGRADE_STAT_MAX = 12500;
@@ -92,16 +89,36 @@ export default async function (req: Request) {
       ? { uniqueAttackName: 'Blessed Strike', uniqueAttackPercent: 110, uniqueAttackTarget: 'single', uniqueAttackEffect: 'Deals 110% attack damage and heals all of your active cards (including itself) by 35% of their total health.', uniqueAttackEffectType: 'healAll35' }
       : { uniqueAttackName: 'Cursed Strike', uniqueAttackPercent: 175, uniqueAttackTarget: 'single', uniqueAttackEffect: 'Deals 175% attack damage but all of your active cards on the field lose 15% of their current health.', uniqueAttackEffectType: 'sacrificeAll15' };
 
-    // Save the upgraded card IMMEDIATELY with the stored upgraded image and
-    // deduct coins / bookkeeping. This completes the upgrade in well under a
-    // second, so the client invocation can never time out waiting on art.
+    // Composite the stored upgraded image onto an elemental type background
+    // coloured by alignment (good = white/gold/silver, evil = black/red/orange/
+    // purple) BEFORE saving, so the card is never shown with a blank background.
+    // Bounded by a timeout: if generation is slow or fails, fall back to the
+    // stored image so the upgrade itself always completes.
+    let cardArtUrl: string = upgradedImage;
+    try {
+      const typeBackgrounds = await base44.entities.TypeBackground.filter({ type: card.type });
+      const { prompt, existingImageUrls } = buildEggUpgradeBackgroundPrompt(
+        { baseName: creature.baseName, type: card.type, isHybrid: false },
+        upgradedImage,
+        typeBackgrounds,
+        alignment
+      );
+      const art: any = await Promise.race([
+        generateCleanArt(base44, prompt, existingImageUrls),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('art generation timeout')), ART_TIMEOUT_MS)),
+      ]);
+      if (art?.url) cardArtUrl = art.url;
+    } catch (e) {
+      console.error('upgradeEggHatchling: background generation failed/timed out, using stored image:', e);
+    }
+
     const updated: any = {
       tier: 4,
       name,
       attack,
       defense,
       bonusDamage,
-      imageUrl: upgradedImage,
+      imageUrl: cardArtUrl,
       eggUpgraded: true,
       eggAlignment: alignment,
       ...ua,
@@ -121,27 +138,6 @@ export default async function (req: Request) {
       userUpdate.creaturesEvolved = (user.creaturesEvolved || 0) + 1;
     }
     const updatedUser = await base44.auth.updateMe(userUpdate);
-
-    // Composite the stored upgraded image onto a fitting elemental type
-    // background AFTER the response is sent. The card is already upgraded and
-    // playable with the stored image; this only swaps in the nicer type-
-    // background art when it finishes (a few seconds later), and silently keeps
-    // the stored image if generation fails. Running it post-response means a slow
-    // or hung GenerateImage can never block or fail the upgrade.
-    waitUntil((async () => {
-      try {
-        const typeBackgrounds = await base44.entities.TypeBackground.filter({ type: card.type });
-        const { prompt, existingImageUrls } = buildEggUpgradeBackgroundPrompt(
-          { baseName: creature.baseName, type: card.type, isHybrid: false },
-          upgradedImage,
-          typeBackgrounds
-        );
-        const art: any = await generateCleanArt(base44, prompt, existingImageUrls);
-        if (art?.url) await base44.entities.Card.update(card.id, { imageUrl: art.url });
-      } catch (e) {
-        console.error('upgradeEggHatchling: background generation failed, keeping stored image:', e);
-      }
-    })());
 
     return Response.json({ card: { ...card, ...updated }, user: updatedUser });
   } catch (error) {

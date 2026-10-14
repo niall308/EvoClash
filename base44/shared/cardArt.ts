@@ -184,13 +184,17 @@ export function buildEggHatchRecolorPrompt(
 export function buildEggUpgradeBackgroundPrompt(
   cardData: CardArtInput,
   upgradedImageUrl: string,
-  typeBackgrounds: { type: string; imageUrl: string }[] = []
+  typeBackgrounds: { type: string; imageUrl: string }[] = [],
+  alignment: "good" | "evil" = "good"
 ) {
   const bgRef = typeBackgrounds.find((b) => b.type === cardData.type && isPublicRefUrl(b.imageUrl));
   const backgroundInstruction = bgRef
-    ? `Paint a NEW background environment that matches the elemental mood, colors, and setting of the additional background reference image provided — use that reference ONLY for its environment style, do not copy any creature or object from it.`
+    ? `Paint a NEW background environment that matches the elemental setting of the additional background reference image provided — use that reference ONLY for its environment style and setting, do not copy any creature or object from it.`
     : `Paint a NEW background environment that fits a ${cardData.type} elemental setting (e.g. lava fields for Lava, icy tundra for Ice, storm clouds for Wind).`;
-  const prompt = `Use the provided creature illustration as the character reference. Keep the creature's pose, anatomy, body structure, face, colours, and art style IDENTICAL to the reference — do not redesign, restructure, or recolor the creature in any way. Then paint a complete, fully rendered, completely opaque ${cardData.type} elemental environment around the creature and place the creature standing within it. ${backgroundInstruction} The environment must be a separate, atmospheric, magical ${cardData.type} scene that contrasts with the creature so the creature stays the clear focal point. The entire image must be a finished, fully opaque painting with every area completely filled in — a complete illustration, nothing left blank. Output the creature within the ${cardData.type} environment. No text, no border, no frame.`;
+  const alignmentPalette = alignment === "good"
+    ? `The whole environment must be bathed in LIGHT, radiant, heavenly colours: white, gold, and silver, with soft glowing light and gentle luminous haze (it overrides the reference image's colours).`
+    : `The whole environment must be DARK and menacing, in the colours black, deep red, burning orange, and purple, with ominous shadows and ember-like glows (it overrides the reference image's colours).`;
+  const prompt = `Use the provided creature illustration as the character reference. Keep the creature's pose, anatomy, body structure, face, colours, and art style IDENTICAL to the reference — do not redesign, restructure, or recolor the creature in any way. Then paint a complete, fully rendered, completely opaque ${cardData.type} elemental environment around the creature and place the creature standing within it. ${backgroundInstruction} ${alignmentPalette} The environment must be a separate, atmospheric, magical ${cardData.type} scene that contrasts with the creature so the creature stays the clear focal point. The entire image must be a finished, fully opaque painting with every area completely filled in — a complete illustration, nothing left blank. Output the creature within the ${cardData.type} environment. No text, no border, no frame.`;
   const existingImageUrls: string[] = [upgradedImageUrl];
   if (bgRef) existingImageUrls.push(bgRef.imageUrl);
   return { prompt, existingImageUrls };
