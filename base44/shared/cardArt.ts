@@ -65,7 +65,7 @@ export const CREATURE_ANATOMY: Record<string, string> = {
 // GenerateImage fetches reference images over the public internet, so private
 // file URIs (base44.app/api/apps/.../files/...) can't be read and make the
 // whole integration fail. Only pass publicly accessible URLs as references.
-const isPublicRefUrl = (url: string) => !!url && !url.includes("base44.app/api/apps/");
+export const isPublicRefUrl = (url: string) => !!url && !url.includes("base44.app/api/apps/");
 
 const isStyleReferenceSubject = (baseName: string, isHybrid: boolean) =>
   !isHybrid && (baseName || "").toLowerCase() === "tyrannosaurus rex";

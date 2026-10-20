@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { buildCardImagePrompt } from '../../shared/cardArt.ts';
+import { buildCardImagePrompt, buildEggHatchRecolorPrompt, isPublicRefUrl } from '../../shared/cardArt.ts';
 import { enforceCardArtQuota } from '../../shared/cardArtQuota.ts';
 
 // POST { baseName, type, isHybrid }
@@ -38,14 +38,27 @@ export default async function(req) {
     // Resolve the matching elemental type background (publicly readable).
     const typeBackgrounds = await base44.entities.TypeBackground.filter({ type });
 
-    const { prompt, existingImageUrls } = buildCardImagePrompt(
-      { baseName, type, isHybrid: !!isHybrid },
-      {
-        typeBackgrounds,
-        creatureDescription: creature?.description || '',
-        referenceImageUrl: creature?.referenceImageUrl || '',
-      }
-    );
+    // If the creature has a stored Tier 1 image, reuse it the way egg-hatch art
+    // does: keep the creature's pose, anatomy, and face identical to the stored
+    // image, recolour its body to the card type's gradient, and paint a fitting
+    // elemental type background. Falls back to from-scratch generation when no
+    // Tier 1 image is stored (or it's a private file URI GenerateImage can't read).
+    const tier1Image = creature?.tier1Image || '';
+    const useRecolor = isPublicRefUrl(tier1Image);
+    const { prompt, existingImageUrls } = useRecolor
+      ? buildEggHatchRecolorPrompt(
+          { baseName, type, isHybrid: !!isHybrid },
+          tier1Image,
+          typeBackgrounds
+        )
+      : buildCardImagePrompt(
+          { baseName, type, isHybrid: !!isHybrid },
+          {
+            typeBackgrounds,
+            creatureDescription: creature?.description || '',
+            referenceImageUrl: creature?.referenceImageUrl || '',
+          }
+        );
 
     const { url } = await base44.asServiceRole.integrations.Core.GenerateImage({
       prompt,
