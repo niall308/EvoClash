@@ -168,6 +168,16 @@ export const COINS_LOSS_AI = 15;
 export const COINS_FORFEIT = 0;
 export const COINS_WIN_HUMAN = 250;
 export const COINS_LOSS_HUMAN = 50;
+
+// Coins refunded when a player deletes/sells a card from their deck. Hybrids
+// have a flat refund regardless of tier; normal cards refund by tier.
+export const CARD_SELL_VALUE = { 1: 50, 2: 200, 3: 350, 4: 1000 };
+export const HYBRID_SELL_VALUE = 6000;
+export function getCardSellValue(card) {
+  if (!card) return 0;
+  if (card.isHybrid) return HYBRID_SELL_VALUE;
+  return CARD_SELL_VALUE[card.tier] || 0;
+}
 // Bonus LC added on top of COINS_WIN_AI, based on the AI difficulty beaten
 export const AI_DIFFICULTY_WIN_BONUS = { Easy: 15, Normal: 20, Hard: 45, Extreme: 100 };
 

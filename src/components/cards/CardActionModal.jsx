@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { ArrowUpCircle, ArrowLeftRight, BarChart3, X, GitCompareArrows, Trash2 } from "lucide-react";
 import GameCard from "./GameCard";
+import { getCardSellValue } from "@/lib/gameConstants";
 
-export default function CardActionModal({ card, onClose, onUpgrade, onTrade, onStats, onCompare, onDelete }) {
-  const [confirming, setConfirming] = useState(false);
+export default function CardActionModal({ card, onClose, onUpgrade, onTrade, onStats, onCompare, onDelete, startConfirming = false }) {
+  const [confirming, setConfirming] = useState(!!startConfirming);
   if (!card) return null;
 
+  const refund = getCardSellValue(card);
   const handleConfirmDelete = () => {
     setConfirming(false);
     if (onDelete) onDelete(card);
@@ -36,6 +38,13 @@ export default function CardActionModal({ card, onClose, onUpgrade, onTrade, onS
             </div>
             <p className="text-white font-bold text-center">Delete this card?</p>
             <p className="text-white/50 text-xs text-center -mt-2">This action cannot be undone.</p>
+            {refund > 0 && (
+              <div className="w-full flex items-center justify-center gap-2 bg-amber-500/15 border border-amber-500/30 rounded-xl py-2 px-3">
+                <Trash2 className="w-4 h-4 text-amber-400" />
+                <span className="text-amber-300 font-bold text-sm">+{refund.toLocaleString()} LC</span>
+                <span className="text-white/50 text-xs">refund on delete</span>
+              </div>
+            )}
             <div className="w-full flex flex-col gap-2">
               <button
                 onClick={handleConfirmDelete}

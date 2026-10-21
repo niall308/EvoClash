@@ -10,7 +10,7 @@ import DeckCompareModal from "@/components/cards/DeckCompareModal";
 import DeckTabs from "@/components/decks/DeckTabs";
 import NewDeckModal from "@/components/decks/NewDeckModal";
 import { getDecksAndActive } from "@/lib/decks";
-import { DECK_COST, MAX_CARDS_PER_DECK, MAX_DECKS } from "@/lib/gameConstants";
+import { DECK_COST, MAX_CARDS_PER_DECK, MAX_DECKS, getCardSellValue } from "@/lib/gameConstants";
 import { Sparkles, Loader2, ListChecks, PlusCircle, Trash2, Star, LayoutGrid, List, Egg } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import PullToRefresh from "@/components/common/PullToRefresh";
@@ -34,6 +34,7 @@ export default function Deck() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [statsCard, setStatsCard] = useState(null);
   const [compareIndex, setCompareIndex] = useState(null);
+  const [deleteTriggered, setDeleteTriggered] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
   const [showEggs, setShowEggs] = useState(false);
 
@@ -83,15 +84,26 @@ export default function Deck() {
 
   const handleDelete = async (id) => {
     const prevCards = cards;
+    const card = cards?.find((c) => c.id === id);
+    const refund = getCardSellValue(card);
     setCards((prev) => prev.filter((c) => c.id !== id));
     if (viewingDeckId === activeDeckId) setActiveDeckCount((c) => Math.max(0, c - 1));
     if (selectedId === id) setSelectedId(null);
     try {
       await base44.entities.Card.delete(id);
+      if (refund > 0 && user?.role !== "admin") {
+        const updated = await base44.auth.updateMe({ coins: (user.coins || 0) + refund });
+        updateUser(updated);
+      }
     } catch (err) {
       setCards(prevCards);
       if (viewingDeckId === activeDeckId) setActiveDeckCount((c) => c + 1);
     }
+  };
+
+  const handleGridDelete = (id) => {
+    setSelectedId(id);
+    setDeleteTriggered(true);
   };
 
   const handleSelect = (card) => {
@@ -281,7 +293,7 @@ export default function Deck() {
           {viewMode === "grid" ? (
             <CardGrid
               cards={filteredCards}
-              onDelete={handleDelete}
+              onDelete={handleGridDelete}
               selectedId={selectedId}
               onSelect={handleSelect}
               bulkMode={bulkMode}
@@ -296,21 +308,28 @@ export default function Deck() {
       {selectedCard && !bulkMode && (
         <CardActionModal
           card={selectedCard}
-          onClose={() => setSelectedId(null)}
+          startConfirming={deleteTriggered}
+          onClose={() => {
+            setSelectedId(null);
+            setDeleteTriggered(false);
+          }}
           onUpgrade={() => navigate(`/card-upgrade/${selectedCard.id}`)}
           onTrade={() => navigate("/trades")}
           onStats={() => {
             setStatsCard(selectedCard);
             setSelectedId(null);
+            setDeleteTriggered(false);
           }}
           onCompare={() => {
             const pos = filteredCards.findIndex((c) => c.id === selectedCard.id);
             setCompareIndex(pos >= 0 ? pos : 0);
             setSelectedId(null);
+            setDeleteTriggered(false);
           }}
           onDelete={(c) => {
             handleDelete(c.id);
             setSelectedId(null);
+            setDeleteTriggered(false);
           }}
         />
       )}
