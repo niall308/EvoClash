@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { buildCardImagePrompt, buildEggHatchRecolorPrompt, isPublicRefUrl } from '../../shared/cardArt.ts';
+import { buildCardImagePrompt, buildEggHatchRecolorPrompt } from '../../shared/cardArt.ts';
 import { enforceCardArtQuota } from '../../shared/cardArtQuota.ts';
 
 // POST { baseName, type, isHybrid }
@@ -38,17 +38,28 @@ export default async function(req) {
     // Resolve the matching elemental type background (publicly readable).
     const typeBackgrounds = await base44.entities.TypeBackground.filter({ type });
 
-    // If the creature has a stored Tier 1 image, reuse it the way egg-hatch art
-    // does: keep the creature's pose, anatomy, and face identical to the stored
-    // image, recolour its body to the card type's gradient, and paint a fitting
-    // elemental type background. Falls back to from-scratch generation when no
-    // Tier 1 image is stored (or it's a private file URI GenerateImage can't read).
+    // If the creature has a stored image, reuse it the way egg-hatch art does:
+    // keep the creature's pose, anatomy, and face identical to the stored image,
+    // recolour its body to the card type's gradient, and paint a fitting
+    // elemental type background. We check the Tier 1 image first, then fall back
+    // to the egg-baby image (creatures managed through the egg-creature admin
+    // store their base art there). Falls back to from-scratch generation when no
+    // usable stored image exists.
+    // A stored image is usable when it's a truly public URL OR a Base44 public
+    // file URL (the /files/mp/public/ path UploadPublicFile returns). Private
+    // file URIs can't be fetched over the public internet, so those are skipped.
+    const isUsableStoredImage = (url: string) =>
+      !!url && (!url.includes('base44.app/api/apps/') || url.includes('/files/mp/public/'));
     const tier1Image = creature?.tier1Image || '';
-    const useRecolor = isPublicRefUrl(tier1Image);
+    const eggBabyImages = (creature?.eggBabyImages || []);
+    const sourceImage = isUsableStoredImage(tier1Image)
+      ? tier1Image
+      : (eggBabyImages.find(isUsableStoredImage) || '');
+    const useRecolor = !!sourceImage;
     const { prompt, existingImageUrls } = useRecolor
       ? buildEggHatchRecolorPrompt(
           { baseName, type, isHybrid: !!isHybrid },
-          tier1Image,
+          sourceImage,
           typeBackgrounds
         )
       : buildCardImagePrompt(
