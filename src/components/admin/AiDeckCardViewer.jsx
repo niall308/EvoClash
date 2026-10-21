@@ -52,6 +52,7 @@ export default function AiDeckCardViewer({ cards, startIndex, difficulty, creatu
         baseName: card.baseName,
         type: card.type,
         isHybrid: !!card.isHybrid,
+        tier: card.tier,
       });
       const created = await base44.entities.AiDeckCard.create({ ...card, imageUrl: data.url, difficulty });
       const next = [...list, created];

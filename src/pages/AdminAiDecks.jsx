@@ -48,6 +48,7 @@ export default function AdminAiDecks() {
         baseName: card.baseName,
         type: card.type,
         isHybrid: !!card.isHybrid,
+        tier: card.tier,
       });
       // Stamp the admin-authored Unique Attack fields from the Creature entity
       // onto every AI deck card so the in-game resolver uses them.

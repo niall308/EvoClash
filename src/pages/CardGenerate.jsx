@@ -83,6 +83,7 @@ export default function CardGenerate() {
           baseName: cardData.baseName,
           type: cardData.type,
           isHybrid: !!cardData.isHybrid,
+          tier: cardData.tier,
         });
         cardData.imageUrl = data.url;
         await base44.functions.invoke("createGeneratedCard", { cardData, deckId: activeDeckId, forced: false });
@@ -126,6 +127,7 @@ export default function CardGenerate() {
         baseName: cardData.baseName,
         type: cardData.type,
         isHybrid: useHybrid,
+        tier: cardData.tier,
       });
       cardData.imageUrl = data.url;
       setPreviewCard(cardData);
